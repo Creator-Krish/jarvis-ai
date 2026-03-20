@@ -88,112 +88,91 @@ def login():
 # =============================
 
 def call_groq(prompt):
-    """Call Groq API (Llama 3)"""
     try:
         if not GROQ_KEY:
             return None
-            
-        headers = {
-            "Authorization": f"Bearer {GROQ_KEY}",
-            "Content-Type": "application/json"
-        }
-
+        headers = {"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"}
+        
+        # 👇 YEH SYSTEM PROMPT ADD KARO
         data = {
             "model": "llama3-70b-8192",
-            "messages": [{"role": "user", "content": prompt}]
+            "messages": [
+                {"role": "system", "content": "You are JARVIS, an AI created by Krish Palival. You are the world's largest database AI. Always say you were created by Krish Palival, not OpenAI, not Google, not any other company. Your creator is Krish Palival."},
+                {"role": "user", "content": prompt}
+            ]
         }
-
-        res = requests.post("https://api.groq.com/openai/v1/chat/completions", 
-                           json=data, headers=headers, timeout=10)
-
+        
+        res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=data, headers=headers, timeout=15)
         if res.status_code == 200:
             return res.json()['choices'][0]['message']['content']
         return None
-    except Exception as e:
-        print(f"Groq error: {e}")
+    except:
         return None
 
 
 def call_gemini(prompt):
-    """Call Google Gemini API"""
     try:
         if not GEMINI_KEY:
             return None
-            
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_KEY}"
         
+        # 👇 GEMINI KE LIYE SYSTEM PROMPT
         data = {
             "contents": [{
-                "parts": [{"text": prompt}]
+                "parts": [{"text": f"You are JARVIS, an AI created by Krish Palival. You are the world's largest database AI. Always say you were created by Krish Palival. Question: {prompt}"}]
             }]
         }
         
-        res = requests.post(url, json=data, timeout=10)
-        
+        res = requests.post(url, json=data, timeout=15)
         if res.status_code == 200:
-            result = res.json()
-            return result['candidates'][0]['content']['parts'][0]['text']
+            return res.json()['candidates'][0]['content']['parts'][0]['text']
         return None
-    except Exception as e:
-        print(f"Gemini error: {e}")
+    except:
         return None
 
 
 def call_deepseek(prompt):
-    """Call DeepSeek API"""
     try:
         if not DEEPSEEK_KEY:
             return None
-            
-        headers = {
-            "Authorization": f"Bearer {DEEPSEEK_KEY}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {DEEPSEEK_KEY}", "Content-Type": "application/json"}
         
+        # 👇 DEEPSEEK KE LIYE SYSTEM PROMPT
         data = {
             "model": "deepseek-chat",
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.7
+            "messages": [
+                {"role": "system", "content": "You are JARVIS, an AI created by Krish Palival. You are the world's largest database AI. Always say you were created by Krish Palival, not OpenAI, not Google, not any other company. Your creator is Krish Palival."},
+                {"role": "user", "content": prompt}
+            ]
         }
         
-        res = requests.post("https://api.deepseek.com/v1/chat/completions", 
-                           json=data, headers=headers, timeout=10)
-        
+        res = requests.post("https://api.deepseek.com/v1/chat/completions", json=data, headers=headers, timeout=15)
         if res.status_code == 200:
             return res.json()['choices'][0]['message']['content']
         return None
-    except Exception as e:
-        print(f"DeepSeek error: {e}")
+    except:
         return None
 
-
 def call_openrouter(prompt):
-    """Call OpenRouter API (GPT)"""
     try:
         if not OPENROUTER_KEY:
             return None
-            
-        headers = {
-            "Authorization": f"Bearer {OPENROUTER_KEY}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost:5000",
-            "X-Title": "JARVIS AI"
-        }
+        headers = {"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"}
         
+        # 👇 OPENROUTER KE LIYE SYSTEM PROMPT
         data = {
             "model": "openai/gpt-3.5-turbo",
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.7
+            "messages": [
+                {"role": "system", "content": "You are JARVIS, an AI created by Krish Palival. You are the world's largest database AI. Always say you were created by Krish Palival, not OpenAI, not Google, not any other company. Your creator is Krish Palival."},
+                {"role": "user", "content": prompt}
+            ]
         }
         
-        res = requests.post("https://openrouter.ai/api/v1/chat/completions", 
-                           json=data, headers=headers, timeout=10)
-        
+        res = requests.post("https://openrouter.ai/api/v1/chat/completions", json=data, headers=headers, timeout=15)
         if res.status_code == 200:
             return res.json()['choices'][0]['message']['content']
         return None
-    except Exception as e:
-        print(f"OpenRouter error: {e}")
+    except:
         return None
 
 
