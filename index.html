@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>JARVIS - World's Largest Database AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 20%, #0f2027, #000000 90%);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Login Screen */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+        }
+
+        .login-box {
+            background: rgba(10, 20, 30, 0.9);
+            padding: 45px 40px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 30px rgba(0, 255, 255, 0.2); }
+            to { box-shadow: 0 0 60px rgba(0, 255, 255, 0.4); }
+        }
+
+        .login-box h2 {
+            color: cyan;
+            font-size: clamp(28px, 5vw, 36px);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .login-box .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            margin-bottom: 30px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 14px 18px;
+            margin: 12px 0;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 15px;
+            transition: 0.3s;
+        }
+
+        .login-box input:focus {
+            outline: none;
+            border-color: cyan;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 14px;
+            margin: 20px 0 15px;
+            border: none;
+            border-radius: 30px;
+            background: cyan;
+            color: black;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .login-box button:hover {
+            background: #00ffff;
+            box-shadow: 0 0 30px cyan;
+            transform: scale(1.02);
+        }
+
+        #login-msg {
+            color: #ff6b6b;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .info-text {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            margin-top: 20px;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            padding-top: 20px;
+        }
+
+        /* Main Interface */
+        #main {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .logo h1 {
+            color: cyan;
+            font-size: clamp(18px, 4vw, 24px);
+            text-shadow: 0 0 10px cyan;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid cyan;
+            color: cyan;
+            font-size: 24px;
+            padding: 5px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .menu-toggle:hover {
+            background: cyan;
+            color: black;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            white-space: nowrap;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .session-display {
+            padding: 5px 10px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid cyan;
+            border-radius: 20px;
+            font-size: 12px;
+            color: cyan;
+            white-space: nowrap;
+        }
+
+        .user-email {
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 12px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Main Container */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: rgba(0, 0, 0, 0.5);
+            border-right: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            position: relative;
+            z-index: 100;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            width: 280px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+
+        .sidebar-title {
+            color: cyan;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .processing-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .processing-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid transparent;
+            transition: 0.3s;
+        }
+
+        .processing-item.active {
+            border-color: cyan;
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .processing-icon {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 50%;
+            color: cyan;
+            flex-shrink: 0;
+        }
+
+        .processing-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .processing-name {
+            font-size: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .processing-desc {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stats-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stats-number {
+            font-size: clamp(24px, 5vw, 32px);
+            color: cyan;
+            font-weight: bold;
+        }
+
+        .stats-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .sidebar-button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 30px;
+            background: rgba(0, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-button:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: cyan;
+            transform: translateY(-2px);
+        }
+
+        /* Username Display at Left Bottom */
+        .username-display {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 8px 15px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid cyan;
+            border-radius: 30px;
+            color: cyan;
+            font-size: clamp(12px, 3vw, 14px);
+            font-weight: bold;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.3);
+            min-width: 0;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 15px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .message {
+            max-width: 90%;
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            margin-left: auto;
+        }
+
+        .bot-message {
+            margin-right: auto;
+        }
+
+        .message-content {
+            padding: 12px 15px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            font-size: clamp(14px, 4vw, 16px);
+        }
+
+        .user-message .message-content {
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid cyan;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message .message-content {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom-left-radius: 5px;
+        }
+
+        .system-message {
+            margin: 10px auto;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        .system-message .message-content {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+            color: #ffc107;
+            font-size: 12px;
+            padding: 8px 12px;
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            flex-wrap: wrap;
+        }
+
+        .user-message .message-meta {
+            justify-content: flex-end;
+        }
+
+        .message-time {
+            font-size: 9px;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 5px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            width: fit-content;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            background: cyan;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        /* Input Area */
+        .input-area {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+            min-width: 0;
+        }
+
+        #input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        #input:focus {
+            outline: none;
+            border-color: cyan;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        #input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+        }
+
+        #input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #sendBtn {
+            padding: 0 20px;
+            border: none;
+            border-radius: 25px;
+            background: cyan;
+            color: black;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            white-space: nowrap;
+        }
+
+        #sendBtn:hover:not(:disabled) {
+            background: #00ffff;
+            box-shadow: 0 0 30px cyan;
+            transform: scale(1.05);
+        }
+
+        #sendBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            padding: 0 15px 15px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+
+        .quick-actions::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .quick-actions::-webkit-scrollbar-track {
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .quick-actions::-webkit-scrollbar-thumb {
+            background: cyan;
+            border-radius: 2px;
+        }
+
+        .quick-btn {
+            padding: 8px 12px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            background: rgba(0, 255, 255, 0.05);
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .quick-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: cyan;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: cyan;
+            border-radius: 2px;
+        }
+
+        /* Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 90;
+            backdrop-filter: blur(3px);
+        }
+
+        .sidebar-overlay.visible {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+            
+            .sidebar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 100;
+                transform: translateX(-100%);
+                background: rgba(0, 0, 0, 0.95);
+                width: 260px;
+            }
+            
+            .sidebar.visible {
+                transform: translateX(0);
+            }
+            
+            .message {
+                max-width: 95%;
+            }
+            
+            .username-display {
+                bottom: 15px;
+                left: 15px;
+                font-size: 11px;
+                padding: 6px 12px;
+                max-width: 150px;
+            }
+            
+            .header {
+                padding: 8px 10px;
+            }
+            
+            .user-info {
+                gap: 5px;
+            }
+            
+            .user-email {
+                max-width: 100px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="login-screen">
+    <div class="login-box">
+        <h2>JARVIS</h2>
+        <div class="subtitle">Authorized Access Only</div>
+        
+        <input type="text" id="username" placeholder="Username" autocomplete="off">
+        <input type="password" id="password" placeholder="Access Code" autocomplete="off">
+        
+        <button onclick="login()">Access System</button>
+        <p id="login-msg"></p>
+        
+        <div class="info-text">
+            Built by Krish Palival<br>
+            World's Largest Database AI
+        </div>
+    </div>
+</div>
+
+<!-- Username Display -->
+<div id="username-display" class="username-display" style="display: none;"></div>
+
+<!-- Main Interface -->
+<div id="main" style="display: none;">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <span class="menu-toggle" onclick="toggleSidebar()">☰</span>
+            <h1>JARVIS</h1>
+            <span class="status-badge" id="status">Active</span>
+        </div>
+        <div class="user-info">
+            <div class="session-display" id="sessionDisplay">∞</div>
+            <div class="user-email" id="userEmail"></div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Processing Units</div>
+                <div class="processing-list" id="processingList"></div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">System Status</div>
+                <div class="stats-box">
+                    <div class="stats-number" id="systemStatus">∞</div>
+                    <div class="stats-label">Neural Capacity</div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="sidebar-button" onclick="newChat()">⟳ New Session</button>
+                <button class="sidebar-button" onclick="clearHistory()">⌫ Clear Memory</button>
+                <button class="sidebar-button" onclick="logout()">🚪 Exit</button>
+                <button class="sidebar-button" onclick="toggleSidebar()">📱 Hide Sidebar</button>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <div class="chat-messages" id="chat"></div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="quick-btn" onclick="quickPrompt('What is artificial intelligence?')">What is AI?</button>
+                <button class="quick-btn" onclick="quickPrompt('Write Python code to sort a list')">Python Code</button>
+                <button class="quick-btn" onclick="quickPrompt('Tell me an interesting fact')">Interesting Fact</button>
+                <button class="quick-btn" onclick="quickPrompt('Explain quantum computing')">Quantum Computing</button>
+                <button class="quick-btn" onclick="quickPrompt('What is machine learning?')">Machine Learning</button>
+                <button class="quick-btn" onclick="quickPrompt('Tell me about neural networks')">Neural Networks</button>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="input" placeholder="Ask JARVIS anything..." onkeypress="handleKeyPress(event)">
+                </div>
+                <button onclick="send()" id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// =========================
+// GLOBAL VARIABLES
+// =========================
+let USER = "";
+let isProcessing = false;
+
+// =========================
+// LOGIN FUNCTION
+// =========================
+async function login() {
+    let username = document.getElementById("username").value.trim();
+    let password = document.getElementById("password").value.trim();
+    let msg = document.getElementById("login-msg");
+
+    if (!username || !password) {
+        msg.innerText = "Enter username and access code";
+        return;
+    }
+
+    try {
+        let res = await fetch("/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: username, password: password })
+        });
+
+        let data = await res.json();
+
+        if (data.success) {
+            USER = username;
+            
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("main").style.display = "flex";
+            document.getElementById("username-display").style.display = "block";
+            
+            document.getElementById("userEmail").innerText = USER;
+            document.getElementById("username-display").innerHTML = `👤 ${USER}`;
+            
+            addSystemMessage(`Welcome, ${USER}`);
+            addSystemMessage("JARVIS neural network active");
+            addSystemMessage("Unlimited processing capacity");
+            
+            loadProcessingUnits();
+        } else {
+            msg.innerText = data.error || "Access denied";
+        }
+    } catch (error) {
+        msg.innerText = "Connection error";
+    }
+}
+
+// =========================
+// LOAD PROCESSING UNITS
+// =========================
+function loadProcessingUnits() {
+    let processingList = document.getElementById("processingList");
+    processingList.innerHTML = "";
+    
+    const units = [
+        { name: "Primary Core", desc: "Active", icon: "⚡" },
+        { name: "Neural Matrix", desc: "Optimized", icon: "🌀" },
+        { name: "Deep Memory", desc: "Online", icon: "🔍" },
+        { name: "Cognitive Layer", desc: "Ready", icon: "🌐" }
+    ];
+    
+    units.forEach((unit, index) => {
+        let div = document.createElement("div");
+        div.className = `processing-item ${index === 0 ? 'active' : ''}`;
+        div.innerHTML = `
+            <div class="processing-icon">${unit.icon}</div>
+            <div class="processing-info">
+                <div class="processing-name">${unit.name}</div>
+                <div class="processing-desc">${unit.desc}</div>
+            </div>
+        `;
+        processingList.appendChild(div);
+    });
+}
+
+// =========================
+// SEND MESSAGE FUNCTION
+// =========================
+async function send() {
+    if (isProcessing) return;
+    
+    let input = document.getElementById("input");
+    let msg = input.value.trim();
+    
+    if (msg === "") return;
+
+    addMessage(msg, "user");
+    input.value = "";
+
+    showTypingIndicator();
+    setProcessing(true);
+
+    try {
+        let res = await fetch("/ai/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: msg, user: USER })
+        });
+
+        let data = await res.json();
+        
+        removeTypingIndicator();
+
+        if (data.success) {
+            addMessage(data.response, "bot");
+        } else {
+            addMessage("Processing error. Please try again.", "system");
+        }
+
+    } catch (error) {
+        removeTypingIndicator();
+        addMessage("Neural connection issue. Retrying...", "system");
+    } finally {
+        setProcessing(false);
+    }
+}
+
+// =========================
+// QUICK PROMPT FUNCTION
+// =========================
+function quickPrompt(text) {
+    document.getElementById("input").value = text;
+    send();
+}
+
+// =========================
+// ADD MESSAGE TO CHAT
+// =========================
+function addMessage(text, type) {
+    let chat = document.getElementById("chat");
+    let div = document.createElement("div");
+    div.className = `message ${type}-message`;
+    
+    let content = document.createElement("div");
+    content.className = "message-content";
+    content.innerText = text;
+    
+    let meta = document.createElement("div");
+    meta.className = "message-meta";
+    
+    let time = document.createElement("span");
+    time.className = "message-time";
+    time.innerText = new Date().toLocaleTimeString();
+    
+    meta.appendChild(time);
+    
+    div.appendChild(content);
+    div.appendChild(meta);
+    
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function addSystemMessage(text) {
+    addMessage(text, "system");
+}
+
+// =========================
+// TYPING INDICATOR
+// =========================
+function showTypingIndicator() {
+    let chat = document.getElementById("chat");
+    let indicator = document.createElement("div");
+    indicator.className = "message bot-message";
+    indicator.id = "typingIndicator";
+    
+    let content = document.createElement("div");
+    content.className = "typing-indicator";
+    for (let i = 0; i < 3; i++) {
+        content.appendChild(document.createElement("span"));
+    }
+    
+    indicator.appendChild(content);
+    chat.appendChild(indicator);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    let indicator = document.getElementById("typingIndicator");
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+// =========================
+// UTILITY FUNCTIONS
+// =========================
+function setProcessing(processing) {
+    isProcessing = processing;
+    document.getElementById("sendBtn").disabled = processing;
+    document.getElementById("input").disabled = processing;
+}
+
+function handleKeyPress(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        send();
+    }
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('visible');
+    overlay.classList.toggle('visible');
+}
+
+function newChat() {
+    document.getElementById("chat").innerHTML = "";
+    addSystemMessage("New session initialized");
+    addSystemMessage(`User: ${USER}`);
+    if (window.innerWidth <= 768) toggleSidebar();
+}
+
+function clearHistory() {
+    if (confirm("Clear memory cache?")) {
+        document.getElementById("chat").innerHTML = "";
+        addSystemMessage("Memory cache cleared");
+        if (window.innerWidth <= 768) toggleSidebar();
+    }
+}
+
+function logout() {
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("main").style.display = "none";
+    document.getElementById("username-display").style.display = "none";
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("login-msg").innerText = "";
+}
+
+// =========================
+// WINDOW LOAD
+// =========================
+window.onload = function() {
+    document.getElementById("username").focus();
+};
+</script>
+
+</body>
+</html>
