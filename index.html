@@ -9,19 +9,33 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
+        /* FIX 1: Removed position: fixed */
         html, body {
             height: 100%;
             overflow: hidden;
-            position: fixed;
-            width: 100%;
+            background: radial-gradient(circle at 20% 20%, #0f2027, #000000 90%);
         }
 
         body {
-            background: radial-gradient(circle at 20% 20%, #0f2027, #000000 90%);
             color: white;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            /* FIX 5: Safe area support */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        /* FIX 2: Use dvh instead of vh */
+        #main {
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.8);
+            position: relative;
         }
 
         /* Login Screen */
@@ -62,6 +76,18 @@
             margin-bottom: 30px;
         }
 
+        /* FIX 6: Accessibility - Labels for inputs */
+        .login-box label {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
         .login-box input {
             width: 100%;
             padding: 14px 18px;
@@ -71,11 +97,13 @@
             background: rgba(255, 255, 255, 0.05);
             color: white;
             font-size: 16px;
+            transition: 0.3s;
         }
 
         .login-box input:focus {
             outline: none;
             border-color: cyan;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
         }
 
         .login-box button {
@@ -89,6 +117,11 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .login-box button:active {
+            transform: scale(0.98);
         }
 
         #login-msg {
@@ -102,16 +135,6 @@
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid rgba(0, 255, 255, 0.2);
-        }
-
-        /* Main Interface */
-        #main {
-            height: 100vh;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            background: rgba(0, 0, 0, 0.8);
-            position: relative;
         }
 
         /* Header */
@@ -141,6 +164,11 @@
             padding: 6px 12px;
             border-radius: 8px;
             cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .menu-toggle:active {
+            transform: scale(0.95);
         }
 
         .logo h1 {
@@ -299,6 +327,12 @@
             cursor: pointer;
             font-size: 12px;
             text-align: center;
+            transition: 0.2s;
+        }
+
+        .sidebar-button:active {
+            transform: scale(0.98);
+            background: rgba(0, 255, 255, 0.1);
         }
 
         /* Chat Area */
@@ -311,7 +345,6 @@
             height: 100%;
         }
 
-        /* Chat Messages - Scrollable */
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -322,6 +355,12 @@
         .message {
             max-width: 85%;
             margin-bottom: 12px;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .user-message {
@@ -401,7 +440,7 @@
             30% { transform: translateY(-6px); opacity: 1; }
         }
 
-        /* Input Area - FIXED AT BOTTOM */
+        /* FIX 3: Sticky input area for keyboard */
         .input-area {
             display: flex;
             gap: 10px;
@@ -410,6 +449,8 @@
             border-top: 1px solid rgba(0, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
         }
 
         .input-wrapper {
@@ -424,6 +465,7 @@
             background: rgba(30, 30, 50, 0.9);
             color: white;
             font-size: 15px;
+            transition: 0.2s;
         }
 
         #input:focus {
@@ -445,9 +487,14 @@
             font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
+            transition: 0.2s;
         }
 
-        /* Quick Actions - Scrollable */
+        #sendBtn:active {
+            transform: scale(0.95);
+        }
+
+        /* Quick Actions */
         .quick-actions {
             display: flex;
             gap: 8px;
@@ -472,8 +519,15 @@
             font-size: 11px;
             white-space: nowrap;
             flex-shrink: 0;
+            transition: 0.2s;
         }
 
+        .quick-btn:active {
+            transform: scale(0.95);
+            background: rgba(0, 255, 255, 0.15);
+        }
+
+        /* FIX 4: Sidebar overlay and body scroll lock */
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -483,10 +537,16 @@
             bottom: 0;
             background: rgba(0, 0, 0, 0.5);
             z-index: 90;
+            backdrop-filter: blur(3px);
         }
 
         .sidebar-overlay.visible {
             display: block;
+        }
+
+        /* Body scroll lock when sidebar open */
+        body.sidebar-open {
+            overflow: hidden;
         }
 
         /* Mobile Styles */
@@ -559,7 +619,9 @@
     <div class="login-box">
         <h2>JARVIS</h2>
         <div class="subtitle">Authorized Access Only</div>
+        <label for="username">Username</label>
         <input type="text" id="username" placeholder="Username" autocomplete="off">
+        <label for="password">Access Code</label>
         <input type="password" id="password" placeholder="Access Code" autocomplete="off">
         <button onclick="login()">Access System</button>
         <p id="login-msg"></p>
@@ -614,7 +676,6 @@
                 <button class="quick-btn" onclick="quickPrompt('Explain quantum computing')">Quantum</button>
             </div>
 
-            <!-- INPUT BAR - NOW VISIBLE ON MOBILE -->
             <div class="input-area">
                 <div class="input-wrapper">
                     <input type="text" id="input" placeholder="Ask JARVIS anything..." onkeypress="handleKeyPress(event)">
@@ -778,21 +839,29 @@ function handleKeyPress(event) {
 }
 
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('visible');
-    document.getElementById('sidebarOverlay').classList.toggle('visible');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('visible');
+    overlay.classList.toggle('visible');
+    // FIX 4: Lock body scroll when sidebar open
+    document.body.classList.toggle('sidebar-open', sidebar.classList.contains('visible'));
 }
 
 function newChat() {
     document.getElementById("chat").innerHTML = "";
     addSystemMessage("New session initialized");
-    if (window.innerWidth <= 768) toggleSidebar();
+    if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('visible')) {
+        toggleSidebar();
+    }
 }
 
 function clearHistory() {
     if (confirm("Clear memory cache?")) {
         document.getElementById("chat").innerHTML = "";
         addSystemMessage("Memory cache cleared");
-        if (window.innerWidth <= 768) toggleSidebar();
+        if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('visible')) {
+            toggleSidebar();
+        }
     }
 }
 
@@ -801,6 +870,9 @@ function logout() {
     document.getElementById("main").style.display = "none";
     document.getElementById("username").value = "";
     document.getElementById("password").value = "";
+    document.getElementById("login-msg").innerText = "";
+    // Remove sidebar lock if any
+    document.body.classList.remove('sidebar-open');
 }
 
 window.onload = function() {
