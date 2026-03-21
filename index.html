@@ -11,15 +11,17 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
         body {
             background: radial-gradient(circle at 20% 20%, #0f2027, #000000 90%);
             color: white;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            min-height: 100vh;
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            height: 100%;
         }
 
         /* Login Screen */
@@ -52,7 +54,6 @@
             color: cyan;
             font-size: 32px;
             margin-bottom: 10px;
-            letter-spacing: 2px;
         }
 
         .login-box .subtitle {
@@ -70,13 +71,11 @@
             background: rgba(255, 255, 255, 0.05);
             color: white;
             font-size: 16px;
-            transition: 0.3s;
         }
 
         .login-box input:focus {
             outline: none;
             border-color: cyan;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
         }
 
         .login-box button {
@@ -90,18 +89,11 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .login-box button:hover {
-            background: #00ffff;
-            transform: scale(1.02);
         }
 
         #login-msg {
             color: #ff6b6b;
             font-size: 13px;
-            margin-top: 10px;
         }
 
         .info-text {
@@ -115,6 +107,7 @@
         /* Main Interface */
         #main {
             height: 100vh;
+            width: 100%;
             display: flex;
             flex-direction: column;
             background: rgba(0, 0, 0, 0.8);
@@ -136,7 +129,7 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .menu-toggle {
@@ -153,7 +146,6 @@
         .logo h1 {
             color: cyan;
             font-size: 20px;
-            text-shadow: 0 0 10px cyan;
         }
 
         .status-badge {
@@ -168,7 +160,7 @@
         .user-info {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .session-display {
@@ -232,7 +224,6 @@
             color: cyan;
             font-size: 12px;
             text-transform: uppercase;
-            letter-spacing: 1px;
             margin-bottom: 12px;
             border-bottom: 1px solid rgba(0, 255, 255, 0.3);
             padding-bottom: 6px;
@@ -267,11 +258,6 @@
             background: rgba(0, 255, 255, 0.15);
             border-radius: 8px;
             color: cyan;
-            font-size: 14px;
-        }
-
-        .processing-info {
-            flex: 1;
         }
 
         .processing-name {
@@ -294,12 +280,6 @@
         .stats-number {
             font-size: 28px;
             color: cyan;
-            font-weight: 500;
-        }
-
-        .stats-label {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.6);
         }
 
         .sidebar-footer {
@@ -317,15 +297,8 @@
             background: transparent;
             color: #ccc;
             cursor: pointer;
-            transition: 0.2s;
             font-size: 12px;
             text-align: center;
-        }
-
-        .sidebar-button:hover {
-            background: rgba(0, 255, 255, 0.1);
-            border-color: cyan;
-            color: white;
         }
 
         /* Chat Area */
@@ -338,6 +311,7 @@
             height: 100%;
         }
 
+        /* Chat Messages - Scrollable */
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -348,12 +322,6 @@
         .message {
             max-width: 85%;
             margin-bottom: 12px;
-            animation: fadeIn 0.2s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .user-message {
@@ -400,7 +368,6 @@
 
         .message-meta {
             display: flex;
-            align-items: center;
             gap: 6px;
             margin-top: 4px;
             font-size: 9px;
@@ -434,13 +401,13 @@
             30% { transform: translateY(-6px); opacity: 1; }
         }
 
-        /* Input Area */
+        /* Input Area - FIXED AT BOTTOM */
         .input-area {
             display: flex;
             gap: 10px;
             padding: 12px 16px;
-            background: rgba(0, 0, 0, 0.6);
-            border-top: 1px solid rgba(0, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.85);
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             flex-shrink: 0;
         }
@@ -454,25 +421,18 @@
             padding: 12px 16px;
             border: 1px solid rgba(0, 255, 255, 0.3);
             border-radius: 30px;
-            background: rgba(30, 30, 50, 0.8);
+            background: rgba(30, 30, 50, 0.9);
             color: white;
             font-size: 15px;
-            transition: 0.2s;
         }
 
         #input:focus {
             outline: none;
             border-color: cyan;
-            background: rgba(40, 40, 65, 0.9);
         }
 
         #input::placeholder {
             color: rgba(255, 255, 255, 0.4);
-            font-size: 13px;
-        }
-
-        #input:disabled {
-            opacity: 0.5;
         }
 
         #sendBtn {
@@ -484,20 +444,10 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.2s;
             white-space: nowrap;
         }
 
-        #sendBtn:hover:not(:disabled) {
-            background: #00ffff;
-            transform: scale(1.02);
-        }
-
-        #sendBtn:disabled {
-            opacity: 0.5;
-        }
-
-        /* Quick Actions */
+        /* Quick Actions - Scrollable */
         .quick-actions {
             display: flex;
             gap: 8px;
@@ -505,21 +455,11 @@
             overflow-x: auto;
             overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
             flex-shrink: 0;
         }
 
         .quick-actions::-webkit-scrollbar {
             height: 3px;
-        }
-
-        .quick-actions::-webkit-scrollbar-track {
-            background: rgba(0, 255, 255, 0.1);
-        }
-
-        .quick-actions::-webkit-scrollbar-thumb {
-            background: cyan;
-            border-radius: 3px;
         }
 
         .quick-btn {
@@ -534,11 +474,6 @@
             flex-shrink: 0;
         }
 
-        .quick-btn:active {
-            background: rgba(0, 255, 255, 0.2);
-        }
-
-        /* Overlay */
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -585,11 +520,6 @@
                 font-size: 10px;
             }
             
-            .session-display {
-                font-size: 10px;
-                padding: 3px 8px;
-            }
-            
             .header {
                 padding: 10px 12px;
             }
@@ -619,22 +549,6 @@
             .quick-actions {
                 padding: 0 12px 10px;
             }
-            
-            .quick-btn {
-                padding: 5px 12px;
-                font-size: 10px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .user-email {
-                max-width: 80px;
-            }
-            
-            .message-content {
-                font-size: 13px;
-                padding: 8px 12px;
-            }
         }
     </style>
 </head>
@@ -645,23 +559,16 @@
     <div class="login-box">
         <h2>JARVIS</h2>
         <div class="subtitle">Authorized Access Only</div>
-        
         <input type="text" id="username" placeholder="Username" autocomplete="off">
         <input type="password" id="password" placeholder="Access Code" autocomplete="off">
-        
         <button onclick="login()">Access System</button>
         <p id="login-msg"></p>
-        
-        <div class="info-text">
-            Built by Krish Palival<br>
-            World's Largest Database AI
-        </div>
+        <div class="info-text">Built by Krish Palival<br>World's Largest Database AI</div>
     </div>
 </div>
 
 <!-- Main Interface -->
 <div id="main" style="display: none;">
-    <!-- Header -->
     <div class="header">
         <div class="logo">
             <span class="menu-toggle" onclick="toggleSidebar()">☰</span>
@@ -669,31 +576,26 @@
             <span class="status-badge" id="status">Active</span>
         </div>
         <div class="user-info">
-            <div class="session-display" id="sessionDisplay">∞</div>
+            <div class="session-display">∞</div>
             <div class="user-email" id="userEmail"></div>
         </div>
     </div>
 
-    <!-- Main Container -->
     <div class="main-container">
-        <!-- Sidebar Overlay -->
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
         
-        <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-section">
                 <div class="sidebar-title">Processing Units</div>
                 <div class="processing-list" id="processingList"></div>
             </div>
-
             <div class="sidebar-section">
                 <div class="sidebar-title">System Status</div>
                 <div class="stats-box">
-                    <div class="stats-number" id="systemStatus">∞</div>
+                    <div class="stats-number">∞</div>
                     <div class="stats-label">Neural Capacity</div>
                 </div>
             </div>
-
             <div class="sidebar-footer">
                 <button class="sidebar-button" onclick="newChat()">⟳ New Session</button>
                 <button class="sidebar-button" onclick="clearHistory()">⌫ Clear Memory</button>
@@ -702,11 +604,9 @@
             </div>
         </div>
 
-        <!-- Chat Area -->
         <div class="chat-area">
             <div class="chat-messages" id="chat"></div>
 
-            <!-- Quick Actions -->
             <div class="quick-actions">
                 <button class="quick-btn" onclick="quickPrompt('What is artificial intelligence?')">What is AI?</button>
                 <button class="quick-btn" onclick="quickPrompt('Write Python code to sort a list')">Python Code</button>
@@ -714,7 +614,7 @@
                 <button class="quick-btn" onclick="quickPrompt('Explain quantum computing')">Quantum</button>
             </div>
 
-            <!-- Input Area -->
+            <!-- INPUT BAR - NOW VISIBLE ON MOBILE -->
             <div class="input-area">
                 <div class="input-wrapper">
                     <input type="text" id="input" placeholder="Ask JARVIS anything..." onkeypress="handleKeyPress(event)">
@@ -726,15 +626,9 @@
 </div>
 
 <script>
-// =========================
-// GLOBAL VARIABLES
-// =========================
 let USER = "";
 let isProcessing = false;
 
-// =========================
-// LOGIN FUNCTION
-// =========================
 async function login() {
     let username = document.getElementById("username").value.trim();
     let password = document.getElementById("password").value.trim();
@@ -756,16 +650,13 @@ async function login() {
 
         if (data.success) {
             USER = username;
-            
             document.getElementById("login-screen").style.display = "none";
             document.getElementById("main").style.display = "flex";
-            
             document.getElementById("userEmail").innerText = USER;
             
             addSystemMessage(`Welcome, ${USER}`);
             addSystemMessage("JARVIS neural network active");
             addSystemMessage("Unlimited processing capacity");
-            
             loadProcessingUnits();
         } else {
             msg.innerText = data.error || "Access denied";
@@ -775,48 +666,35 @@ async function login() {
     }
 }
 
-// =========================
-// LOAD PROCESSING UNITS
-// =========================
 function loadProcessingUnits() {
-    let processingList = document.getElementById("processingList");
-    processingList.innerHTML = "";
-    
+    let list = document.getElementById("processingList");
+    list.innerHTML = "";
     const units = [
         { name: "Primary Core", desc: "Active", icon: "⚡" },
         { name: "Neural Matrix", desc: "Optimized", icon: "🌀" },
         { name: "Deep Memory", desc: "Online", icon: "🔍" },
         { name: "Cognitive Layer", desc: "Ready", icon: "🌐" }
     ];
-    
-    units.forEach((unit, index) => {
+    units.forEach((unit, i) => {
         let div = document.createElement("div");
-        div.className = `processing-item ${index === 0 ? 'active' : ''}`;
-        div.innerHTML = `
-            <div class="processing-icon">${unit.icon}</div>
+        div.className = `processing-item ${i === 0 ? 'active' : ''}`;
+        div.innerHTML = `<div class="processing-icon">${unit.icon}</div>
             <div class="processing-info">
                 <div class="processing-name">${unit.name}</div>
                 <div class="processing-desc">${unit.desc}</div>
-            </div>
-        `;
-        processingList.appendChild(div);
+            </div>`;
+        list.appendChild(div);
     });
 }
 
-// =========================
-// SEND MESSAGE FUNCTION
-// =========================
 async function send() {
     if (isProcessing) return;
-    
     let input = document.getElementById("input");
     let msg = input.value.trim();
-    
     if (msg === "") return;
 
     addMessage(msg, "user");
     input.value = "";
-
     showTypingIndicator();
     setProcessing(true);
 
@@ -826,17 +704,13 @@ async function send() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt: msg, user: USER })
         });
-
         let data = await res.json();
-        
         removeTypingIndicator();
-
         if (data.success) {
             addMessage(data.response, "bot");
         } else {
             addMessage("Processing error. Please try again.", "system");
         }
-
     } catch (error) {
         removeTypingIndicator();
         addMessage("Connection issue. Retrying...", "system");
@@ -845,37 +719,25 @@ async function send() {
     }
 }
 
-// =========================
-// QUICK PROMPT FUNCTION
-// =========================
 function quickPrompt(text) {
     document.getElementById("input").value = text;
     send();
 }
 
-// =========================
-// ADD MESSAGE TO CHAT
-// =========================
 function addMessage(text, type) {
     let chat = document.getElementById("chat");
     let div = document.createElement("div");
     div.className = `message ${type}-message`;
-    
     let content = document.createElement("div");
     content.className = "message-content";
     content.innerText = text;
-    
     let meta = document.createElement("div");
     meta.className = "message-meta";
-    
     let time = document.createElement("span");
     time.innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    
     meta.appendChild(time);
-    
     div.appendChild(content);
     div.appendChild(meta);
-    
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
 }
@@ -884,21 +746,14 @@ function addSystemMessage(text) {
     addMessage(text, "system");
 }
 
-// =========================
-// TYPING INDICATOR
-// =========================
 function showTypingIndicator() {
     let chat = document.getElementById("chat");
     let indicator = document.createElement("div");
     indicator.className = "message bot-message";
     indicator.id = "typingIndicator";
-    
     let content = document.createElement("div");
     content.className = "typing-indicator";
-    for (let i = 0; i < 3; i++) {
-        content.appendChild(document.createElement("span"));
-    }
-    
+    for (let i = 0; i < 3; i++) content.appendChild(document.createElement("span"));
     indicator.appendChild(content);
     chat.appendChild(indicator);
     chat.scrollTop = chat.scrollHeight;
@@ -909,9 +764,6 @@ function removeTypingIndicator() {
     if (indicator) indicator.remove();
 }
 
-// =========================
-// UTILITY FUNCTIONS
-// =========================
 function setProcessing(processing) {
     isProcessing = processing;
     document.getElementById("sendBtn").disabled = processing;
@@ -926,16 +778,13 @@ function handleKeyPress(event) {
 }
 
 function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('visible');
-    overlay.classList.toggle('visible');
+    document.getElementById('sidebar').classList.toggle('visible');
+    document.getElementById('sidebarOverlay').classList.toggle('visible');
 }
 
 function newChat() {
     document.getElementById("chat").innerHTML = "";
     addSystemMessage("New session initialized");
-    addSystemMessage(`User: ${USER}`);
     if (window.innerWidth <= 768) toggleSidebar();
 }
 
@@ -952,12 +801,8 @@ function logout() {
     document.getElementById("main").style.display = "none";
     document.getElementById("username").value = "";
     document.getElementById("password").value = "";
-    document.getElementById("login-msg").innerText = "";
 }
 
-// =========================
-// WINDOW LOAD
-// =========================
 window.onload = function() {
     document.getElementById("username").focus();
 };
