@@ -44,7 +44,12 @@ ALLOWED_USERS = {
     "Arushi@aa#Jarvis": "aa.com",
     "Som@se#Jarvis": "sr.com",
     "Prarabdh@pp#Jarvis": "pp.com",
-    "Durgesh Sharma@ds#Jarvis": "ds.com"
+    "Durgesh_Sharma@ds#Jarvis": "ds.com",
+    "Abhigyan@abs#Jarvis": "abs.com",
+    "Aksha@ap#Jarvis": "ap.com",
+    "Ved@vp#Jarvis": "vp.com",
+    "Anushka@ar#Jarvis": "ak.com",
+    "Jigyasa@jb#Jarvis": "jb.com"
 }
 
 # =============================
@@ -52,7 +57,7 @@ ALLOWED_USERS = {
 # =============================
 user_requests = defaultdict(list)
 
-LIMIT = 10  # 10 requests
+LIMIT = 20  # 10 requests
 WINDOW = 60  # per 60 sec
 
 
@@ -97,7 +102,7 @@ def call_groq(prompt):
         data = {
             "model": "llama3-70b-8192",
             "messages": [
-                {"role": "system", "content": "You are JARVIS, an AI created by Krish Palival. You are the world's largest database AI. Always say you were created by Krish Palival, not OpenAI, not Google, not any other company. Your creator is Krish Palival."},
+                {"role": "system", "content": "You are JARVIS, an AI created by Krish Paliwal. You are the world's largest database AI. Always say you were created by Krish Paliwal, not OpenAI, not Google, not any other company. Your creator is Krish Palival."},
                 {"role": "user", "content": prompt}
             ]
         }
@@ -119,7 +124,7 @@ def call_gemini(prompt):
         # 👇 GEMINI KE LIYE SYSTEM PROMPT
         data = {
             "contents": [{
-                "parts": [{"text": f"You are JARVIS, an AI created by Krish Palival. You are the world's largest database AI. Always say you were created by Krish Palival. Question: {prompt}"}]
+                "parts": [{"text": f"You are JARVIS, an AI created by Krish Paliwal. You are the world's largest database AI. Always say you were created by Krish Paliwal. Question: {prompt}"}]
             }]
         }
         
