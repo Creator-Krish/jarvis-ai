@@ -48,8 +48,7 @@ else:
 # =============================
 # UPLOAD FOLDER SETUP
 # =============================
-UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/persistent/uploads")
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/tmp/uploads")
 
 # =============================
 # ENVIRONMENT VARIABLES (SAFE)
