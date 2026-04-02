@@ -3,63 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="JARVIS - World's Largest Database AI">
     <title>JARVIS - Advanced AI Assistant</title>
     <style>
-        /* CSS Variables for Theming */
+        /* ==================== CSS VARIABLES ==================== */
         :root {
             --bg-primary: #0a0a0f;
             --bg-secondary: #111114;
             --bg-tertiary: #1a1a20;
             --text-primary: #ffffff;
             --text-secondary: #a0a0c0;
+            --text-muted: #6b6b8d;
             --accent-primary: #00ffff;
             --accent-secondary: #0088ff;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --message-user-bg: rgba(0, 255, 255, 0.15);
-            --message-bot-bg: rgba(255, 255, 255, 0.05);
+            --accent-glow: rgba(0, 255, 255, 0.3);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --message-user-bg: linear-gradient(135deg, rgba(0, 255, 255, 0.15), rgba(0, 136, 255, 0.1));
+            --message-bot-bg: rgba(255, 255, 255, 0.03);
             --sidebar-bg: rgba(17, 17, 20, 0.95);
             --header-bg: rgba(17, 17, 20, 0.9);
-            --input-bg: rgba(30, 30, 50, 0.9);
+            --input-bg: rgba(30, 30, 50, 0.8);
             --hover-bg: rgba(255, 255, 255, 0.05);
-            --card-bg: rgba(17, 17, 20, 0.95);
+            --card-bg: rgba(17, 17, 20, 0.98);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 20px rgba(0, 255, 255, 0.2);
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
+            --transition-slow: 0.4s ease;
         }
 
         /* Light Theme */
         [data-theme="light"] {
-            --bg-primary: #f5f5f7;
+            --bg-primary: #f0f2f5;
             --bg-secondary: #ffffff;
-            --bg-tertiary: #e8e8ec;
+            --bg-tertiary: #e8eaef;
             --text-primary: #1a1a2e;
             --text-secondary: #4a4a6a;
+            --text-muted: #8a8aaa;
             --accent-primary: #0066cc;
             --accent-secondary: #004499;
-            --border-color: rgba(0, 0, 0, 0.1);
-            --message-user-bg: rgba(0, 102, 204, 0.1);
-            --message-bot-bg: rgba(0, 0, 0, 0.03);
+            --accent-glow: rgba(0, 102, 204, 0.2);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --message-user-bg: linear-gradient(135deg, rgba(0, 102, 204, 0.1), rgba(0, 68, 153, 0.08));
+            --message-bot-bg: rgba(0, 0, 0, 0.02);
             --sidebar-bg: rgba(255, 255, 255, 0.95);
             --header-bg: rgba(255, 255, 255, 0.9);
-            --input-bg: rgba(240, 240, 245, 0.9);
+            --input-bg: rgba(240, 242, 245, 0.9);
             --hover-bg: rgba(0, 0, 0, 0.03);
             --card-bg: #ffffff;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
-        /* Dark Theme (Default) */
+        /* Dark Theme */
         [data-theme="dark"] {
             --bg-primary: #0a0a0f;
             --bg-secondary: #111114;
             --bg-tertiary: #1a1a20;
             --text-primary: #ffffff;
             --text-secondary: #a0a0c0;
+            --text-muted: #6b6b8d;
             --accent-primary: #00ffff;
             --accent-secondary: #0088ff;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --message-user-bg: rgba(0, 255, 255, 0.15);
-            --message-bot-bg: rgba(255, 255, 255, 0.05);
+            --accent-glow: rgba(0, 255, 255, 0.2);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --message-user-bg: linear-gradient(135deg, rgba(0, 255, 255, 0.12), rgba(0, 136, 255, 0.08));
+            --message-bot-bg: rgba(255, 255, 255, 0.03);
             --sidebar-bg: rgba(17, 17, 20, 0.95);
             --header-bg: rgba(17, 17, 20, 0.9);
-            --input-bg: rgba(30, 30, 50, 0.9);
+            --input-bg: rgba(30, 30, 50, 0.8);
             --hover-bg: rgba(255, 255, 255, 0.05);
-            --card-bg: #1a1a20;
+            --card-bg: rgba(17, 17, 20, 0.98);
         }
 
         * {
@@ -75,12 +93,18 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', system-ui, sans-serif;
             color: var(--text-primary);
-            transition: background 0.3s ease, color 0.3s ease;
+            transition: background var(--transition-normal), color var(--transition-normal);
         }
 
-        /* Login Container */
+        /* ==================== SCROLLBAR ==================== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--border-color); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: var(--accent-primary); border-radius: 3px; opacity: 0.5; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-secondary); }
+
+        /* ==================== LOGIN CONTAINER ==================== */
         .login-container {
             position: fixed;
             top: 0;
@@ -92,6 +116,7 @@
             align-items: center;
             background: var(--bg-primary);
             z-index: 9999;
+            backdrop-filter: blur(20px);
         }
 
         .login-card {
@@ -100,22 +125,30 @@
             border-radius: 32px;
             text-align: center;
             border: 1px solid var(--border-color);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-            max-width: 420px;
+            box-shadow: var(--shadow-lg);
+            max-width: 440px;
             width: 90%;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .login-card h1 {
             color: var(--accent-primary);
-            font-size: 48px;
+            font-size: 52px;
             margin-bottom: 12px;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: -1px;
+            text-shadow: 0 0 30px var(--accent-glow);
         }
 
         .login-card p {
             color: var(--text-secondary);
             margin-bottom: 32px;
-            font-size: 14px;
+            font-size: 15px;
         }
 
         .google-btn {
@@ -128,59 +161,34 @@
             background: white;
             color: #333;
             border: 1px solid #ddd;
-            border-radius: 40px;
+            border-radius: 48px;
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
-            transition: 0.3s;
+            transition: var(--transition-fast);
         }
 
         .google-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .google-btn img {
-            width: 20px;
-            height: 20px;
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 24px 0;
-            color: var(--text-secondary);
-            font-size: 12px;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: "";
-            flex: 1;
-            height: 1px;
-            background: var(--border-color);
-        }
-
-        .divider span {
-            padding: 0 12px;
+            box-shadow: var(--shadow-md);
         }
 
         .info-text {
             margin-top: 24px;
             font-size: 12px;
-            color: var(--text-secondary);
+            color: var(--text-muted);
             padding-top: 20px;
             border-top: 1px solid var(--border-color);
         }
 
-        /* Main App Layout */
+        /* ==================== APP CONTAINER ==================== */
         .app-container {
             display: none;
             height: 100vh;
             flex-direction: column;
         }
 
-        /* Header */
+        /* ==================== HEADER ==================== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -188,14 +196,15 @@
             padding: 12px 24px;
             background: var(--header-bg);
             border-bottom: 1px solid var(--border-color);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
             flex-shrink: 0;
+            z-index: 10;
         }
 
         .logo-section {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 16px;
         }
 
         .menu-toggle {
@@ -205,81 +214,90 @@
             color: var(--accent-primary);
             font-size: 24px;
             cursor: pointer;
+            padding: 8px;
+            border-radius: 12px;
+            transition: var(--transition-fast);
+        }
+
+        .menu-toggle:hover {
+            background: var(--hover-bg);
         }
 
         .logo-section h1 {
             color: var(--accent-primary);
             font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
         }
 
         .user-section {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
         }
 
-        .settings-btn {
+        .icon-btn {
             background: transparent;
-            border: 1px solid var(--border-color);
-            border-radius: 30px;
-            padding: 8px 16px;
-            color: var(--text-primary);
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
             cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: var(--transition-fast);
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            transition: 0.2s;
+            justify-content: center;
         }
 
-        .settings-btn:hover {
+        .icon-btn:hover {
             background: var(--hover-bg);
-            border-color: var(--accent-primary);
+            color: var(--accent-primary);
         }
 
         .user-profile {
             display: flex;
             align-items: center;
             gap: 12px;
+            padding: 6px 12px 6px 8px;
+            background: var(--hover-bg);
+            border-radius: 40px;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .user-profile:hover {
+            background: var(--border-color);
         }
 
         .user-avatar {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background: var(--accent-primary);
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
+            font-weight: 600;
             color: var(--bg-primary);
             background-size: cover;
-            background-position: center;
         }
 
         .user-name {
             font-size: 14px;
-            color: var(--text-secondary);
+            color: var(--text-primary);
+            font-weight: 500;
         }
 
-        .logout-btn {
-            background: rgba(255, 100, 100, 0.2);
-            border: 1px solid #ff6b6b;
-            color: #ff6b6b;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        /* Main Layout */
+        /* ==================== MAIN LAYOUT ==================== */
         .main-layout {
             display: flex;
             flex: 1;
             overflow: hidden;
+            position: relative;
         }
 
-        /* Sidebar */
+        /* ==================== SIDEBAR ==================== */
         .sidebar {
             width: 280px;
             background: var(--sidebar-bg);
@@ -287,26 +305,34 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            transition: transform 0.3s ease;
+            transition: transform var(--transition-normal);
             overflow-y: auto;
+            flex-shrink: 0;
+            backdrop-filter: blur(20px);
         }
 
         .new-chat-btn {
             width: 100%;
-            padding: 12px;
+            padding: 12px 16px;
             background: var(--accent-primary);
             border: none;
-            border-radius: 30px;
+            border-radius: 40px;
             color: var(--bg-primary);
             font-weight: 600;
             cursor: pointer;
-            margin-bottom: 20px;
-            transition: 0.2s;
+            margin-bottom: 24px;
+            transition: var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
         }
 
         .new-chat-btn:hover {
             transform: translateY(-2px);
-            filter: brightness(1.1);
+            filter: brightness(1.05);
+            box-shadow: var(--shadow-glow);
         }
 
         .chat-history {
@@ -319,10 +345,12 @@
         }
 
         .group-title {
-            font-size: 12px;
-            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
             margin-bottom: 8px;
-            padding-left: 8px;
+            padding-left: 12px;
+            letter-spacing: 0.5px;
         }
 
         .chat-item {
@@ -335,7 +363,7 @@
             gap: 10px;
             color: var(--text-secondary);
             font-size: 13px;
-            transition: 0.2s;
+            transition: var(--transition-fast);
         }
 
         .chat-item:hover {
@@ -347,101 +375,119 @@
             color: var(--accent-primary);
         }
 
-        /* Chat Area */
+        /* ==================== CHAT AREA ==================== */
         .chat-area {
             flex: 1;
             display: flex;
             flex-direction: column;
             background: var(--bg-primary);
+            overflow: hidden;
         }
 
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 24px;
         }
 
         .message {
-            max-width: 80%;
-            margin-bottom: 16px;
-            animation: fadeIn 0.2s;
+            max-width: 75%;
+            margin-bottom: 20px;
+            animation: fadeInSlide 0.3s ease;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .user-message {
-            margin-left: auto;
-        }
-
-        .bot-message {
-            margin-right: auto;
-        }
+        .user-message { margin-left: auto; }
+        .bot-message { margin-right: auto; }
+        .system-message { margin: 16px auto; text-align: center; max-width: 70%; }
 
         .message-content {
-            padding: 12px 16px;
+            padding: 12px 18px;
             border-radius: 20px;
             font-size: 14px;
             line-height: 1.5;
+            position: relative;
         }
 
         .user-message .message-content {
             background: var(--message-user-bg);
             border: 1px solid var(--accent-primary);
-            border-bottom-right-radius: 4px;
+            border-bottom-right-radius: 6px;
         }
 
         .bot-message .message-content {
             background: var(--message-bot-bg);
             border: 1px solid var(--border-color);
-            border-bottom-left-radius: 4px;
-        }
-
-        .system-message {
-            margin: 10px auto;
-            text-align: center;
-            max-width: 80%;
+            border-bottom-left-radius: 6px;
         }
 
         .system-message .message-content {
-            background: rgba(255, 193, 7, 0.1);
+            background: rgba(255, 193, 7, 0.08);
             border: 1px solid #ffc107;
             color: #ffc107;
             font-size: 12px;
+            padding: 8px 16px;
         }
 
         .message-meta {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             margin-top: 6px;
             font-size: 11px;
-            color: var(--text-secondary);
+            color: var(--text-muted);
         }
 
-        .user-message .message-meta {
-            justify-content: flex-end;
+        .user-message .message-meta { justify-content: flex-end; }
+
+        /* ==================== TYPING INDICATOR ==================== */
+        .typing-indicator {
+            display: flex;
+            gap: 5px;
+            padding: 12px 18px;
+            background: var(--message-bot-bg);
+            border-radius: 20px;
+            width: fit-content;
+            border: 1px solid var(--border-color);
         }
 
-        /* Input Area */
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite;
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        /* ==================== INPUT AREA ==================== */
         .input-area {
-            padding: 16px 20px;
+            padding: 16px 24px;
             background: var(--header-bg);
             border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
         }
 
         .input-wrapper {
             display: flex;
             gap: 12px;
             background: var(--input-bg);
-            border-radius: 30px;
-            padding: 4px 4px 4px 20px;
+            border-radius: 48px;
+            padding: 6px 6px 6px 20px;
             border: 1px solid var(--border-color);
+            transition: var(--transition-fast);
         }
 
         .input-wrapper:focus-within {
             border-color: var(--accent-primary);
+            box-shadow: var(--shadow-glow);
         }
 
         #input {
@@ -455,44 +501,53 @@
         }
 
         #input::placeholder {
-            color: var(--text-secondary);
+            color: var(--text-muted);
+        }
+
+        .input-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: var(--transition-fast);
+        }
+
+        .input-action-btn:hover {
+            color: var(--accent-primary);
+            background: var(--hover-bg);
         }
 
         #sendBtn {
             background: var(--accent-primary);
             border: none;
-            border-radius: 30px;
-            padding: 8px 24px;
+            border-radius: 40px;
+            padding: 10px 24px;
             color: var(--bg-primary);
             font-weight: 600;
             cursor: pointer;
-            transition: 0.2s;
+            transition: var(--transition-fast);
         }
 
-        /* Typing Indicator */
-        .typing-indicator {
-            display: flex;
-            gap: 4px;
-            padding: 10px 14px;
-            background: var(--message-bot-bg);
-            border-radius: 18px;
-            width: fit-content;
+        #sendBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        .typing-indicator span {
-            width: 6px;
-            height: 6px;
-            background: var(--accent-primary);
-            border-radius: 50%;
-            animation: typing 1.4s infinite;
+        #sendBtn:hover:not(:disabled) {
+            transform: scale(1.02);
+            filter: brightness(1.05);
         }
 
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-            30% { transform: translateY(-6px); opacity: 1; }
-        }
-
-        /* Settings Modal */
+        /* ==================== MODAL ==================== */
         .modal {
             display: none;
             position: fixed;
@@ -500,98 +555,168 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
             z-index: 10000;
             justify-content: center;
             align-items: center;
         }
 
-        .modal.active {
-            display: flex;
-        }
+        .modal.active { display: flex; }
 
         .modal-content {
             background: var(--card-bg);
             border-radius: 28px;
             padding: 32px;
-            max-width: 500px;
+            max-width: 520px;
             width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
             border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         .modal-header h3 {
             color: var(--accent-primary);
             font-size: 24px;
+            font-weight: 600;
         }
 
         .close-modal {
             background: transparent;
             border: none;
-            color: var(--text-secondary);
+            color: var(--text-muted);
             font-size: 24px;
             cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: var(--transition-fast);
         }
 
-        .setting-item {
-            margin-bottom: 24px;
+        .close-modal:hover {
+            background: var(--hover-bg);
+            color: var(--accent-primary);
         }
 
-        .setting-item label {
+        .setting-section {
+            margin-bottom: 28px;
+        }
+
+        .setting-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .setting-option {
+            margin-bottom: 16px;
+        }
+
+        .setting-option label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: var(--text-secondary);
             font-size: 13px;
-            font-weight: 500;
         }
 
-        .theme-select, .model-select {
+        select, input[type="range"] {
             width: 100%;
             padding: 12px 16px;
             background: var(--input-bg);
             border: 1px solid var(--border-color);
-            border-radius: 30px;
+            border-radius: 24px;
             color: var(--text-primary);
-            cursor: pointer;
             font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition-fast);
         }
 
-        .stats-box {
-            background: var(--bg-tertiary);
-            border-radius: 16px;
-            padding: 16px;
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .theme-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .theme-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 40px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .theme-btn.active {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .model-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--hover-bg);
+            border-radius: 20px;
+            font-size: 12px;
             margin-top: 8px;
         }
 
-        .stats-item {
+        .danger-btn {
+            background: rgba(255, 100, 100, 0.15);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .danger-btn:hover {
+            background: rgba(255, 100, 100, 0.25);
+        }
+
+        /* ==================== NOTIFICATION ==================== */
+        .notification {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--accent-primary);
+            border-radius: 16px;
+            padding: 12px 20px;
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 13px;
+            align-items: center;
+            gap: 12px;
+            z-index: 10001;
+            transform: translateX(400px);
+            transition: transform var(--transition-normal);
+            box-shadow: var(--shadow-lg);
         }
 
-        .stats-label {
-            color: var(--text-secondary);
+        .notification.show {
+            transform: translateX(0);
         }
 
-        .stats-value {
-            color: var(--accent-primary);
-            font-weight: 500;
-        }
-
-        /* Mobile Styles */
+        /* ==================== RESPONSIVE ==================== */
         @media (max-width: 768px) {
-            .menu-toggle {
-                display: block;
-            }
-            
+            .menu-toggle { display: block; }
             .sidebar {
                 position: fixed;
                 left: 0;
@@ -601,22 +726,13 @@
                 transform: translateX(-100%);
                 width: 280px;
             }
-            
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            
-            .message {
-                max-width: 90%;
-            }
-            
-            .user-name {
-                display: none;
-            }
-            
-            .settings-btn span {
-                display: none;
-            }
+            .sidebar.open { transform: translateX(0); }
+            .message { max-width: 90%; }
+            .user-name { display: none; }
+            .header { padding: 10px 16px; }
+            .logo-section h1 { font-size: 18px; }
+            .chat-messages { padding: 16px; }
+            .input-area { padding: 12px 16px; }
         }
 
         .sidebar-overlay {
@@ -629,40 +745,20 @@
             background: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
-        
-        .sidebar-overlay.open {
-            display: block;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--border-color);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--accent-primary);
-            border-radius: 3px;
-        }
+        .sidebar-overlay.open { display: block; }
     </style>
 </head>
 <body>
 
-<!-- Login Screen -->
+<!-- LOGIN SCREEN -->
 <div id="loginScreen" class="login-container">
     <div class="login-card">
         <h1>JARVIS</h1>
         <p>World's Largest Database AI</p>
-        
         <button class="google-btn" onclick="googleLogin()">
-            <img src="https://www.google.com/favicon.ico" alt="Google">
+            <img src="https://www.google.com/favicon.ico" alt="Google" style="width: 20px; height: 20px;">
             Sign in with Google
         </button>
-        
         <div class="info-text">
             Built by Krish Palival<br>
             Your data is stored securely
@@ -670,70 +766,107 @@
     </div>
 </div>
 
-<!-- Main App -->
+<!-- MAIN APP -->
 <div id="app" class="app-container">
+    <!-- HEADER -->
     <div class="header">
         <div class="logo-section">
             <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
             <h1>JARVIS</h1>
         </div>
         <div class="user-section">
-            <button class="settings-btn" onclick="openSettings()">
-                ⚙️ <span>Settings</span>
-            </button>
-            <div class="user-profile">
+            <button class="icon-btn" onclick="toggleVoiceInput()" id="voiceBtn" title="Voice Input">🎤</button>
+            <button class="icon-btn" onclick="exportChats()" title="Export Chats">📥</button>
+            <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
+            <div class="user-profile" onclick="openSettings()">
                 <div class="user-avatar" id="userAvatar"></div>
                 <span class="user-name" id="userName"></span>
-                <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
+            <button class="icon-btn" onclick="logout()" title="Logout">🚪</button>
         </div>
     </div>
 
+    <!-- MAIN LAYOUT -->
     <div class="main-layout">
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
         
+        <!-- SIDEBAR -->
         <div class="sidebar" id="sidebar">
-            <button class="new-chat-btn" onclick="createNewChat()">+ New Chat</button>
+            <button class="new-chat-btn" onclick="createNewChat()">➕ New Chat</button>
             <div class="chat-history" id="chatHistoryList"></div>
         </div>
 
+        <!-- CHAT AREA -->
         <div class="chat-area">
             <div class="chat-messages" id="chatMessages"></div>
+            
+            <!-- INPUT AREA -->
             <div class="input-area">
                 <div class="input-wrapper">
-                    <input type="text" id="input" placeholder="Ask JARVIS anything..." onkeypress="handleKeyPress(event)">
-                    <button onclick="sendMessage()" id="sendBtn">Send</button>
+                    <input type="text" id="input" placeholder="Ask JARVIS anything..." onkeypress="handleKeyPress(event)" autocomplete="off">
+                    <div class="input-actions">
+                        <button class="input-action-btn" onclick="attachFile()" title="Attach File">📎</button>
+                        <button class="input-action-btn" onclick="toggleVoiceInput()" title="Voice Input">🎤</button>
+                        <button onclick="sendMessage()" id="sendBtn">Send</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Settings Modal -->
+<!-- SETTINGS MODAL -->
 <div id="settingsModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
             <h3>⚙️ Settings</h3>
             <button class="close-modal" onclick="closeSettings()">✕</button>
         </div>
-        <div class="setting-item">
-            <label>🎨 Theme</label>
-            <select class="theme-select" id="themeSelect" onchange="changeTheme()">
-                <option value="dark">🌙 Dark Mode</option>
-                <option value="light">☀️ Light Mode</option>
-                <option value="system">💻 System Default</option>
-            </select>
+
+        <div class="setting-section">
+            <div class="setting-title">🎨 Appearance</div>
+            <div class="theme-buttons">
+                <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">🌙 Dark</button>
+                <button class="theme-btn" data-theme="light" onclick="setTheme('light')">☀️ Light</button>
+                <button class="theme-btn" data-theme="system" onclick="setTheme('system')">💻 System</button>
+            </div>
         </div>
-        <div class="setting-item">
-            <label>🧠 AI Model</label>
-            <select class="model-select" id="modelSelect">
+
+        <div class="setting-section">
+            <div class="setting-title">🧠 AI Model</div>
+            <select id="modelSelect" onchange="changeModel()">
                 <option value="deepseek">DeepSeek (Default - Best for Technical)</option>
                 <option value="groq">Groq (Fastest Responses)</option>
                 <option value="gemini">Gemini (General Knowledge)</option>
             </select>
+            <div class="model-badge" id="modelBadge">Current: DeepSeek</div>
         </div>
-        <div class="setting-item">
-            <label>📊 Account Stats</label>
+
+        <div class="setting-section">
+            <div class="setting-title">🔊 Voice Input</div>
+            <select id="voiceSelect">
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="hi-IN">Hindi (India)</option>
+            </select>
+        </div>
+
+        <div class="setting-section">
+            <div class="setting-title">📝 Display</div>
+            <div class="setting-option">
+                <label>Font Size</label>
+                <input type="range" id="fontSizeRange" min="12" max="20" value="14" step="1" onchange="changeFontSize()">
+            </div>
+        </div>
+
+        <div class="setting-section">
+            <div class="setting-title">💾 Data Management</div>
+            <button class="sidebar-button" onclick="exportChats()" style="margin-bottom: 12px;">📥 Export All Chats</button>
+            <button class="sidebar-button danger-btn" onclick="clearAllHistory()">🗑️ Clear All History</button>
+        </div>
+
+        <div class="setting-section">
+            <div class="setting-title">👤 Account</div>
             <div class="stats-box" id="userStatsBox">
                 <div class="stats-item">
                     <span class="stats-label">Username:</span>
@@ -744,383 +877,395 @@
                     <span class="stats-value" id="statEmail">-</span>
                 </div>
                 <div class="stats-item">
-                    <span class="stats-label">Logged in since:</span>
-                    <span class="stats-value" id="statLoginTime">-</span>
+                    <span class="stats-label">Member since:</span>
+                    <span class="stats-value" id="statJoinDate">-</span>
                 </div>
             </div>
         </div>
-        <div class="setting-item">
-            <label>ℹ️ About JARVIS</label>
+
+        <div class="setting-section">
+            <div class="setting-title">ℹ️ About</div>
             <div class="stats-box">
-                <div class="stats-item">
-                    <span class="stats-label">Version:</span>
-                    <span class="stats-value">2.0.0</span>
-                </div>
-                <div class="stats-item">
-                    <span class="stats-label">Creator:</span>
-                    <span class="stats-value">Krish Palival</span>
-                </div>
-                <div class="stats-item">
-                    <span class="stats-label">Default AI:</span>
-                    <span class="stats-value">DeepSeek</span>
-                </div>
+                <div class="stats-item"><span class="stats-label">Version:</span><span class="stats-value">3.0.0</span></div>
+                <div class="stats-item"><span class="stats-label">Creator:</span><span class="stats-value">Krish Palival</span></div>
+                <div class="stats-item"><span class="stats-label">Default AI:</span><span class="stats-value">DeepSeek</span></div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- NOTIFICATION -->
+<div id="notification" class="notification">
+    <span id="notificationIcon">✅</span>
+    <span id="notificationMsg">Message copied!</span>
+</div>
+
 <script>
-// =========================
-// GLOBAL VARIABLES
-// =========================
-let currentSessionId = null;
-let isProcessing = false;
-let currentUser = null;
-let userEmail = null;
+    // ==================== GLOBAL VARIABLES ====================
+    let currentSessionId = null;
+    let isProcessing = false;
+    let currentUser = null;
+    let userEmail = null;
+    let recognition = null;
+    let isListening = false;
 
-// =========================
-// GOOGLE LOGIN
-// =========================
-function googleLogin() {
-    window.location.href = '/login/google';
-}
+    // ==================== GOOGLE LOGIN ====================
+    function googleLogin() {
+        window.location.href = '/login/google';
+    }
 
-// =========================
-// CHECK LOGIN STATUS
-// =========================
-async function checkLoginStatus() {
-    try {
-        let res = await fetch('/api/me');
-        let data = await res.json();
-        
-        if (data.success) {
-            currentUser = data.user.name;
-            userEmail = data.user.email;
-            
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('app').style.display = 'flex';
-            
-            document.getElementById('userName').innerText = currentUser;
-            const avatarDiv = document.getElementById('userAvatar');
-            avatarDiv.innerText = currentUser.charAt(0).toUpperCase();
-            if (data.user.avatar) {
-                avatarDiv.style.backgroundImage = `url(${data.user.avatar})`;
-                avatarDiv.style.backgroundSize = 'cover';
-                avatarDiv.innerText = '';
+    // ==================== CHECK LOGIN STATUS ====================
+    async function checkLoginStatus() {
+        try {
+            let res = await fetch('/api/me');
+            let data = await res.json();
+            if (data.success) {
+                currentUser = data.user.name;
+                userEmail = data.user.email;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                document.getElementById('userName').innerText = currentUser;
+                let avatar = document.getElementById('userAvatar');
+                avatar.innerText = currentUser.charAt(0).toUpperCase();
+                if (data.user.avatar) {
+                    avatar.style.backgroundImage = `url(${data.user.avatar})`;
+                    avatar.style.backgroundSize = 'cover';
+                    avatar.innerText = '';
+                }
+                document.getElementById('statUsername').innerText = currentUser;
+                document.getElementById('statEmail').innerText = userEmail;
+                document.getElementById('statJoinDate').innerText = new Date().toLocaleDateString();
+                loadSessions();
+                addSystemMessage(`Welcome back, ${currentUser}! JARVIS is ready.`);
+                showNotification('✅ Login successful', 'success');
+            } else {
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('app').style.display = 'none';
             }
-            
-            // Update stats in settings
-            document.getElementById('statUsername').innerText = currentUser;
-            document.getElementById('statEmail').innerText = userEmail;
-            document.getElementById('statLoginTime').innerText = new Date().toLocaleString();
-            
-            loadSessions();
-            addSystemMessage(`Welcome, ${currentUser}! JARVIS is ready.`);
+        } catch (error) {
+            console.error('Login check failed:', error);
+        }
+    }
+
+    function logout() { window.location.href = '/logout'; }
+
+    // ==================== THEME MANAGEMENT ====================
+    function setTheme(theme) {
+        if (theme === 'system') {
+            let darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
         } else {
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('app').style.display = 'none';
+            document.documentElement.setAttribute('data-theme', theme);
         }
-    } catch (error) {
-        console.error('Login check failed:', error);
-    }
-}
-
-// =========================
-// LOGOUT
-// =========================
-function logout() {
-    window.location.href = '/logout';
-}
-
-// =========================
-// THEME MANAGEMENT
-// =========================
-function changeTheme() {
-    const theme = document.getElementById('themeSelect').value;
-    
-    if (theme === 'system') {
-        const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-    } else {
-        document.documentElement.setAttribute('data-theme', theme);
-    }
-    
-    localStorage.setItem('jarvis-theme', theme);
-}
-
-function loadTheme() {
-    const savedTheme = localStorage.getItem('jarvis-theme') || 'dark';
-    document.getElementById('themeSelect').value = savedTheme;
-    changeTheme();
-}
-
-// =========================
-// SIDEBAR TOGGLE
-// =========================
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('open');
-}
-
-// =========================
-// SETTINGS MODAL
-// =========================
-function openSettings() {
-    document.getElementById('settingsModal').classList.add('active');
-}
-
-function closeSettings() {
-    document.getElementById('settingsModal').classList.remove('active');
-}
-
-// =========================
-// LOAD SESSIONS
-// =========================
-async function loadSessions() {
-    try {
-        let res = await fetch('/ai/sessions');
-        let data = await res.json();
-        
-        if (data.success && data.sessions.length > 0) {
-            renderSidebar(data.sessions);
-            loadChat(data.sessions[0].id);
-        } else {
-            createNewChat();
-        }
-    } catch (error) {
-        console.error('Failed to load sessions:', error);
-    }
-}
-
-function renderSidebar(sessions) {
-    const container = document.getElementById('chatHistoryList');
-    container.innerHTML = '';
-    
-    const today = [];
-    const yesterday = [];
-    const older = [];
-    
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-    const weekStart = new Date(todayStart);
-    weekStart.setDate(weekStart.getDate() - 7);
-    
-    sessions.forEach(session => {
-        const sessionDate = new Date(session.updated_at);
-        if (sessionDate >= todayStart) {
-            today.push(session);
-        } else if (sessionDate >= yesterdayStart) {
-            yesterday.push(session);
-        } else if (sessionDate >= weekStart) {
-            older.push(session);
-        } else {
-            older.push(session);
-        }
-    });
-    
-    if (today.length > 0) addGroup(container, '📝 Today', today);
-    if (yesterday.length > 0) addGroup(container, '📅 Yesterday', yesterday);
-    if (older.length > 0) addGroup(container, '📁 Older', older);
-}
-
-function addGroup(container, title, sessions) {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'history-group';
-    
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'group-title';
-    titleDiv.innerText = title;
-    groupDiv.appendChild(titleDiv);
-    
-    sessions.forEach(session => {
-        const item = document.createElement('div');
-        item.className = `chat-item ${currentSessionId === session.id ? 'active' : ''}`;
-        item.innerHTML = `<span>💬</span><span>${escapeHtml(session.title || 'New Chat')}</span>`;
-        item.onclick = () => loadChat(session.id);
-        groupDiv.appendChild(item);
-    });
-    
-    container.appendChild(groupDiv);
-}
-
-// =========================
-// LOAD CHAT
-// =========================
-async function loadChat(sessionId) {
-    currentSessionId = sessionId;
-    
-    try {
-        let res = await fetch(`/ai/session/${sessionId}`);
-        let data = await res.json();
-        
-        if (data.success) {
-            renderMessages(data.messages);
-            loadSessions();
-        }
-    } catch (error) {
-        console.error('Failed to load chat:', error);
-    }
-}
-
-function renderMessages(messages) {
-    const container = document.getElementById('chatMessages');
-    container.innerHTML = '';
-    
-    messages.forEach(msg => {
-        addMessageToUI(msg.content, msg.role === 'user' ? 'user' : 'bot');
-    });
-}
-
-// =========================
-// CREATE NEW CHAT
-// =========================
-async function createNewChat() {
-    try {
-        let res = await fetch('/ai/session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: 'New Chat' })
+        localStorage.setItem('jarvis-theme', theme);
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-theme') === theme) btn.classList.add('active');
         });
-        
-        let data = await res.json();
-        if (data.success) {
-            currentSessionId = data.session_id;
-            document.getElementById('chatMessages').innerHTML = '';
-            addSystemMessage('New chat started');
-            loadSessions();
-            if (window.innerWidth <= 768) toggleSidebar();
-        }
-    } catch (error) {
-        console.error('Failed to create chat:', error);
     }
-}
 
-// =========================
-// SEND MESSAGE
-// =========================
-async function sendMessage() {
-    if (isProcessing || !currentSessionId) return;
-    
-    const input = document.getElementById('input');
-    const msg = input.value.trim();
-    if (msg === '') return;
-    
-    addMessageToUI(msg, 'user');
-    input.value = '';
-    
-    showTypingIndicator();
-    isProcessing = true;
-    document.getElementById('sendBtn').disabled = true;
-    
-    try {
-        const selectedModel = document.getElementById('modelSelect').value;
-        
-        let res = await fetch(`/ai/session/${currentSessionId}/message`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: msg, model: selectedModel })
+    function loadTheme() {
+        let savedTheme = localStorage.getItem('jarvis-theme') || 'dark';
+        setTheme(savedTheme);
+    }
+
+    function changeFontSize() {
+        let size = document.getElementById('fontSizeRange').value;
+        document.documentElement.style.fontSize = size + 'px';
+        localStorage.setItem('jarvis-font-size', size);
+    }
+
+    function loadFontSize() {
+        let savedSize = localStorage.getItem('jarvis-font-size') || '14';
+        document.getElementById('fontSizeRange').value = savedSize;
+        document.documentElement.style.fontSize = savedSize + 'px';
+    }
+
+    function changeModel() {
+        let model = document.getElementById('modelSelect').value;
+        localStorage.setItem('jarvis-model', model);
+        document.getElementById('modelBadge').innerHTML = `Current: ${model.toUpperCase()}`;
+        showNotification(`🤖 Switched to ${model.toUpperCase()}`, 'info');
+    }
+
+    function loadModel() {
+        let savedModel = localStorage.getItem('jarvis-model') || 'deepseek';
+        document.getElementById('modelSelect').value = savedModel;
+        document.getElementById('modelBadge').innerHTML = `Current: ${savedModel.toUpperCase()}`;
+    }
+
+    // ==================== SIDEBAR ====================
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('open');
+    }
+
+    // ==================== MODAL ====================
+    function openSettings() {
+        document.getElementById('settingsModal').classList.add('active');
+        if (window.innerWidth <= 768) toggleSidebar();
+    }
+    function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+
+    // ==================== NOTIFICATION ====================
+    function showNotification(msg, type = 'info') {
+        let notification = document.getElementById('notification');
+        let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        document.getElementById('notificationIcon').innerText = icon;
+        document.getElementById('notificationMsg').innerText = msg;
+        notification.classList.add('show');
+        setTimeout(() => notification.classList.remove('show'), 3000);
+    }
+
+    // ==================== LOAD SESSIONS ====================
+    async function loadSessions() {
+        try {
+            let res = await fetch('/ai/sessions');
+            let data = await res.json();
+            if (data.success && data.sessions.length > 0) {
+                renderSidebar(data.sessions);
+                loadChat(data.sessions[0].id);
+            } else {
+                createNewChat();
+            }
+        } catch (error) { console.error('Failed to load sessions:', error); }
+    }
+
+    function renderSidebar(sessions) {
+        let container = document.getElementById('chatHistoryList');
+        container.innerHTML = '';
+        let today = [], yesterday = [], older = [];
+        let now = new Date();
+        let todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let yesterdayStart = new Date(todayStart);
+        yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+        sessions.forEach(session => {
+            let sessionDate = new Date(session.updated_at);
+            if (sessionDate >= todayStart) today.push(session);
+            else if (sessionDate >= yesterdayStart) yesterday.push(session);
+            else older.push(session);
         });
-        
-        let data = await res.json();
-        removeTypingIndicator();
-        
-        if (data.success) {
-            addMessageToUI(data.response, 'bot');
-            if (data.is_first_message) loadSessions();
-        } else {
-            addMessageToUI(data.error || 'Error', 'system');
+        if (today.length) addGroup(container, '📝 Today', today);
+        if (yesterday.length) addGroup(container, '📅 Yesterday', yesterday);
+        if (older.length) addGroup(container, '📁 Older', older);
+    }
+
+    function addGroup(container, title, sessions) {
+        let group = document.createElement('div');
+        group.className = 'history-group';
+        let titleDiv = document.createElement('div');
+        titleDiv.className = 'group-title';
+        titleDiv.innerText = title;
+        group.appendChild(titleDiv);
+        sessions.forEach(session => {
+            let item = document.createElement('div');
+            item.className = `chat-item ${currentSessionId === session.id ? 'active' : ''}`;
+            item.innerHTML = `💬 <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(session.title || 'New Chat')}</span>`;
+            item.onclick = () => loadChat(session.id);
+            group.appendChild(item);
+        });
+        container.appendChild(group);
+    }
+
+    // ==================== LOAD CHAT ====================
+    async function loadChat(sessionId) {
+        currentSessionId = sessionId;
+        try {
+            let res = await fetch(`/ai/session/${sessionId}`);
+            let data = await res.json();
+            if (data.success) {
+                let container = document.getElementById('chatMessages');
+                container.innerHTML = '';
+                data.messages.forEach(msg => addMessageToUI(msg.content, msg.role === 'user' ? 'user' : 'bot'));
+                loadSessions();
+            }
+        } catch (error) { console.error('Failed to load chat:', error); }
+    }
+
+    function renderMessages(messages) {
+        let container = document.getElementById('chatMessages');
+        container.innerHTML = '';
+        messages.forEach(msg => addMessageToUI(msg.content, msg.role === 'user' ? 'user' : 'bot'));
+    }
+
+    // ==================== CREATE NEW CHAT ====================
+    async function createNewChat() {
+        try {
+            let res = await fetch('/ai/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'New Chat' }) });
+            let data = await res.json();
+            if (data.success) {
+                currentSessionId = data.session_id;
+                document.getElementById('chatMessages').innerHTML = '';
+                addSystemMessage('✨ New chat started. How can I help you today?');
+                loadSessions();
+                if (window.innerWidth <= 768) toggleSidebar();
+            }
+        } catch (error) { console.error('Failed to create chat:', error); }
+    }
+
+    // ==================== SEND MESSAGE ====================
+    async function sendMessage() {
+        if (isProcessing || !currentSessionId) return;
+        let input = document.getElementById('input');
+        let msg = input.value.trim();
+        if (!msg) return;
+        addMessageToUI(msg, 'user');
+        input.value = '';
+        isProcessing = true;
+        document.getElementById('sendBtn').disabled = true;
+        showTypingIndicator();
+        try {
+            let selectedModel = document.getElementById('modelSelect').value;
+            let res = await fetch(`/ai/session/${currentSessionId}/message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: msg, model: selectedModel })
+            });
+            let data = await res.json();
+            removeTypingIndicator();
+            if (data.success) {
+                addMessageToUI(data.response, 'bot');
+                if (data.is_first_message) loadSessions();
+            } else {
+                addMessageToUI(data.error || 'Error occurred', 'system');
+            }
+        } catch (error) {
+            removeTypingIndicator();
+            addMessageToUI('Connection error. Please try again.', 'system');
+        } finally {
+            isProcessing = false;
+            document.getElementById('sendBtn').disabled = false;
         }
-    } catch (error) {
-        removeTypingIndicator();
-        addMessageToUI('Connection error', 'system');
-    } finally {
-        isProcessing = false;
-        document.getElementById('sendBtn').disabled = false;
     }
-}
 
-// =========================
-// UI HELPERS
-// =========================
-function addMessageToUI(text, type) {
-    const container = document.getElementById('chatMessages');
-    const div = document.createElement('div');
-    div.className = `message ${type}-message`;
-    
-    const content = document.createElement('div');
-    content.className = 'message-content';
-    content.innerText = text;
-    
-    const meta = document.createElement('div');
-    meta.className = 'message-meta';
-    const time = document.createElement('span');
-    time.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    meta.appendChild(time);
-    
-    div.appendChild(content);
-    div.appendChild(meta);
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-}
-
-function addSystemMessage(text) {
-    addMessageToUI(text, 'system');
-}
-
-function showTypingIndicator() {
-    const container = document.getElementById('chatMessages');
-    const div = document.createElement('div');
-    div.className = 'message bot-message';
-    div.id = 'typingIndicator';
-    
-    const content = document.createElement('div');
-    content.className = 'typing-indicator';
-    for (let i = 0; i < 3; i++) {
-        content.appendChild(document.createElement('span'));
+    // ==================== VOICE INPUT ====================
+    function toggleVoiceInput() {
+        if (!recognition) {
+            let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showNotification('Voice input not supported in this browser', 'error');
+                return;
+            }
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.onresult = (event) => {
+                let text = event.results[0][0].transcript;
+                document.getElementById('input').value = text;
+                isListening = false;
+                document.getElementById('voiceBtn').style.color = '';
+                sendMessage();
+            };
+            recognition.onerror = () => {
+                isListening = false;
+                document.getElementById('voiceBtn').style.color = '';
+                showNotification('Voice recognition failed', 'error');
+            };
+            recognition.onend = () => {
+                isListening = false;
+                document.getElementById('voiceBtn').style.color = '';
+            };
+        }
+        if (isListening) {
+            recognition.stop();
+            isListening = false;
+            document.getElementById('voiceBtn').style.color = '';
+        } else {
+            recognition.lang = document.getElementById('voiceSelect').value;
+            recognition.start();
+            isListening = true;
+            document.getElementById('voiceBtn').style.color = 'var(--accent-primary)';
+        }
     }
-    
-    div.appendChild(content);
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-}
 
-function removeTypingIndicator() {
-    const indicator = document.getElementById('typingIndicator');
-    if (indicator) indicator.remove();
-}
-
-function handleKeyPress(event) {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        sendMessage();
+    // ==================== EXPORT CHATS ====================
+    async function exportChats() {
+        try {
+            let res = await fetch('/ai/sessions');
+            let data = await res.json();
+            if (data.success) {
+                let exportData = [];
+                for (let session of data.sessions) {
+                    let msgs = await fetch(`/ai/session/${session.id}`);
+                    let msgData = await msgs.json();
+                    exportData.push({ session: session, messages: msgData.messages });
+                }
+                let blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                let url = URL.createObjectURL(blob);
+                let a = document.createElement('a');
+                a.href = url;
+                a.download = `jarvis-chats-${new Date().toISOString()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showNotification('Chats exported successfully!', 'success');
+            }
+        } catch (error) {
+            showNotification('Failed to export chats', 'error');
+        }
     }
-}
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// =========================
-// INITIALIZE
-// =========================
-window.onload = function() {
-    loadTheme();
-    checkLoginStatus();
-};
-
-// Listen for system theme changes
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (document.getElementById('themeSelect').value === 'system') {
-        changeTheme();
+    async function clearAllHistory() {
+        if (confirm('⚠️ This will delete ALL your chat history. This action cannot be undone. Continue?')) {
+            try {
+                let res = await fetch('/ai/sessions');
+                let data = await res.json();
+                if (data.success) {
+                    for (let session of data.sessions) {
+                        await fetch(`/ai/session/${session.id}`, { method: 'DELETE' });
+                    }
+                }
+                document.getElementById('chatMessages').innerHTML = '';
+                addSystemMessage('🗑️ All chat history cleared.');
+                loadSessions();
+                showNotification('All history cleared', 'success');
+            } catch (error) {
+                showNotification('Failed to clear history', 'error');
+            }
+        }
     }
-});
+
+    function attachFile() { showNotification('File upload coming soon!', 'info'); }
+
+    // ==================== UI HELPERS ====================
+    function addMessageToUI(text, type) {
+        let container = document.getElementById('chatMessages');
+        let div = document.createElement('div');
+        div.className = `message ${type}-message`;
+        div.innerHTML = `<div class="message-content">${text.replace(/\n/g, '<br>')}</div><div class="message-meta"><span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function addSystemMessage(text) { addMessageToUI(text, 'system'); }
+
+    function showTypingIndicator() {
+        let container = document.getElementById('chatMessages');
+        let div = document.createElement('div');
+        div.className = 'message bot-message';
+        div.id = 'typingIndicator';
+        div.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+        let indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+
+    function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+    function escapeHtml(text) { let div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+    // ==================== INITIALIZE ====================
+    window.onload = () => {
+        loadTheme();
+        loadFontSize();
+        loadModel();
+        checkLoginStatus();
+    };
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (localStorage.getItem('jarvis-theme') === 'system') setTheme('system');
+    });
 </script>
-
 </body>
 </html>
