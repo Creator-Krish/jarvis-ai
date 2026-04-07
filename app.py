@@ -41,7 +41,7 @@ app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get("MAX_CONTENT_LENGTH", 10 *
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 if os.environ.get("FLASK_ENV") == "production":
-    CORS(app, origins=[os.environ.get("ALLOWED_ORIGIN", "https://jarvis-ai.onrender.com")], supports_credentials=True)
+    CORS(app, origins=[os.environ.get("ALLOWED_ORIGIN", "https://jarvis-e76i.onrender.com")], supports_credentials=True)
 else:
     CORS(app, origins=["*"], supports_credentials=True)
 
