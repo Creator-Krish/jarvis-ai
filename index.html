@@ -5,6 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#0a0a0f">
     <meta name="description" content="JARVIS - World's Largest Database AI">
+    
+    <!-- SECURITY HEADERS -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://apis.google.com https://accounts.google.com;
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: https: http:;
+        font-src 'self' data:;
+        connect-src 'self' https://api.deepseek.com https://api.groq.com https://generativelanguage.googleapis.com https://oauth2.googleapis.com https://www.googleapis.com;
+        frame-src 'self' https://accounts.google.com;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+    ">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
     <title>JARVIS - Advanced AI Assistant</title>
     <style>
         /* ==================== CSS VARIABLES ==================== */
@@ -166,11 +185,17 @@
             font-weight: 500;
             cursor: pointer;
             transition: var(--transition-fast);
+            position: relative;
+            overflow: hidden;
         }
 
         .google-btn:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
+        }
+
+        .google-btn:active {
+            transform: translateY(0);
         }
 
         .info-text {
@@ -335,6 +360,10 @@
             box-shadow: var(--shadow-glow);
         }
 
+        .new-chat-btn:active {
+            transform: translateY(0);
+        }
+
         .chat-history {
             flex: 1;
             overflow-y: auto;
@@ -411,6 +440,8 @@
             font-size: 14px;
             line-height: 1.5;
             position: relative;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .user-message .message-content {
@@ -746,6 +777,37 @@
             z-index: 999;
         }
         .sidebar-overlay.open { display: block; }
+
+        .login-card {
+            animation: fadeInUp 0.5s ease, glowPulse 2s infinite;
+        }
+
+        .login-card:hover {
+            transform: scale(1.03) rotateX(5deg);
+            transition: 0.3s;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Sanitized Content */
+        .message-content {
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -761,7 +823,7 @@
         </button>
         <div class="info-text">
             Built by Krish Paliwal<br>
-           Unfiltered. Unlimited. Unmatched
+            Unfiltered. Unlimited. Unmatched
         </div>
     </div>
 </div>
@@ -861,8 +923,8 @@
 
         <div class="setting-section">
             <div class="setting-title">💾 Data Management</div>
-            <button class="sidebar-button" onclick="exportChats()" style="margin-bottom: 12px;">📥 Export All Chats</button>
-            <button class="sidebar-button danger-btn" onclick="clearAllHistory()">🗑️ Clear All History</button>
+            <button class="sidebar-button" onclick="exportChats()" style="margin-bottom: 12px; width: 100%; padding: 12px; border-radius: 40px; background: var(--hover-bg); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer;">📥 Export All Chats</button>
+            <button class="sidebar-button danger-btn" onclick="clearAllHistory()" style="width: 100%; padding: 12px; border-radius: 40px; cursor: pointer;">🗑️ Clear All History</button>
         </div>
 
         <div class="setting-section">
@@ -901,6 +963,60 @@
 </div>
 
 <script>
+    // ==================== SECURITY: Input Sanitization ====================
+    function sanitizeHTML(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    // ==================== SECURITY: Validate URL ====================
+    function isValidUrl(string) {
+        try {
+            const url = new URL(string);
+            return ['http:', 'https:'].includes(url.protocol);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    // ==================== SECURITY: Rate limiting for API calls ====================
+    const rateLimitMap = new Map();
+    function isRateLimited(key, limit = 10, windowMs = 60000) {
+        const now = Date.now();
+        const windowStart = now - windowMs;
+        
+        if (!rateLimitMap.has(key)) {
+            rateLimitMap.set(key, []);
+        }
+        
+        const requests = rateLimitMap.get(key).filter(timestamp => timestamp > windowStart);
+        
+        if (requests.length >= limit) {
+            return true;
+        }
+        
+        requests.push(now);
+        rateLimitMap.set(key, requests);
+        return false;
+    }
+
     // ==================== GLOBAL VARIABLES ====================
     let currentSessionId = null;
     let isProcessing = false;
@@ -909,25 +1025,40 @@
     let recognition = null;
     let isListening = false;
 
-    // ==================== GOOGLE LOGIN ====================
+    // ==================== GOOGLE LOGIN with Security ====================
     function googleLogin() {
-        window.location.href = '/login/google';
+        let btn = document.querySelector('.google-btn');
+        if (!btn) return;
+        
+        btn.innerHTML = '<span class="loading-spinner"></span> Connecting...';
+        btn.style.pointerEvents = 'none';
+
+        setTimeout(() => {
+            window.location.href = '/login/google';
+        }, 500);
     }
 
     // ==================== CHECK LOGIN STATUS ====================
     async function checkLoginStatus() {
         try {
-            let res = await fetch('/api/me');
+            let res = await fetch('/api/me', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
             let data = await res.json();
-            if (data.success) {
-                currentUser = data.user.name;
-                userEmail = data.user.email;
+            if (data.success && data.user) {
+                currentUser = sanitizeHTML(data.user.name);
+                userEmail = sanitizeHTML(data.user.email);
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
                 document.getElementById('userName').innerText = currentUser;
                 let avatar = document.getElementById('userAvatar');
                 avatar.innerText = currentUser.charAt(0).toUpperCase();
-                if (data.user.avatar) {
+                if (data.user.avatar && isValidUrl(data.user.avatar)) {
                     avatar.style.backgroundImage = `url(${data.user.avatar})`;
                     avatar.style.backgroundSize = 'cover';
                     avatar.innerText = '';
@@ -944,10 +1075,14 @@
             }
         } catch (error) {
             console.error('Login check failed:', error);
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
         }
     }
 
-    function logout() { window.location.href = '/logout'; }
+    function logout() { 
+        window.location.href = '/logout';
+    }
 
     // ==================== THEME MANAGEMENT ====================
     function setTheme(theme) {
@@ -984,14 +1119,16 @@
     function changeModel() {
         let model = document.getElementById('modelSelect').value;
         localStorage.setItem('jarvis-model', model);
-        document.getElementById('modelBadge').innerHTML = `Current: ${model.toUpperCase()}`;
-        showNotification(`🤖 Switched to ${model.toUpperCase()}`, 'info');
+        let displayModel = model === 'deepseek' ? 'Jarvis Technical' : model === 'groq' ? 'Jarvis Lightning' : 'Jarvis Philosopher';
+        document.getElementById('modelBadge').innerHTML = `Current: ${displayModel}`;
+        showNotification(`🤖 Switched to ${displayModel}`, 'info');
     }
 
     function loadModel() {
         let savedModel = localStorage.getItem('jarvis-model') || 'deepseek';
         document.getElementById('modelSelect').value = savedModel;
-        document.getElementById('modelBadge').innerHTML = `Current: ${savedModel.toUpperCase()}`;
+        let displayModel = savedModel === 'deepseek' ? 'Jarvis Technical' : savedModel === 'groq' ? 'Jarvis Lightning' : 'Jarvis Philosopher';
+        document.getElementById('modelBadge').innerHTML = `Current: ${displayModel}`;
     }
 
     // ==================== SIDEBAR ====================
@@ -1005,14 +1142,16 @@
         document.getElementById('settingsModal').classList.add('active');
         if (window.innerWidth <= 768) toggleSidebar();
     }
-    function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+    function closeSettings() { 
+        document.getElementById('settingsModal').classList.remove('active');
+    }
 
     // ==================== NOTIFICATION ====================
     function showNotification(msg, type = 'info') {
         let notification = document.getElementById('notification');
         let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
         document.getElementById('notificationIcon').innerText = icon;
-        document.getElementById('notificationMsg').innerText = msg;
+        document.getElementById('notificationMsg').innerText = sanitizeHTML(msg);
         notification.classList.add('show');
         setTimeout(() => notification.classList.remove('show'), 3000);
     }
@@ -1020,31 +1159,40 @@
     // ==================== LOAD SESSIONS ====================
     async function loadSessions() {
         try {
-            let res = await fetch('/ai/sessions');
+            let res = await fetch('/ai/sessions', {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
             let data = await res.json();
-            if (data.success && data.sessions.length > 0) {
+            if (data.success && data.sessions && data.sessions.length > 0) {
                 renderSidebar(data.sessions);
                 loadChat(data.sessions[0].id);
             } else {
                 createNewChat();
             }
-        } catch (error) { console.error('Failed to load sessions:', error); }
+        } catch (error) { 
+            console.error('Failed to load sessions:', error);
+            addSystemMessage('Failed to load chat history. Please refresh the page.');
+        }
     }
 
     function renderSidebar(sessions) {
         let container = document.getElementById('chatHistoryList');
+        if (!container) return;
         container.innerHTML = '';
         let today = [], yesterday = [], older = [];
         let now = new Date();
         let todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         let yesterdayStart = new Date(todayStart);
         yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-        sessions.forEach(session => {
-            let sessionDate = new Date(session.updated_at);
-            if (sessionDate >= todayStart) today.push(session);
-            else if (sessionDate >= yesterdayStart) yesterday.push(session);
-            else older.push(session);
-        });
+        if (sessions && Array.isArray(sessions)) {
+            sessions.forEach(session => {
+                let sessionDate = new Date(session.updated_at);
+                if (sessionDate >= todayStart) today.push(session);
+                else if (sessionDate >= yesterdayStart) yesterday.push(session);
+                else older.push(session);
+            });
+        }
         if (today.length) addGroup(container, '📝 Today', today);
         if (yesterday.length) addGroup(container, '📅 Yesterday', yesterday);
         if (older.length) addGroup(container, '📁 Older', older);
@@ -1060,7 +1208,8 @@
         sessions.forEach(session => {
             let item = document.createElement('div');
             item.className = `chat-item ${currentSessionId === session.id ? 'active' : ''}`;
-            item.innerHTML = `💬 <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(session.title || 'New Chat')}</span>`;
+            let sessionTitle = sanitizeHTML(session.title || 'New Chat');
+            item.innerHTML = `💬 <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sessionTitle}</span>`;
             item.onclick = () => loadChat(session.id);
             group.appendChild(item);
         });
@@ -1071,70 +1220,138 @@
     async function loadChat(sessionId) {
         currentSessionId = sessionId;
         try {
-            let res = await fetch(`/ai/session/${sessionId}`);
+            let res = await fetch(`/ai/session/${sessionId}`, {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
             let data = await res.json();
-            if (data.success) {
+            if (data.success && data.messages) {
                 let container = document.getElementById('chatMessages');
-                container.innerHTML = '';
-                data.messages.forEach(msg => addMessageToUI(msg.content, msg.role === 'user' ? 'user' : 'bot'));
+                if (container) {
+                    container.innerHTML = '';
+                    data.messages.forEach(msg => addMessageToUI(sanitizeHTML(msg.content), msg.role === 'user' ? 'user' : 'bot'));
+                }
                 loadSessions();
             }
-        } catch (error) { console.error('Failed to load chat:', error); }
-    }
-
-    function renderMessages(messages) {
-        let container = document.getElementById('chatMessages');
-        container.innerHTML = '';
-        messages.forEach(msg => addMessageToUI(msg.content, msg.role === 'user' ? 'user' : 'bot'));
+        } catch (error) { 
+            console.error('Failed to load chat:', error);
+        }
     }
 
     // ==================== CREATE NEW CHAT ====================
     async function createNewChat() {
         try {
-            let res = await fetch('/ai/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'New Chat' }) });
+            let res = await fetch('/ai/session', { 
+                method: 'POST', 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }, 
+                body: JSON.stringify({ title: 'New Chat' }),
+                credentials: 'same-origin'
+            });
             let data = await res.json();
             if (data.success) {
                 currentSessionId = data.session_id;
-                document.getElementById('chatMessages').innerHTML = '';
+                let container = document.getElementById('chatMessages');
+                if (container) container.innerHTML = '';
                 addSystemMessage('✨ New chat started. How can I help you today?');
                 loadSessions();
                 if (window.innerWidth <= 768) toggleSidebar();
             }
-        } catch (error) { console.error('Failed to create chat:', error); }
+        } catch (error) { 
+            console.error('Failed to create chat:', error);
+            addSystemMessage('Failed to create new chat. Please try again.');
+        }
     }
 
     // ==================== SEND MESSAGE ====================
     async function sendMessage() {
         if (isProcessing || !currentSessionId) return;
+        
         let input = document.getElementById('input');
         let msg = input.value.trim();
         if (!msg) return;
-        addMessageToUI(msg, 'user');
+        
+        // Client-side rate limiting
+        if (isRateLimited('sendMessage_' + (currentUser || 'anonymous'), 5, 30000)) {
+            addSystemMessage('⚠️ Too many messages. Please wait a moment.');
+            return;
+        }
+        
+        // Sanitize message before sending
+        const sanitizedMsg = sanitizeHTML(msg);
+        
+        // Add user message
+        addMessageToUI(sanitizedMsg, 'user');
         input.value = '';
         isProcessing = true;
         document.getElementById('sendBtn').disabled = true;
-        showTypingIndicator();
+        
+        // Show typing indicator
+        let container = document.getElementById('chatMessages');
+        let typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot-message';
+        typingDiv.id = 'typingIndicator';
+        typingDiv.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+        container.appendChild(typingDiv);
+        container.scrollTop = container.scrollHeight;
+        
         try {
             let selectedModel = document.getElementById('modelSelect').value;
             let res = await fetch(`/ai/session/${currentSessionId}/message`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: msg, model: selectedModel })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ prompt: sanitizedMsg, model: selectedModel }),
+                credentials: 'same-origin'
             });
             let data = await res.json();
-            removeTypingIndicator();
+            
+            // Remove typing indicator
+            let indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+            
             if (data.success) {
-                addMessageToUI(data.response, 'bot');
-                if (data.is_first_message) loadSessions();
+                let botResponse = sanitizeHTML(data.response);
+                let botDiv = document.createElement('div');
+                botDiv.className = 'message bot-message';
+                botDiv.innerHTML = `
+                    <div class="message-content">${botResponse.replace(/\n/g, '<br>')}</div>
+                    <div class="message-meta"><span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
+                `;
+                container.appendChild(botDiv);
+                container.scrollTop = container.scrollHeight;
+                
+                if (data.is_first_message) {
+                    updateSessionTitleInSidebar(currentSessionId, sanitizedMsg.substring(0, 50));
+                }
             } else {
-                addMessageToUI(data.error || 'Error occurred', 'system');
+                addSystemMessage(sanitizeHTML(data.error) || 'Error occurred');
             }
         } catch (error) {
-            removeTypingIndicator();
-            addMessageToUI('Connection error. Please try again.', 'system');
+            let indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+            addSystemMessage('Connection error. Please try again.');
         } finally {
             isProcessing = false;
             document.getElementById('sendBtn').disabled = false;
+        }
+    }
+
+    function updateSessionTitleInSidebar(sessionId, newTitle) {
+        let chatItems = document.querySelectorAll('.chat-item');
+        for (let item of chatItems) {
+            if (item.onclick && item.onclick.toString().includes(sessionId)) {
+                let span = item.querySelector('span');
+                if (span) {
+                    let displayTitle = newTitle.length > 50 ? newTitle.substring(0, 47) + '...' : newTitle;
+                    span.innerText = displayTitle;
+                }
+                break;
+            }
         }
     }
 
@@ -1150,7 +1367,7 @@
             recognition.continuous = false;
             recognition.interimResults = false;
             recognition.onresult = (event) => {
-                let text = event.results[0][0].transcript;
+                let text = sanitizeHTML(event.results[0][0].transcript);
                 document.getElementById('input').value = text;
                 isListening = false;
                 document.getElementById('voiceBtn').style.color = '';
@@ -1181,12 +1398,17 @@
     // ==================== EXPORT CHATS ====================
     async function exportChats() {
         try {
-            let res = await fetch('/ai/sessions');
+            let res = await fetch('/ai/sessions', {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
             let data = await res.json();
-            if (data.success) {
+            if (data.success && data.sessions) {
                 let exportData = [];
                 for (let session of data.sessions) {
-                    let msgs = await fetch(`/ai/session/${session.id}`);
+                    let msgs = await fetch(`/ai/session/${session.id}`, {
+                        credentials: 'same-origin'
+                    });
                     let msgData = await msgs.json();
                     exportData.push({ session: session, messages: msgData.messages });
                 }
@@ -1207,14 +1429,17 @@
     async function clearAllHistory() {
         if (confirm('⚠️ This will delete ALL your chat history. This action cannot be undone. Continue?')) {
             try {
-                let res = await fetch('/ai/sessions');
+                let res = await fetch('/ai/sessions', {
+                    credentials: 'same-origin'
+                });
                 let data = await res.json();
-                if (data.success) {
+                if (data.success && data.sessions) {
                     for (let session of data.sessions) {
-                        await fetch(`/ai/session/${session.id}`, { method: 'DELETE' });
+                        await fetch(`/ai/session/${session.id}`, { method: 'DELETE', credentials: 'same-origin' });
                     }
                 }
-                document.getElementById('chatMessages').innerHTML = '';
+                let container = document.getElementById('chatMessages');
+                if (container) container.innerHTML = '';
                 addSystemMessage('🗑️ All chat history cleared.');
                 loadSessions();
                 showNotification('All history cleared', 'success');
@@ -1224,37 +1449,32 @@
         }
     }
 
-    function attachFile() { showNotification('File upload coming soon!', 'info'); }
+    function attachFile() { 
+        showNotification('File upload coming soon!', 'info'); 
+    }
 
     // ==================== UI HELPERS ====================
     function addMessageToUI(text, type) {
         let container = document.getElementById('chatMessages');
+        if (!container) return;
         let div = document.createElement('div');
         div.className = `message ${type}-message`;
-        div.innerHTML = `<div class="message-content">${text.replace(/\n/g, '<br>')}</div><div class="message-meta"><span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`;
+        let sanitizedText = sanitizeHTML(text);
+        div.innerHTML = `<div class="message-content">${sanitizedText.replace(/\n/g, '<br>')}</div><div class="message-meta"><span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     }
 
-    function addSystemMessage(text) { addMessageToUI(text, 'system'); }
-
-    function showTypingIndicator() {
-        let container = document.getElementById('chatMessages');
-        let div = document.createElement('div');
-        div.className = 'message bot-message';
-        div.id = 'typingIndicator';
-        div.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
+    function addSystemMessage(text) { 
+        addMessageToUI(text, 'system'); 
     }
 
-    function removeTypingIndicator() {
-        let indicator = document.getElementById('typingIndicator');
-        if (indicator) indicator.remove();
+    function handleKeyPress(e) { 
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
     }
-
-    function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
-    function escapeHtml(text) { let div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
     // ==================== INITIALIZE ====================
     window.onload = () => {
@@ -1262,7 +1482,16 @@
         loadFontSize();
         loadModel();
         checkLoginStatus();
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            let modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                closeSettings();
+            }
+        };
     };
+    
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
         if (localStorage.getItem('jarvis-theme') === 'system') setTheme('system');
     });
