@@ -331,9 +331,11 @@ def health_check():
 # DATABASE INIT
 # =============================
 def init_db():
+   def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # Users table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -345,14 +347,21 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP,
             total_logins INT DEFAULT 1,
-            session_token TEXT,
-            is_admin BOOLEAN DEFAULT FALSE
+            session_token TEXT
         )
     """)
+    
+    # 🔥 FIX: Add is_admin column if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE")
+        logger.info("✅ Added is_admin column")
+    except Exception as e:
+        logger.warning(f"is_admin column may already exist: {e}")
     
     # Set admin users
     cursor.execute("UPDATE users SET is_admin = TRUE WHERE email IN ('krish@gmail.com', 'admin@jarvis.ai')")
     
+    # Rest of your tables...
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS login_logs (
             id SERIAL PRIMARY KEY,
@@ -396,7 +405,6 @@ def init_db():
     cursor.close()
     return_db_connection(conn)
     logger.info("✅ PostgreSQL database initialized")
-
 # =============================
 # GOOGLE OAUTH ROUTES
 # =============================
