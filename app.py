@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, g
 from flask_cors import CORS
+import psycopg2.extras
 import psycopg2
 from psycopg2 import pool
 import os
