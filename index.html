@@ -26,15 +26,28 @@
     
     <title>JARVIS - Advanced AI Assistant</title>
     <style>
-        /* ==================== CSS VARIABLES ==================== */
+        /* ==================== CSS VARIABLES - 7 COLOR SYSTEM ==================== */
         :root {
+            /* Theme Colors - 7 Color System */
+            --color-1: #00ffff;
+            --color-2: #ff00ff;
+            --color-3: #ff6600;
+            --color-4: #00ff66;
+            --color-5: #ff0066;
+            --color-6: #6600ff;
+            --color-7: #ffff00;
+            
+            /* Theme transition */
+            --theme-transition: all 0.3s ease;
+            
+            /* Base Colors */
             --bg-primary: #0a0a0f;
             --bg-secondary: #111114;
             --bg-tertiary: #1a1a20;
             --text-primary: #ffffff;
             --text-secondary: #a0a0c0;
             --text-muted: #6b6b8d;
-            --accent-primary: #00ffff;
+            --accent-primary: var(--color-1);
             --accent-secondary: #0088ff;
             --accent-glow: rgba(0, 255, 255, 0.3);
             --border-color: rgba(255, 255, 255, 0.08);
@@ -45,14 +58,16 @@
             --input-bg: rgba(30, 30, 50, 0.8);
             --hover-bg: rgba(255, 255, 255, 0.05);
             --card-bg: rgba(17, 17, 20, 0.98);
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
-            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
-            --shadow-glow: 0 0 20px rgba(0, 255, 255, 0.2);
-            --transition-fast: 0.15s ease;
-            --transition-normal: 0.25s ease;
-            --transition-slow: 0.4s ease;
         }
+
+        /* Color Theme Classes */
+        [data-theme-color="1"] { --accent-primary: var(--color-1); }
+        [data-theme-color="2"] { --accent-primary: var(--color-2); }
+        [data-theme-color="3"] { --accent-primary: var(--color-3); }
+        [data-theme-color="4"] { --accent-primary: var(--color-4); }
+        [data-theme-color="5"] { --accent-primary: var(--color-5); }
+        [data-theme-color="6"] { --accent-primary: var(--color-6); }
+        [data-theme-color="7"] { --accent-primary: var(--color-7); }
 
         /* Light Theme */
         [data-theme="light"] {
@@ -62,7 +77,6 @@
             --text-primary: #1a1a2e;
             --text-secondary: #4a4a6a;
             --text-muted: #8a8aaa;
-            --accent-primary: #0066cc;
             --accent-secondary: #004499;
             --accent-glow: rgba(0, 102, 204, 0.2);
             --border-color: rgba(0, 0, 0, 0.08);
@@ -73,9 +87,6 @@
             --input-bg: rgba(240, 242, 245, 0.9);
             --hover-bg: rgba(0, 0, 0, 0.03);
             --card-bg: #ffffff;
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
         /* Dark Theme */
@@ -86,7 +97,6 @@
             --text-primary: #ffffff;
             --text-secondary: #a0a0c0;
             --text-muted: #6b6b8d;
-            --accent-primary: #00ffff;
             --accent-secondary: #0088ff;
             --accent-glow: rgba(0, 255, 255, 0.2);
             --border-color: rgba(255, 255, 255, 0.08);
@@ -114,13 +124,13 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', system-ui, sans-serif;
             color: var(--text-primary);
-            transition: background var(--transition-normal), color var(--transition-normal);
+            transition: background var(--theme-transition), color var(--theme-transition);
         }
 
         /* ==================== SCROLLBAR ==================== */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--border-color); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb { background: var(--accent-primary); border-radius: 3px; opacity: 0.5; }
+        ::-webkit-scrollbar-thumb { background: var(--accent-primary); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--accent-secondary); }
 
         /* ==================== LOGIN CONTAINER ==================== */
@@ -144,7 +154,7 @@
             border-radius: 32px;
             text-align: center;
             border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
             max-width: 440px;
             width: 90%;
             animation: fadeInUp 0.5s ease;
@@ -184,18 +194,12 @@
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
-            transition: var(--transition-fast);
-            position: relative;
-            overflow: hidden;
+            transition: var(--theme-transition);
         }
 
         .google-btn:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .google-btn:active {
-            transform: translateY(0);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
         .info-text {
@@ -241,7 +245,6 @@
             cursor: pointer;
             padding: 8px;
             border-radius: 12px;
-            transition: var(--transition-fast);
         }
 
         .menu-toggle:hover {
@@ -269,10 +272,7 @@
             cursor: pointer;
             padding: 8px;
             border-radius: 50%;
-            transition: var(--transition-fast);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transition: var(--theme-transition);
         }
 
         .icon-btn:hover {
@@ -288,7 +288,6 @@
             background: var(--hover-bg);
             border-radius: 40px;
             cursor: pointer;
-            transition: var(--transition-fast);
         }
 
         .user-profile:hover {
@@ -330,7 +329,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            transition: transform var(--transition-normal);
+            transition: transform var(--theme-transition);
             overflow-y: auto;
             flex-shrink: 0;
             backdrop-filter: blur(20px);
@@ -346,7 +345,7 @@
             font-weight: 600;
             cursor: pointer;
             margin-bottom: 24px;
-            transition: var(--transition-fast);
+            transition: var(--theme-transition);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -357,11 +356,7 @@
         .new-chat-btn:hover {
             transform: translateY(-2px);
             filter: brightness(1.05);
-            box-shadow: var(--shadow-glow);
-        }
-
-        .new-chat-btn:active {
-            transform: translateY(0);
+            box-shadow: 0 0 20px var(--accent-glow);
         }
 
         .chat-history {
@@ -392,7 +387,7 @@
             gap: 10px;
             color: var(--text-secondary);
             font-size: 13px;
-            transition: var(--transition-fast);
+            transition: var(--theme-transition);
         }
 
         .chat-item:hover {
@@ -439,9 +434,8 @@
             border-radius: 20px;
             font-size: 14px;
             line-height: 1.5;
-            position: relative;
             word-wrap: break-word;
-            overflow-wrap: break-word;
+            white-space: pre-wrap;
         }
 
         .user-message .message-content {
@@ -513,12 +507,11 @@
             border-radius: 48px;
             padding: 6px 6px 6px 20px;
             border: 1px solid var(--border-color);
-            transition: var(--transition-fast);
         }
 
         .input-wrapper:focus-within {
             border-color: var(--accent-primary);
-            box-shadow: var(--shadow-glow);
+            box-shadow: 0 0 20px var(--accent-glow);
         }
 
         #input {
@@ -549,7 +542,6 @@
             cursor: pointer;
             padding: 8px;
             border-radius: 50%;
-            transition: var(--transition-fast);
         }
 
         .input-action-btn:hover {
@@ -565,17 +557,11 @@
             color: var(--bg-primary);
             font-weight: 600;
             cursor: pointer;
-            transition: var(--transition-fast);
         }
 
         #sendBtn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-        }
-
-        #sendBtn:hover:not(:disabled) {
-            transform: scale(1.02);
-            filter: brightness(1.05);
         }
 
         /* ==================== MODAL ==================== */
@@ -604,7 +590,7 @@
             max-height: 85vh;
             overflow-y: auto;
             border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
             animation: modalIn 0.3s ease;
         }
 
@@ -634,7 +620,6 @@
             cursor: pointer;
             padding: 8px;
             border-radius: 50%;
-            transition: var(--transition-fast);
         }
 
         .close-modal:hover {
@@ -654,40 +639,13 @@
             letter-spacing: 0.5px;
         }
 
-        .setting-option {
-            margin-bottom: 16px;
-        }
-
-        .setting-option label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-            font-size: 13px;
-        }
-
-        select, input[type="range"] {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            color: var(--text-primary);
-            font-size: 14px;
-            cursor: pointer;
-            transition: var(--transition-fast);
-        }
-
-        select:focus, input:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-        }
-
-        .theme-buttons {
+        .theme-buttons, .color-buttons {
             display: flex;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
-        .theme-btn {
+        .theme-btn, .color-btn {
             flex: 1;
             padding: 10px;
             border: 1px solid var(--border-color);
@@ -695,23 +653,29 @@
             background: transparent;
             color: var(--text-secondary);
             cursor: pointer;
-            transition: var(--transition-fast);
+            transition: var(--theme-transition);
+            text-align: center;
         }
 
-        .theme-btn.active {
+        .theme-btn.active, .color-btn.active {
             background: var(--accent-primary);
             color: var(--bg-primary);
             border-color: var(--accent-primary);
         }
 
-        .model-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            background: var(--hover-bg);
-            border-radius: 20px;
-            font-size: 12px;
-            margin-top: 8px;
+        .color-btn {
+            flex: 0 0 40px;
+            height: 40px;
+            border-radius: 50%;
         }
+
+        .color-btn[data-color="1"] { background: #00ffff; }
+        .color-btn[data-color="2"] { background: #ff00ff; }
+        .color-btn[data-color="3"] { background: #ff6600; }
+        .color-btn[data-color="4"] { background: #00ff66; }
+        .color-btn[data-color="5"] { background: #ff0066; }
+        .color-btn[data-color="6"] { background: #6600ff; }
+        .color-btn[data-color="7"] { background: #ffff00; }
 
         .danger-btn {
             background: rgba(255, 100, 100, 0.15);
@@ -737,8 +701,8 @@
             gap: 12px;
             z-index: 10001;
             transform: translateX(400px);
-            transition: transform var(--transition-normal);
-            box-shadow: var(--shadow-lg);
+            transition: transform var(--theme-transition);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
         .notification.show {
@@ -777,37 +741,6 @@
             z-index: 999;
         }
         .sidebar-overlay.open { display: block; }
-
-        .login-card {
-            animation: fadeInUp 0.5s ease, glowPulse 2s infinite;
-        }
-
-        .login-card:hover {
-            transform: scale(1.03) rotateX(5deg);
-            transition: 0.3s;
-        }
-
-        /* Loading Spinner */
-        .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 0.6s linear infinite;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Sanitized Content */
-        .message-content {
-            word-break: break-word;
-            white-space: pre-wrap;
-        }
     </style>
 </head>
 <body>
@@ -855,21 +788,29 @@
         <!-- SIDEBAR -->
         <div class="sidebar" id="sidebar">
             <button class="new-chat-btn" onclick="createNewChat()">➕ New Chat</button>
-            <div class="chat-history" id="chatHistoryList"></div>
+            <div class="chat-history" id="chatHistoryList">
+                <div style="text-align: center; padding: 20px; color: var(--text-muted);">
+                    Loading chats...
+                </div>
+            </div>
         </div>
 
         <!-- CHAT AREA -->
         <div class="chat-area">
-            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message system-message">
+                    <div class="message-content">Welcome to JARVIS! Sign in to start chatting.</div>
+                </div>
+            </div>
             
             <!-- INPUT AREA -->
             <div class="input-area">
                 <div class="input-wrapper">
-                    <input type="text" id="input" placeholder="Ask JARVIS anything..." onkeypress="handleKeyPress(event)" autocomplete="off">
+                    <input type="text" id="input" placeholder="Ask JARVIS anything..." onkeypress="handleKeyPress(event)" autocomplete="off" disabled>
                     <div class="input-actions">
                         <button class="input-action-btn" onclick="attachFile()" title="Attach File">📎</button>
                         <button class="input-action-btn" onclick="toggleVoiceInput()" title="Voice Input">🎤</button>
-                        <button onclick="sendMessage()" id="sendBtn">Send</button>
+                        <button onclick="sendMessage()" id="sendBtn" disabled>Send</button>
                     </div>
                 </div>
             </div>
@@ -886,7 +827,7 @@
         </div>
 
         <div class="setting-section">
-            <div class="setting-title">🎨 Appearance</div>
+            <div class="setting-title">🎨 Theme</div>
             <div class="theme-buttons">
                 <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">🌙 Dark</button>
                 <button class="theme-btn" data-theme="light" onclick="setTheme('light')">☀️ Light</button>
@@ -895,13 +836,25 @@
         </div>
 
         <div class="setting-section">
+            <div class="setting-title">🌈 Accent Color</div>
+            <div class="color-buttons">
+                <button class="color-btn" data-color="1" onclick="setAccentColor(1)" style="background: #00ffff;"></button>
+                <button class="color-btn" data-color="2" onclick="setAccentColor(2)" style="background: #ff00ff;"></button>
+                <button class="color-btn" data-color="3" onclick="setAccentColor(3)" style="background: #ff6600;"></button>
+                <button class="color-btn" data-color="4" onclick="setAccentColor(4)" style="background: #00ff66;"></button>
+                <button class="color-btn" data-color="5" onclick="setAccentColor(5)" style="background: #ff0066;"></button>
+                <button class="color-btn" data-color="6" onclick="setAccentColor(6)" style="background: #6600ff;"></button>
+                <button class="color-btn" data-color="7" onclick="setAccentColor(7)" style="background: #ffff00;"></button>
+            </div>
+        </div>
+
+        <div class="setting-section">
             <div class="setting-title">🧠 AI Model</div>
             <select id="modelSelect" onchange="changeModel()">
-                <option value="deepseek">Jarvis Technical (Default - Best for Technical)</option>
-                <option value="groq">Jarvis Lightning (Fastest Responses)</option>
-                <option value="gemini">Jarvis Philosopher (General Knowledge)</option>
+                <option value="deepseek">Jarvis Technical (Default)</option>
+                <option value="groq">Jarvis Lightning (Fast)</option>
+                <option value="gemini">Jarvis Philosopher</option>
             </select>
-            <div class="model-badge" id="modelBadge">Current: Jarvis Technical</div>
         </div>
 
         <div class="setting-section">
@@ -928,29 +881,11 @@
         </div>
 
         <div class="setting-section">
-            <div class="setting-title">👤 Account</div>
-            <div class="stats-box" id="userStatsBox">
-                <div class="stats-item">
-                    <span class="stats-label">Username:</span>
-                    <span class="stats-value" id="statUsername">-</span>
-                </div>
-                <div class="stats-item">
-                    <span class="stats-label">Email:</span>
-                    <span class="stats-value" id="statEmail">-</span>
-                </div>
-                <div class="stats-item">
-                    <span class="stats-label">Member since:</span>
-                    <span class="stats-value" id="statJoinDate">-</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="setting-section">
             <div class="setting-title">ℹ️ About</div>
             <div class="stats-box">
-                <div class="stats-item"><span class="stats-label">Version:</span><span class="stats-value">1102.80.52</span></div>
+                <div class="stats-item"><span class="stats-label">Version:</span><span class="stats-value">3.0.0</span></div>
                 <div class="stats-item"><span class="stats-label">Creator:</span><span class="stats-value">Krish Paliwal</span></div>
-                <div class="stats-item"><span class="stats-label">Under Construction Since:</span><span class="stats-value">03-09-25</span></div>
+                <div class="stats-item"><span class="stats-label">Accent Colors:</span><span class="stats-value">7 Themes Available</span></div>
             </div>
         </div>
     </div>
@@ -971,50 +906,7 @@
             if (m === '<') return '&lt;';
             if (m === '>') return '&gt;';
             return m;
-        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
-            return c;
         });
-    }
-
-    function escapeHtml(unsafe) {
-        if (!unsafe) return '';
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
-    }
-
-    // ==================== SECURITY: Validate URL ====================
-    function isValidUrl(string) {
-        try {
-            const url = new URL(string);
-            return ['http:', 'https:'].includes(url.protocol);
-        } catch (_) {
-            return false;
-        }
-    }
-
-    // ==================== SECURITY: Rate limiting for API calls ====================
-    const rateLimitMap = new Map();
-    function isRateLimited(key, limit = 10, windowMs = 60000) {
-        const now = Date.now();
-        const windowStart = now - windowMs;
-        
-        if (!rateLimitMap.has(key)) {
-            rateLimitMap.set(key, []);
-        }
-        
-        const requests = rateLimitMap.get(key).filter(timestamp => timestamp > windowStart);
-        
-        if (requests.length >= limit) {
-            return true;
-        }
-        
-        requests.push(now);
-        rateLimitMap.set(key, requests);
-        return false;
     }
 
     // ==================== GLOBAL VARIABLES ====================
@@ -1025,17 +917,9 @@
     let recognition = null;
     let isListening = false;
 
-    // ==================== GOOGLE LOGIN with Security ====================
+    // ==================== GOOGLE LOGIN ====================
     function googleLogin() {
-        let btn = document.querySelector('.google-btn');
-        if (!btn) return;
-        
-        btn.innerHTML = '<span class="loading-spinner"></span> Connecting...';
-        btn.style.pointerEvents = 'none';
-
-        setTimeout(() => {
-            window.location.href = '/login/google';
-        }, 500);
+        window.location.href = '/login/google';
     }
 
     // ==================== CHECK LOGIN STATUS ====================
@@ -1043,40 +927,30 @@
         try {
             let res = await fetch('/api/me', {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                credentials: 'same-origin'
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
             });
             let data = await res.json();
             if (data.success && data.user) {
                 currentUser = sanitizeHTML(data.user.name);
                 userEmail = sanitizeHTML(data.user.email);
+                
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
                 document.getElementById('userName').innerText = currentUser;
-                let avatar = document.getElementById('userAvatar');
-                avatar.innerText = currentUser.charAt(0).toUpperCase();
-                if (data.user.avatar && isValidUrl(data.user.avatar)) {
-                    avatar.style.backgroundImage = `url(${data.user.avatar})`;
-                    avatar.style.backgroundSize = 'cover';
-                    avatar.innerText = '';
-                }
-                document.getElementById('statUsername').innerText = currentUser;
-                document.getElementById('statEmail').innerText = userEmail;
-                document.getElementById('statJoinDate').innerText = new Date().toLocaleDateString();
-                loadSessions();
+                document.getElementById('userAvatar').innerText = currentUser.charAt(0).toUpperCase();
+                document.getElementById('input').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+                
+                // Load sessions after login
+                await loadSessions();
                 addSystemMessage(`Welcome back, ${currentUser}! JARVIS is ready.`);
-                showNotification('✅ Login successful', 'success');
             } else {
                 document.getElementById('loginScreen').style.display = 'flex';
                 document.getElementById('app').style.display = 'none';
             }
         } catch (error) {
             console.error('Login check failed:', error);
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('app').style.display = 'none';
         }
     }
 
@@ -1084,7 +958,7 @@
         window.location.href = '/logout';
     }
 
-    // ==================== THEME MANAGEMENT ====================
+    // ==================== THEME & COLOR MANAGEMENT ====================
     function setTheme(theme) {
         if (theme === 'system') {
             let darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -1099,9 +973,21 @@
         });
     }
 
+    function setAccentColor(colorNum) {
+        document.documentElement.setAttribute('data-theme-color', colorNum);
+        localStorage.setItem('jarvis-accent-color', colorNum);
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-color') === String(colorNum)) btn.classList.add('active');
+        });
+        showNotification(`🎨 Accent color changed!`, 'info');
+    }
+
     function loadTheme() {
         let savedTheme = localStorage.getItem('jarvis-theme') || 'dark';
+        let savedColor = localStorage.getItem('jarvis-accent-color') || '1';
         setTheme(savedTheme);
+        setAccentColor(parseInt(savedColor));
     }
 
     function changeFontSize() {
@@ -1119,16 +1005,12 @@
     function changeModel() {
         let model = document.getElementById('modelSelect').value;
         localStorage.setItem('jarvis-model', model);
-        let displayModel = model === 'deepseek' ? 'Jarvis Technical' : model === 'groq' ? 'Jarvis Lightning' : 'Jarvis Philosopher';
-        document.getElementById('modelBadge').innerHTML = `Current: ${displayModel}`;
-        showNotification(`🤖 Switched to ${displayModel}`, 'info');
+        showNotification(`🤖 Switched to ${model}`, 'info');
     }
 
     function loadModel() {
         let savedModel = localStorage.getItem('jarvis-model') || 'deepseek';
         document.getElementById('modelSelect').value = savedModel;
-        let displayModel = savedModel === 'deepseek' ? 'Jarvis Technical' : savedModel === 'groq' ? 'Jarvis Lightning' : 'Jarvis Philosopher';
-        document.getElementById('modelBadge').innerHTML = `Current: ${displayModel}`;
     }
 
     // ==================== SIDEBAR ====================
@@ -1160,15 +1042,17 @@
     async function loadSessions() {
         try {
             let res = await fetch('/ai/sessions', {
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                credentials: 'include'
             });
             let data = await res.json();
             if (data.success && data.sessions && data.sessions.length > 0) {
                 renderSidebar(data.sessions);
-                loadChat(data.sessions[0].id);
+                // Load the most recent chat
+                let mostRecent = data.sessions.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
+                await loadChat(mostRecent.id);
             } else {
-                createNewChat();
+                // No sessions, create one
+                await createNewChat();
             }
         } catch (error) { 
             console.error('Failed to load sessions:', error);
@@ -1180,11 +1064,13 @@
         let container = document.getElementById('chatHistoryList');
         if (!container) return;
         container.innerHTML = '';
+        
         let today = [], yesterday = [], older = [];
         let now = new Date();
         let todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         let yesterdayStart = new Date(todayStart);
         yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+        
         if (sessions && Array.isArray(sessions)) {
             sessions.forEach(session => {
                 let sessionDate = new Date(session.updated_at);
@@ -1193,9 +1079,14 @@
                 else older.push(session);
             });
         }
+        
         if (today.length) addGroup(container, '📝 Today', today);
         if (yesterday.length) addGroup(container, '📅 Yesterday', yesterday);
         if (older.length) addGroup(container, '📁 Older', older);
+        
+        if (sessions.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">No chats yet. Start a new conversation!</div>';
+        }
     }
 
     function addGroup(container, title, sessions) {
@@ -1218,24 +1109,36 @@
 
     // ==================== LOAD CHAT ====================
     async function loadChat(sessionId) {
+        if (currentSessionId === sessionId) return;
+        
         currentSessionId = sessionId;
         try {
             let res = await fetch(`/ai/session/${sessionId}`, {
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                credentials: 'include'
             });
             let data = await res.json();
             if (data.success && data.messages) {
                 let container = document.getElementById('chatMessages');
                 if (container) {
                     container.innerHTML = '';
-                    data.messages.forEach(msg => addMessageToUI(sanitizeHTML(msg.content), msg.role === 'user' ? 'user' : 'bot'));
+                    if (data.messages.length === 0) {
+                        addSystemMessage('No messages yet. Start the conversation!');
+                    } else {
+                        data.messages.forEach(msg => addMessageToUI(sanitizeHTML(msg.content), msg.role === 'user' ? 'user' : 'bot'));
+                    }
                 }
-                loadSessions();
+                // Refresh sidebar to update active state
+                renderSidebar(await getSessionsList());
             }
         } catch (error) { 
             console.error('Failed to load chat:', error);
         }
+    }
+
+    async function getSessionsList() {
+        let res = await fetch('/ai/sessions', { credentials: 'include' });
+        let data = await res.json();
+        return data.success ? data.sessions : [];
     }
 
     // ==================== CREATE NEW CHAT ====================
@@ -1243,12 +1146,9 @@
         try {
             let res = await fetch('/ai/session', { 
                 method: 'POST', 
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }, 
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title: 'New Chat' }),
-                credentials: 'same-origin'
+                credentials: 'include'
             });
             let data = await res.json();
             if (data.success) {
@@ -1256,7 +1156,9 @@
                 let container = document.getElementById('chatMessages');
                 if (container) container.innerHTML = '';
                 addSystemMessage('✨ New chat started. How can I help you today?');
-                loadSessions();
+                // Refresh sidebar
+                let sessions = await getSessionsList();
+                renderSidebar(sessions);
                 if (window.innerWidth <= 768) toggleSidebar();
             }
         } catch (error) { 
@@ -1273,17 +1175,8 @@
         let msg = input.value.trim();
         if (!msg) return;
         
-        // Client-side rate limiting
-        if (isRateLimited('sendMessage_' + (currentUser || 'anonymous'), 5, 30000)) {
-            addSystemMessage('⚠️ Too many messages. Please wait a moment.');
-            return;
-        }
-        
-        // Sanitize message before sending
-        const sanitizedMsg = sanitizeHTML(msg);
-        
         // Add user message
-        addMessageToUI(sanitizedMsg, 'user');
+        addMessageToUI(sanitizeHTML(msg), 'user');
         input.value = '';
         isProcessing = true;
         document.getElementById('sendBtn').disabled = true;
@@ -1301,12 +1194,9 @@
             let selectedModel = document.getElementById('modelSelect').value;
             let res = await fetch(`/ai/session/${currentSessionId}/message`, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ prompt: sanitizedMsg, model: selectedModel }),
-                credentials: 'same-origin'
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: msg, model: selectedModel }),
+                credentials: 'include'
             });
             let data = await res.json();
             
@@ -1316,17 +1206,11 @@
             
             if (data.success) {
                 let botResponse = sanitizeHTML(data.response);
-                let botDiv = document.createElement('div');
-                botDiv.className = 'message bot-message';
-                botDiv.innerHTML = `
-                    <div class="message-content">${botResponse.replace(/\n/g, '<br>')}</div>
-                    <div class="message-meta"><span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
-                `;
-                container.appendChild(botDiv);
-                container.scrollTop = container.scrollHeight;
-                
+                addMessageToUI(botResponse, 'bot');
                 if (data.is_first_message) {
-                    updateSessionTitleInSidebar(currentSessionId, sanitizedMsg.substring(0, 50));
+                    // Refresh sidebar to update title
+                    let sessions = await getSessionsList();
+                    renderSidebar(sessions);
                 }
             } else {
                 addSystemMessage(sanitizeHTML(data.error) || 'Error occurred');
@@ -1338,20 +1222,6 @@
         } finally {
             isProcessing = false;
             document.getElementById('sendBtn').disabled = false;
-        }
-    }
-
-    function updateSessionTitleInSidebar(sessionId, newTitle) {
-        let chatItems = document.querySelectorAll('.chat-item');
-        for (let item of chatItems) {
-            if (item.onclick && item.onclick.toString().includes(sessionId)) {
-                let span = item.querySelector('span');
-                if (span) {
-                    let displayTitle = newTitle.length > 50 ? newTitle.substring(0, 47) + '...' : newTitle;
-                    span.innerText = displayTitle;
-                }
-                break;
-            }
         }
     }
 
@@ -1398,17 +1268,12 @@
     // ==================== EXPORT CHATS ====================
     async function exportChats() {
         try {
-            let res = await fetch('/ai/sessions', {
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+            let res = await fetch('/ai/sessions', { credentials: 'include' });
             let data = await res.json();
             if (data.success && data.sessions) {
                 let exportData = [];
                 for (let session of data.sessions) {
-                    let msgs = await fetch(`/ai/session/${session.id}`, {
-                        credentials: 'same-origin'
-                    });
+                    let msgs = await fetch(`/ai/session/${session.id}`, { credentials: 'include' });
                     let msgData = await msgs.json();
                     exportData.push({ session: session, messages: msgData.messages });
                 }
@@ -1429,19 +1294,17 @@
     async function clearAllHistory() {
         if (confirm('⚠️ This will delete ALL your chat history. This action cannot be undone. Continue?')) {
             try {
-                let res = await fetch('/ai/sessions', {
-                    credentials: 'same-origin'
-                });
+                let res = await fetch('/ai/sessions', { credentials: 'include' });
                 let data = await res.json();
                 if (data.success && data.sessions) {
                     for (let session of data.sessions) {
-                        await fetch(`/ai/session/${session.id}`, { method: 'DELETE', credentials: 'same-origin' });
+                        await fetch(`/ai/session/${session.id}`, { method: 'DELETE', credentials: 'include' });
                     }
                 }
                 let container = document.getElementById('chatMessages');
                 if (container) container.innerHTML = '';
                 addSystemMessage('🗑️ All chat history cleared.');
-                loadSessions();
+                await loadSessions();
                 showNotification('All history cleared', 'success');
             } catch (error) {
                 showNotification('Failed to clear history', 'error');
@@ -1459,8 +1322,7 @@
         if (!container) return;
         let div = document.createElement('div');
         div.className = `message ${type}-message`;
-        let sanitizedText = sanitizeHTML(text);
-        div.innerHTML = `<div class="message-content">${sanitizedText.replace(/\n/g, '<br>')}</div><div class="message-meta"><span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`;
+        div.innerHTML = `<div class="message-content">${text.replace(/\n/g, '<br>')}</div><div class="message-meta"><span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     }
@@ -1483,7 +1345,7 @@
         loadModel();
         checkLoginStatus();
         
-        // Close modals when clicking outside
+        // Close modal when clicking outside
         window.onclick = function(event) {
             let modal = document.getElementById('settingsModal');
             if (event.target === modal) {
