@@ -923,41 +923,53 @@
     }
 
     // ==================== CHECK LOGIN STATUS ====================
-    async function checkLoginStatus() {
-        try {
-            let res = await fetch('/api/me', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
-            });
-            let data = await res.json();
-            if (data.success && data.user) {
-                currentUser = sanitizeHTML(data.user.name);
-                userEmail = sanitizeHTML(data.user.email);
-                
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('app').style.display = 'flex';
-                document.getElementById('userName').innerText = currentUser;
-                document.getElementById('userAvatar').innerText = currentUser.charAt(0).toUpperCase();
-                document.getElementById('input').disabled = false;
-                document.getElementById('sendBtn').disabled = false;
-                
-                // Load sessions after login
-                await loadSessions();
-                addSystemMessage(`Welcome back, ${currentUser}! JARVIS is ready.`);
-            } else {
-                document.getElementById('loginScreen').style.display = 'flex';
-                document.getElementById('app').style.display = 'none';
+ async function checkLoginStatus() {
+    try {
+        let res = await fetch('/api/me', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        });
+        let data = await res.json();
+        
+        // 🔥 FIX: Token save KARNE SE PEHLE data check karo
+        if (data.success && data.user) {
+            // Agar token response me aa raha hai toh save karo
+            if (data.token) {
+                localStorage.setItem('jwt_token', data.token);
             }
-        } catch (error) {
-            console.error('Login check failed:', error);
+            
+            currentUser = sanitizeHTML(data.user.name);
+            userEmail = sanitizeHTML(data.user.email);
+            
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            document.getElementById('userName').innerText = currentUser;
+            document.getElementById('userAvatar').innerText = currentUser.charAt(0).toUpperCase();
+            document.getElementById('input').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            
+            // Load sessions after login
+            await loadSessions();
+            
+            // 🔥 FIX: Agar session nahi bana toh naya banao
+            if (!currentSessionId) {
+                await createNewChat();
+            }
+            
+            addSystemMessage(`Welcome back, ${currentUser}! JARVIS is ready.`);
+        } else {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
         }
+    } catch (error) {
+        console.error('Login check failed:', error);
     }
+}
 
-    function logout() { 
-        window.location.href = '/logout';
-    }
-
+function logout() { 
+    window.location.href = '/logout';
+}
     // ==================== THEME & COLOR MANAGEMENT ====================
     function setTheme(theme) {
         if (theme === 'system') {
