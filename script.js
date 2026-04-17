@@ -1422,6 +1422,9 @@ const visualizer = CONFIG.features.webGL ? new Visualizer3D() : null;
 // Initialize application
 async function initializeApp() {
     try {
+        // Update loader status
+        updateLoaderProgress(100, 'JARVIS Core Online');
+        
         // Check login status
         const response = await api.getCurrentUser();
         
@@ -1436,13 +1439,16 @@ async function initializeApp() {
         console.error('Initialization error:', error);
         showLoginScreen();
     } finally {
-        // Hide loader
-        setTimeout(() => {
-            document.getElementById('initialLoader')?.classList.add('hidden');
-        }, 1000);
+        // Hide loader IMMEDIATELY
+        const loader = document.getElementById('initialLoader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
+        }
     }
 }
-
 async function onLoginSuccess() {
     // Hide login, show app
     document.getElementById('loginScreen').style.display = 'none';
