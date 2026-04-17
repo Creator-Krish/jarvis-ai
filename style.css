@@ -272,7 +272,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity var(--transition-slow), visibility var(--transition-slow);
+    transition: opacity 0.5s ease, visibility 0.5s ease;  /* ADD THIS LINE */
 }
 
 .cinematic-loader.hidden {
