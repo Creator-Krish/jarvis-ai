@@ -829,57 +829,154 @@ class ChatSessionRepository:
 # AI SERVICE (Strategy Pattern)
 # =============================
 # =============================
-# JARVIS Enterprise AI - Environment Variables
-# IMPORTANT: Never commit .env to GitHub!
+# CONFIGURATION & CONSTANTS
 # =============================
 
-# Application
-FLASK_ENV=production
-PORT=5000
-FRONTEND_URL=https://your-domain.com
-
-# Security (Use strong random strings)
-SECRET_KEY=your-secret-key-here
-JWT_SECRET=your-jwt-secret-here
-
-# Database (Render PostgreSQL)
-DB_HOST=your-db-host
-DB_NAME=your-db-name
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
-DB_PORT=5432
-
-# Redis (Optional)
-REDIS_URL=redis://your-redis-url
-
-# AI Model Keys
-DEEPSEEK_KEY=sk-your-deepseek-key
-GROQ_KEY=gsk_your-groq-key
-GEMINI_KEY=AIza_your-gemini-key
-OPENROUTER_KEY=sk-or-v1-your-openrouter-key
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_REDIRECT_URI=https://your-domain.com/login/callback
-
-# Feature Flags
-ENABLE_NLP=true
-ENABLE_OCR=true
-ENABLE_PDF=true
-ENABLE_VOICE=true
-
-# Rate Limiting
-RATE_LIMIT=10
-RATE_WINDOW=60
-
-# Upload
-MAX_CONTENT_LENGTH=10485760
-UPLOAD_FOLDER=/tmp/uploads
-
-# Logging
-LOG_FILE=jarvis.log
-LOG_LEVEL=INFO
+class Config:
+    """Centralized configuration management - Enterprise Grade"""
+    
+    # Application
+    APP_NAME = "JARVIS Enterprise AI"
+    VERSION = "3.1.0"
+    ENVIRONMENT = os.environ.get("FLASK_ENV", "production")
+    DEBUG = ENVIRONMENT != "production"
+    
+    # Server
+    PORT = int(os.environ.get("PORT", 5000))
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 10485760))  # 10MB
+    
+    # Security
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    JWT_SECRET = os.environ.get("JWT_SECRET")
+    JWT_ALGORITHM = "HS256"
+    JWT_EXPIRY_HOURS = 168  # 7 days
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    # Database - Render PostgreSQL
+    DB_HOST = os.environ.get("DB_HOST")
+    DB_PORT = int(os.environ.get("DB_PORT", 5432))
+    DB_USER = os.environ.get("DB_USER")
+    DB_PASSWORD = os.environ.get("DB_PASSWORD")
+    DB_NAME = os.environ.get("DB_NAME")
+    DB_MIN_CONNECTIONS = 2
+    DB_MAX_CONNECTIONS = 10  # Optimized for Render free tier
+    DB_CONNECT_TIMEOUT = 10
+    
+    # Redis (Optional - will use in-memory cache if not available)
+    REDIS_URL = os.environ.get("REDIS_URL")
+    
+    # Rate Limiting
+    RATE_LIMIT = int(os.environ.get("RATE_LIMIT", 10))
+    RATE_WINDOW = int(os.environ.get("RATE_WINDOW", 60))
+    RATE_LIMIT_MESSAGES = RATE_LIMIT
+    RATE_LIMIT_WINDOW = RATE_WINDOW
+    RATE_LIMIT_SESSIONS = 30
+    RATE_LIMIT_LOGIN = 5
+    
+    # AI Model Keys
+    DEEPSEEK_KEY = os.environ.get("DEEPSEEK_KEY")
+    GROQ_KEY = os.environ.get("GROQ_KEY")
+    GEMINI_KEY = os.environ.get("GEMINI_KEY")
+    OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
+    
+    # OpenRouter Configuration
+    OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+    
+    # Feature Flags
+    ENABLE_NLP = os.environ.get("ENABLE_NLP", "true").lower() == "true"
+    ENABLE_OCR = os.environ.get("ENABLE_OCR", "true").lower() == "true"
+    ENABLE_PDF = os.environ.get("ENABLE_PDF", "true").lower() == "true"
+    ENABLE_VOICE = os.environ.get("ENABLE_VOICE", "true").lower() == "true"
+    
+    # Google OAuth
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+    GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI")
+    
+    # URLs
+    PRODUCTION_DOMAIN = os.environ.get("FRONTEND_URL", "https://jarvis-e76i.onrender.com")
+    if not GOOGLE_REDIRECT_URI:
+        GOOGLE_REDIRECT_URI = f"{PRODUCTION_DOMAIN}/login/callback"
+    
+    # Upload
+    UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/tmp/uploads")
+    
+    # Logging
+    LOG_FILE = os.environ.get("LOG_FILE", "jarvis.log")
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+    
+    # Content Limits
+    MAX_MESSAGE_LENGTH = 5000
+    MAX_SESSION_TITLE_LENGTH = 100
+    
+    # AI Model Fallback Order
+    AI_FALLBACK_ORDER = ["deepseek", "groq", "gemini", "openrouter"]
+    
+    # Model-specific settings
+    AI_MODELS = {
+        "deepseek": {
+            "model": "deepseek-chat",
+            "max_tokens": 2048,
+            "temperature": 0.7,
+            "timeout": 30
+        },
+        "groq": {
+            "primary_model": "llama3-70b-8192",
+            "fallback_model": "mixtral-8x7b-32768",
+            "max_tokens": 2048,
+            "temperature": 0.7,
+            "timeout": 15
+        },
+        "gemini": {
+            "model": "gemini-pro",
+            "max_tokens": 2048,
+            "temperature": 0.7,
+            "timeout": 30
+        },
+        "openrouter": {
+            "primary_models": [
+                "anthropic/claude-3.5-sonnet",
+                "anthropic/claude-3-opus",
+                "openai/gpt-4-turbo",
+                "meta-llama/llama-3.1-405b-instruct",
+                "google/gemini-pro-1.5"
+            ],
+            "fallback_models": [
+                "anthropic/claude-3-sonnet",
+                "openai/gpt-4",
+                "meta-llama/llama-3.1-70b-instruct",
+                "mistralai/mixtral-8x22b-instruct"
+            ],
+            "budget_models": [
+                "openai/gpt-3.5-turbo",
+                "meta-llama/llama-3.1-8b-instruct",
+                "google/gemma-2-9b-it"
+            ],
+            "max_tokens": 2048,
+            "temperature": 0.7,
+            "timeout": 45
+        }
+    }
+    
+    @classmethod
+    def validate(cls):
+        """Validate required configuration"""
+        required = ['SECRET_KEY', 'JWT_SECRET']
+        missing = [key for key in required if not getattr(cls, key)]
+        if missing:
+            raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+        
+        # Log configuration status (without exposing values)
+        logger.info(f"Configuration loaded for {cls.APP_NAME} v{cls.VERSION}")
+        logger.info(f"Environment: {cls.ENVIRONMENT}")
+        logger.info(f"Database: {cls.DB_HOST}:{cls.DB_PORT}/{cls.DB_NAME}")
+        logger.info(f"Redis: {'Configured' if cls.REDIS_URL else 'Using fallback cache'}")
+        logger.info(f"AI Models: DeepSeek={'✅' if cls.DEEPSEEK_KEY else '❌'} | Groq={'✅' if cls.GROQ_KEY else '❌'} | Gemini={'✅' if cls.GEMINI_KEY else '❌'} | OpenRouter={'✅' if cls.OPENROUTER_KEY else '❌'}")
+        logger.info(f"Features: NLP={'✅' if cls.ENABLE_NLP else '❌'} | OCR={'✅' if cls.ENABLE_OCR else '❌'} | PDF={'✅' if cls.ENABLE_PDF else '❌'} | Voice={'✅' if cls.ENABLE_VOICE else '❌'}")
+        logger.info(f"OAuth: {'✅' if cls.GOOGLE_CLIENT_ID else '❌'}")
+        logger.info(f"Rate Limiting: {cls.RATE_LIMIT} requests/{cls.RATE_WINDOW}s")
 # =============================
 # FLASK APP CONFIGURATION
 # =============================
