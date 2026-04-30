@@ -828,146 +828,58 @@ class ChatSessionRepository:
 # =============================
 # AI SERVICE (Strategy Pattern)
 # =============================
+# =============================
+# JARVIS Enterprise AI - Environment Variables
+# IMPORTANT: Never commit .env to GitHub!
+# =============================
 
-class AIServiceStrategy:
-    """Base strategy for AI models"""
-    def generate(self, prompt: str) -> Optional[str]:
-        raise NotImplementedError
+# Application
+FLASK_ENV=production
+PORT=5000
+FRONTEND_URL=https://your-domain.com
 
-class DeepSeekStrategy(AIServiceStrategy):
-    """DeepSeek AI strategy"""
-    def generate(self, prompt: str) -> Optional[str]:
-        if not Config.DEEPSEEK_KEY:
-            return None
-        try:
-            headers = {
-                "Authorization": f"Bearer {Config.DEEPSEEK_KEY}",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "model": "deepseek-chat",
-                "messages": [
-                    {"role": "system", "content": "You are JARVIS, an advanced AI assistant built by Krish Paliwal. Be helpful, accurate, and professional."},
-                    {"role": "user", "content": prompt[:4000]}
-                ],
-                "max_tokens": 2048,
-                "temperature": 0.7,
-                "stream": False
-            }
-            res = requests.post(
-                "https://api.deepseek.com/v1/chat/completions",
-                json=data, headers=headers, timeout=30
-            )
-            if res.status_code == 200:
-                return res.json()['choices'][0]['message']['content']
-            logger.warning(f"DeepSeek API error: {res.status_code}")
-            return None
-        except Exception as e:
-            logger.error(f"DeepSeek exception: {e}")
-            return None
+# Security (Use strong random strings)
+SECRET_KEY=your-secret-key-here
+JWT_SECRET=your-jwt-secret-here
 
-class GroqStrategy(AIServiceStrategy):
-    """Groq AI strategy"""
-    def generate(self, prompt: str) -> Optional[str]:
-        if not Config.GROQ_KEY:
-            return None
-        try:
-            headers = {
-                "Authorization": f"Bearer {Config.GROQ_KEY}",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "model": "llama3-70b-8192",
-                "messages": [
-                    {"role": "system", "content": "You are JARVIS, an advanced AI assistant built by Krish Paliwal. Be helpful, accurate, and professional."},
-                    {"role": "user", "content": prompt[:4000]}
-                ],
-                "max_tokens": 2048,
-                "temperature": 0.7
-            }
-            res = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                json=data, headers=headers, timeout=30
-            )
-            if res.status_code == 200:
-                return res.json()['choices'][0]['message']['content']
-            logger.warning(f"Groq API error: {res.status_code}")
-            return None
-        except Exception as e:
-            logger.error(f"Groq exception: {e}")
-            return None
+# Database (Render PostgreSQL)
+DB_HOST=your-db-host
+DB_NAME=your-db-name
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+DB_PORT=5432
 
-class GeminiStrategy(AIServiceStrategy):
-    """Gemini AI strategy"""
-    def generate(self, prompt: str) -> Optional[str]:
-        if not Config.GEMINI_KEY:
-            return None
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=Config.GEMINI_KEY)
-            model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(
-                f"You are JARVIS, an advanced AI assistant built by Krish Paliwal. Be helpful, accurate, and professional.\n\nUser: {prompt[:3000]}",
-                generation_config={"temperature": 0.7, "max_output_tokens": 2048}
-            )
-            return response.text
-        except Exception as e:
-            logger.error(f"Gemini exception: {e}")
-            return None
+# Redis (Optional)
+REDIS_URL=redis://your-redis-url
 
-class AIService:
-    """AI Service with fallback strategy"""
-    
-    def __init__(self):
-        self.strategies = OrderedDict([
-            ('deepseek', DeepSeekStrategy()),
-            ('groq', GroqStrategy()),
-            ('gemini', GeminiStrategy())
-        ])
-    
-    def generate_response(self, prompt: str, preferred_model: str = None) -> Tuple[str, str, float]:
-        """
-        Generate AI response
-        Returns: (response, model_used, response_time)
-        """
-        start_time = time.time()
-        
-        # Sanitize prompt
-        prompt = SecurityValidator.sanitize_input(prompt, Config.MAX_MESSAGE_LENGTH)
-        
-        # Check for spam
-        if SecurityValidator.is_spam(prompt):
-            return "I notice your message seems repetitive. Could you please rephrase your question more clearly?", "fallback", 0
-        
-        strategies_to_try = self.strategies.copy()
-        
-        # Try preferred model first if specified
-        if preferred_model and preferred_model in strategies_to_try:
-            strategy = strategies_to_try.pop(preferred_model)
-            response = strategy.generate(prompt)
-            if response:
-                response_time = time.time() - start_time
-                logger.info(f"AI response from {preferred_model}: {response_time:.2f}s")
-                return response, preferred_model, round(response_time, 2)
-        
-        # Try remaining strategies
-        for model_name, strategy in strategies_to_try.items():
-            response = strategy.generate(prompt)
-            if response:
-                response_time = time.time() - start_time
-                logger.info(f"AI response from {model_name}: {response_time:.2f}s")
-                return response, model_name, round(response_time, 2)
-        
-        # All strategies failed
-        logger.error("All AI strategies failed")
-        return (
-            "I apologize, but I'm currently experiencing high demand. Our systems are temporarily unavailable. Please try again in a moment.",
-            "fallback",
-            round(time.time() - start_time, 2)
-        )
+# AI Model Keys
+DEEPSEEK_KEY=sk-your-deepseek-key
+GROQ_KEY=gsk_your-groq-key
+GEMINI_KEY=AIza_your-gemini-key
+OPENROUTER_KEY=sk-or-v1-your-openrouter-key
 
-ai_service = AIService()
+# Google OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=https://your-domain.com/login/callback
 
+# Feature Flags
+ENABLE_NLP=true
+ENABLE_OCR=true
+ENABLE_PDF=true
+ENABLE_VOICE=true
+
+# Rate Limiting
+RATE_LIMIT=10
+RATE_WINDOW=60
+
+# Upload
+MAX_CONTENT_LENGTH=10485760
+UPLOAD_FOLDER=/tmp/uploads
+
+# Logging
+LOG_FILE=jarvis.log
+LOG_LEVEL=INFO
 # =============================
 # FLASK APP CONFIGURATION
 # =============================
