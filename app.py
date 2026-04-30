@@ -1,820 +1,1663 @@
-from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, g
+"""
+JARVIS Enterprise AI Backend
+Production-Grade Engineering by Krish Paliwal
+Version: 3.1.0 Enterprise
+
+Architecture Pattern: Layered Architecture + Repository Pattern + Service Pattern
+Security: JWT + Rate Limiting + CSP + CORS + Input Validation + SQL Injection Prevention
+Performance: Connection Pooling + Redis Caching + Async Ready + Query Optimization
+"""
+
+from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, g, make_response
 from flask_cors import CORS
 import psycopg2.extras
 import psycopg2
-from psycopg2 import pool
+from psycopg2 import pool, sql
 import os
 import time
 import requests
 import secrets
 import logging
 import sys
+import json
+import hashlib
+import hmac
 from functools import wraps
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import redis
+from urllib.parse import urlencode, urlparse, parse_qs
+import re
+from typing import Optional, Dict, Any, List, Tuple
+from dataclasses import dataclass, asdict
 
 # =============================
-# LOGGING SETUP (Prevent spam)
+# CONFIGURATION & CONSTANTS
 # =============================
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('jarvis.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-# Suppress werkzeug logs
-logging.getLogger("werkzeug").setLevel(logging.WARNING)
-logger = logging.getLogger(__name__)
+
+class Config:
+    """Centralized configuration management"""
+    
+    # Application
+    APP_NAME = "JARVIS Enterprise AI"
+    VERSION = "3.1.0"
+    ENVIRONMENT = os.environ.get("FLASK_ENV", "production")
+    DEBUG = ENVIRONMENT != "production"
+    
+    # Security
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    JWT_SECRET = os.environ.get("JWT_SECRET")
+    JWT_ALGORITHM = "HS256"
+    JWT_EXPIRY_HOURS = 168  # 7 days
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    # Database
+    DB_HOST = os.environ.get("DB_HOST", "localhost")
+    DB_PORT = int(os.environ.get("DB_PORT", "5432"))
+    DB_USER = os.environ.get("DB_USER", "postgres")
+    DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
+    DB_NAME = os.environ.get("DB_NAME", "jarvis_db")
+    DB_MIN_CONNECTIONS = 2
+    DB_MAX_CONNECTIONS = 20
+    
+    # Redis
+    REDIS_URL = os.environ.get("REDIS_URL")
+    
+    # Rate Limiting
+    RATE_LIMIT_MESSAGES = 10  # messages per window
+    RATE_LIMIT_WINDOW = 60    # seconds
+    RATE_LIMIT_SESSIONS = 30
+    RATE_LIMIT_LOGIN = 5
+    
+    # AI Models
+    DEEPSEEK_KEY = os.environ.get("DEEPSEEK_KEY")
+    GROQ_KEY = os.environ.get("GROQ_KEY")
+    GEMINI_KEY = os.environ.get("GEMINI_KEY")
+    
+    # Google OAuth
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+    
+    # URLs
+    PRODUCTION_DOMAIN = os.environ.get("FRONTEND_URL", "https://jarvis-e76i.onrender.com")
+    GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", f"{PRODUCTION_DOMAIN}/login/callback")
+    
+    # Content Limits
+    MAX_MESSAGE_LENGTH = 5000
+    MAX_SESSION_TITLE_LENGTH = 100
+    
+    @classmethod
+    def validate(cls):
+        """Validate required configuration"""
+        required = ['SECRET_KEY', 'JWT_SECRET']
+        missing = [key for key in required if not getattr(cls, key)]
+        if missing:
+            raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+
+# =============================
+# LOGGING CONFIGURATION
+# =============================
+
+class LoggerFactory:
+    """Factory for creating configured loggers"""
+    
+    @staticmethod
+    def get_logger(name: str) -> logging.Logger:
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.INFO)
+        
+        if not logger.handlers:
+            # File handler
+            file_handler = logging.FileHandler('jarvis.log')
+            file_handler.setLevel(logging.INFO)
+            file_formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+            )
+            file_handler.setFormatter(file_formatter)
+            
+            # Console handler
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setLevel(logging.WARNING if Config.ENVIRONMENT == 'production' else logging.INFO)
+            console_formatter = logging.Formatter(
+                '%(asctime)s - %(levelname)s - %(message)s'
+            )
+            console_handler.setFormatter(console_formatter)
+            
+            logger.addHandler(file_handler)
+            logger.addHandler(console_handler)
+        
+        return logger
+
+logger = LoggerFactory.get_logger(__name__)
+
+# =============================
+# DATA TRANSFER OBJECTS
+# =============================
+
+@dataclass
+class UserDTO:
+    """User Data Transfer Object"""
+    id: int
+    google_id: str
+    email: str
+    display_name: str
+    avatar_url: Optional[str]
+    is_admin: bool
+    created_at: datetime
+    last_login: Optional[datetime]
+    total_logins: int
+
+@dataclass
+class SessionDTO:
+    """Chat Session Data Transfer Object"""
+    id: int
+    user_id: int
+    title: str
+    created_at: datetime
+    updated_at: datetime
+
+@dataclass
+class MessageDTO:
+    """Message Data Transfer Object"""
+    id: int
+    session_id: int
+    role: str
+    content: str
+    model_used: Optional[str]
+    created_at: datetime
+
+# =============================
+# DATABASE CONNECTION POOL (Singleton Pattern)
+# =============================
+
+class DatabasePool:
+    """Thread-safe database connection pool singleton"""
+    _instance = None
+    _pool = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def initialize(self):
+        """Initialize the connection pool"""
+        if self._pool is None:
+            try:
+                self._pool = pool.ThreadedConnectionPool(
+                    Config.DB_MIN_CONNECTIONS,
+                    Config.DB_MAX_CONNECTIONS,
+                    host=Config.DB_HOST,
+                    port=Config.DB_PORT,
+                    user=Config.DB_USER,
+                    password=Config.DB_PASSWORD,
+                    database=Config.DB_NAME,
+                    connect_timeout=10,
+                    keepalives=1,
+                    keepalives_idle=30,
+                    keepalives_interval=10,
+                    keepalives_count=5
+                )
+                logger.info(f"✅ Database pool initialized ({Config.DB_MIN_CONNECTIONS}-{Config.DB_MAX_CONNECTIONS} connections)")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize database pool: {e}")
+                raise
+    
+    def get_connection(self):
+        """Get a connection from the pool"""
+        if self._pool is None:
+            self.initialize()
+        try:
+            return self._pool.getconn()
+        except pool.PoolError:
+            logger.warning("Connection pool exhausted, creating new connection")
+            return psycopg2.connect(
+                host=Config.DB_HOST,
+                port=Config.DB_PORT,
+                user=Config.DB_USER,
+                password=Config.DB_PASSWORD,
+                database=Config.DB_NAME,
+                connect_timeout=10
+            )
+    
+    def return_connection(self, conn):
+        """Return a connection to the pool"""
+        if self._pool:
+            try:
+                self._pool.putconn(conn)
+            except pool.PoolError:
+                conn.close()
+        else:
+            conn.close()
+    
+    def close_all(self):
+        """Close all connections"""
+        if self._pool:
+            self._pool.closeall()
+            self._pool = None
+
+db_pool = DatabasePool()
+
+# =============================
+# REDIS CACHE (Singleton Pattern)
+# =============================
+
+class RedisCache:
+    """Redis cache singleton with fallback"""
+    _instance = None
+    _client = None
+    _fallback = {}
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def initialize(self):
+        """Initialize Redis connection"""
+        if Config.REDIS_URL:
+            try:
+                self._client = redis.from_url(
+                    Config.REDIS_URL,
+                    decode_responses=True,
+                    socket_timeout=5,
+                    socket_connect_timeout=5,
+                    retry_on_timeout=True
+                )
+                self._client.ping()
+                logger.info("✅ Redis cache connected")
+            except Exception as e:
+                logger.warning(f"⚠️ Redis unavailable, using in-memory cache: {e}")
+                self._client = None
+    
+    def get(self, key: str) -> Optional[str]:
+        """Get value from cache"""
+        if self._client:
+            try:
+                return self._client.get(key)
+            except redis.RedisError:
+                return self._fallback.get(key)
+        return self._fallback.get(key)
+    
+    def set(self, key: str, value: str, expiry: int = 300):
+        """Set value in cache"""
+        if self._client:
+            try:
+                self._client.setex(key, expiry, value)
+            except redis.RedisError:
+                self._fallback[key] = value
+        else:
+            self._fallback[key] = value
+    
+    def delete(self, key: str):
+        """Delete value from cache"""
+        if self._client:
+            try:
+                self._client.delete(key)
+            except redis.RedisError:
+                self._fallback.pop(key, None)
+        else:
+            self._fallback.pop(key, None)
+    
+    def increment(self, key: str, expiry: int = 60) -> int:
+        """Increment counter"""
+        if self._client:
+            try:
+                pipe = self._client.pipeline()
+                pipe.incr(key)
+                pipe.expire(key, expiry)
+                result = pipe.execute()
+                return result[0]
+            except redis.RedisError:
+                current = int(self._fallback.get(key, 0)) + 1
+                self._fallback[key] = current
+                return current
+        else:
+            current = int(self._fallback.get(key, 0)) + 1
+            self._fallback[key] = current
+            return current
+
+redis_cache = RedisCache()
+
+# =============================
+# SECURITY: Input Validation & Sanitization
+# =============================
+
+class SecurityValidator:
+    """Input validation and sanitization utilities"""
+    
+    # Regex patterns
+    EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    SAFE_STRING_PATTERN = re.compile(r'^[a-zA-Z0-9\s\-_.,!?@#$%^&*()+=:;\'\"\[\]{}|\\/~`]+$')
+    
+    @staticmethod
+    def sanitize_input(text: str, max_length: int = 5000) -> str:
+        """Sanitize user input"""
+        if not text:
+            return ""
+        
+        # Remove null bytes
+        text = text.replace('\x00', '')
+        
+        # Remove control characters except newlines and tabs
+        text = ''.join(char for char in text if char == '\n' or char == '\t' or ord(char) >= 32)
+        
+        # Truncate to max length
+        if len(text) > max_length:
+            text = text[:max_length]
+        
+        # Remove HTML tags
+        text = re.sub(r'<[^>]*>', '', text)
+        
+        # Remove potential script injections
+        text = text.replace('javascript:', '')
+        text = text.replace('onerror=', '')
+        text = text.replace('onload=', '')
+        
+        return text.strip()
+    
+    @staticmethod
+    def validate_email(email: str) -> bool:
+        """Validate email format"""
+        return bool(SecurityValidator.EMAIL_PATTERN.match(email))
+    
+    @staticmethod
+    def is_spam(text: str) -> bool:
+        """Basic spam detection"""
+        if len(text) < 2:
+            return True
+        
+        words = text.split()
+        
+        # Check for repeated characters
+        for word in words:
+            if len(word) > 10 and len(set(word)) < 3:
+                return True
+        
+        # Check for excessive repetition
+        if len(words) > 5 and len(set(words)) < 3:
+            return True
+        
+        return False
+    
+    @staticmethod
+    def generate_csrf_token() -> str:
+        """Generate CSRF token"""
+        return secrets.token_hex(32)
+
+# =============================
+# RATE LIMITER (Token Bucket Algorithm)
+# =============================
+
+class RateLimiter:
+    """Token bucket rate limiter with Redis support"""
+    
+    def __init__(self):
+        self.cache = redis_cache
+        self.local_buckets = defaultdict(lambda: {'tokens': 0, 'last_refill': time.time()})
+    
+    def is_allowed(self, key: str, limit: int = 10, window: int = 60) -> Tuple[bool, int]:
+        """
+        Check if request is allowed
+        Returns: (is_allowed, remaining_tokens)
+        """
+        current_time = time.time()
+        
+        # Try Redis first
+        redis_key = f"rate_limit:{key}"
+        current = self.cache.get(redis_key)
+        
+        if current is not None:
+            tokens = int(current)
+            if tokens >= limit:
+                return False, 0
+            
+            new_tokens = self.cache.increment(redis_key, window)
+            remaining = limit - new_tokens
+            return True, max(0, remaining)
+        
+        # Fallback to local bucket
+        bucket = self.local_buckets[key]
+        time_passed = current_time - bucket['last_refill']
+        
+        # Refill tokens (1 token per window/limit seconds)
+        refill_rate = window / limit
+        tokens_to_add = time_passed / refill_rate
+        bucket['tokens'] = min(limit, bucket['tokens'] + tokens_to_add)
+        bucket['last_refill'] = current_time
+        
+        if bucket['tokens'] >= 1:
+            bucket['tokens'] -= 1
+            remaining = int(bucket['tokens'])
+            return True, remaining
+        
+        return False, 0
+
+rate_limiter = RateLimiter()
+
+# =============================
+# JWT AUTHENTICATION SERVICE
+# =============================
+
+class JWTService:
+    """JWT token management service"""
+    
+    @staticmethod
+    def create_token(user_id: int, email: str, is_admin: bool = False) -> str:
+        """Create JWT token"""
+        payload = {
+            'user_id': user_id,
+            'email': email,
+            'is_admin': is_admin,
+            'exp': datetime.now(timezone.utc) + timedelta(hours=Config.JWT_EXPIRY_HOURS),
+            'iat': datetime.now(timezone.utc),
+            'jti': secrets.token_hex(16)
+        }
+        return jwt.encode(payload, Config.JWT_SECRET, algorithm=Config.JWT_ALGORITHM)
+    
+    @staticmethod
+    def verify_token(token: str) -> Optional[Dict]:
+        """Verify JWT token"""
+        try:
+            payload = jwt.decode(
+                token, 
+                Config.JWT_SECRET, 
+                algorithms=[Config.JWT_ALGORITHM],
+                options={'verify_exp': True}
+            )
+            return payload
+        except jwt.ExpiredSignatureError:
+            logger.warning("JWT token expired")
+            return None
+        except jwt.InvalidTokenError as e:
+            logger.warning(f"Invalid JWT token: {e}")
+            return None
+    
+    @staticmethod
+    def refresh_token(token: str) -> Optional[str]:
+        """Refresh JWT token if valid but expiring soon"""
+        payload = JWTService.verify_token(token)
+        if not payload:
+            return None
+        
+        # Refresh if less than 24 hours remaining
+        exp = datetime.fromtimestamp(payload['exp'], tz=timezone.utc)
+        if exp - datetime.now(timezone.utc) < timedelta(hours=24):
+            return JWTService.create_token(
+                payload['user_id'],
+                payload['email'],
+                payload.get('is_admin', False)
+            )
+        
+        return token
+
+# =============================
+# USER REPOSITORY (Repository Pattern)
+# =============================
+
+class UserRepository:
+    """Data access layer for users"""
+    
+    @staticmethod
+    def find_by_google_id(google_id: str) -> Optional[UserDTO]:
+        """Find user by Google ID"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, google_id, email, display_name, avatar_url, 
+                           is_admin, created_at, last_login, total_logins
+                    FROM users 
+                    WHERE google_id = %s
+                """, (google_id,))
+                row = cur.fetchone()
+                return UserDTO(**row) if row else None
+        except Exception as e:
+            logger.error(f"Error finding user by Google ID: {e}")
+            return None
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def find_by_email(email: str) -> Optional[UserDTO]:
+        """Find user by email"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, google_id, email, display_name, avatar_url, 
+                           is_admin, created_at, last_login, total_logins
+                    FROM users 
+                    WHERE email = %s
+                """, (email,))
+                row = cur.fetchone()
+                return UserDTO(**row) if row else None
+        except Exception as e:
+            logger.error(f"Error finding user by email: {e}")
+            return None
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def find_by_id(user_id: int) -> Optional[UserDTO]:
+        """Find user by ID"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, google_id, email, display_name, avatar_url, 
+                           is_admin, created_at, last_login, total_logins
+                    FROM users 
+                    WHERE id = %s
+                """, (user_id,))
+                row = cur.fetchone()
+                return UserDTO(**row) if row else None
+        except Exception as e:
+            logger.error(f"Error finding user by ID: {e}")
+            return None
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def create_or_update(google_id: str, email: str, display_name: str, avatar_url: str) -> UserDTO:
+        """Create or update user"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                # Try to find existing user
+                cur.execute("""
+                    SELECT id FROM users 
+                    WHERE google_id = %s OR email = %s
+                """, (google_id, email))
+                existing = cur.fetchone()
+                
+                if existing:
+                    # Update existing user
+                    cur.execute("""
+                        UPDATE users 
+                        SET display_name = %s, avatar_url = %s, 
+                            last_login = NOW(), total_logins = total_logins + 1
+                        WHERE id = %s
+                        RETURNING id, google_id, email, display_name, avatar_url, 
+                                  is_admin, created_at, last_login, total_logins
+                    """, (display_name, avatar_url, existing['id']))
+                else:
+                    # Create new user
+                    cur.execute("""
+                        INSERT INTO users (google_id, email, display_name, avatar_url)
+                        VALUES (%s, %s, %s, %s)
+                        RETURNING id, google_id, email, display_name, avatar_url, 
+                                  is_admin, created_at, last_login, total_logins
+                    """, (google_id, email, display_name, avatar_url))
+                
+                row = cur.fetchone()
+                conn.commit()
+                return UserDTO(**row)
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error creating/updating user: {e}")
+            raise
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def update_session_token(user_id: int, token: str):
+        """Update user's session token"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE users SET session_token = %s WHERE id = %s
+                """, (token, user_id))
+                conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error updating session token: {e}")
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def log_login(user_id: int, email: str, ip: str, user_agent: str, success: bool = True, error: str = None):
+        """Log login attempt"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO login_logs (user_id, email, ip_address, user_agent, success, error_message)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (user_id, email, ip, user_agent, success, error))
+                conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error logging login: {e}")
+        finally:
+            db_pool.return_connection(conn)
+
+# =============================
+# CHAT SESSION REPOSITORY
+# =============================
+
+class ChatSessionRepository:
+    """Data access layer for chat sessions"""
+    
+    @staticmethod
+    def get_user_sessions(user_id: int, page: int = 1, per_page: int = 20) -> Tuple[List[SessionDTO], int]:
+        """Get paginated sessions for user"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                # Get total count
+                cur.execute("SELECT COUNT(*) as total FROM chat_sessions WHERE user_id = %s", (user_id,))
+                total = cur.fetchone()['total']
+                
+                # Get paginated results
+                offset = (page - 1) * per_page
+                cur.execute("""
+                    SELECT id, user_id, title, created_at, updated_at
+                    FROM chat_sessions 
+                    WHERE user_id = %s 
+                    ORDER BY updated_at DESC 
+                    LIMIT %s OFFSET %s
+                """, (user_id, per_page, offset))
+                
+                sessions = [SessionDTO(**row) for row in cur.fetchall()]
+                return sessions, total
+        except Exception as e:
+            logger.error(f"Error getting user sessions: {e}")
+            return [], 0
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def create_session(user_id: int, title: str = "New Chat") -> SessionDTO:
+        """Create new chat session"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                title = SecurityValidator.sanitize_input(title, Config.MAX_SESSION_TITLE_LENGTH)
+                cur.execute("""
+                    INSERT INTO chat_sessions (user_id, title)
+                    VALUES (%s, %s)
+                    RETURNING id, user_id, title, created_at, updated_at
+                """, (user_id, title))
+                row = cur.fetchone()
+                conn.commit()
+                return SessionDTO(**row)
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error creating session: {e}")
+            raise
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def get_session(session_id: int, user_id: int) -> Optional[SessionDTO]:
+        """Get session by ID with ownership check"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, user_id, title, created_at, updated_at
+                    FROM chat_sessions 
+                    WHERE id = %s AND user_id = %s
+                """, (session_id, user_id))
+                row = cur.fetchone()
+                return SessionDTO(**row) if row else None
+        except Exception as e:
+            logger.error(f"Error getting session: {e}")
+            return None
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def delete_session(session_id: int, user_id: int) -> bool:
+        """Delete session with ownership check"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    DELETE FROM chat_sessions 
+                    WHERE id = %s AND user_id = %s
+                """, (session_id, user_id))
+                deleted = cur.rowcount > 0
+                conn.commit()
+                return deleted
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error deleting session: {e}")
+            return False
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def update_title(session_id: int, title: str):
+        """Update session title"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor() as cur:
+                title = SecurityValidator.sanitize_input(title, Config.MAX_SESSION_TITLE_LENGTH)
+                cur.execute("""
+                    UPDATE chat_sessions SET title = %s, updated_at = NOW()
+                    WHERE id = %s
+                """, (title, session_id))
+                conn.commit()
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error updating session title: {e}")
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def get_messages(session_id: int, user_id: int, page: int = 1, per_page: int = 50) -> Tuple[List[MessageDTO], int]:
+        """Get paginated messages for session"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                # Verify ownership
+                cur.execute("SELECT id FROM chat_sessions WHERE id = %s AND user_id = %s", (session_id, user_id))
+                if not cur.fetchone():
+                    return [], 0
+                
+                # Get total count
+                cur.execute("SELECT COUNT(*) as total FROM messages WHERE session_id = %s", (session_id,))
+                total = cur.fetchone()['total']
+                
+                # Get paginated results
+                offset = (page - 1) * per_page
+                cur.execute("""
+                    SELECT id, session_id, role, content, model_used, created_at
+                    FROM messages 
+                    WHERE session_id = %s 
+                    ORDER BY created_at ASC 
+                    LIMIT %s OFFSET %s
+                """, (session_id, per_page, offset))
+                
+                messages = [MessageDTO(**row) for row in cur.fetchall()]
+                return messages, total
+        except Exception as e:
+            logger.error(f"Error getting messages: {e}")
+            return [], 0
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def add_message(session_id: int, role: str, content: str, model_used: str = None) -> MessageDTO:
+        """Add message to session"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                content = SecurityValidator.sanitize_input(content, Config.MAX_MESSAGE_LENGTH)
+                cur.execute("""
+                    INSERT INTO messages (session_id, role, content, model_used)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id, session_id, role, content, model_used, created_at
+                """, (session_id, role, content, model_used))
+                
+                # Update session timestamp
+                cur.execute("UPDATE chat_sessions SET updated_at = NOW() WHERE id = %s", (session_id,))
+                
+                row = cur.fetchone()
+                conn.commit()
+                return MessageDTO(**row)
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error adding message: {e}")
+            raise
+        finally:
+            db_pool.return_connection(conn)
+    
+    @staticmethod
+    def get_message_count(session_id: int) -> int:
+        """Get message count for session"""
+        conn = db_pool.get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM messages WHERE session_id = %s", (session_id,))
+                return cur.fetchone()[0]
+        except Exception as e:
+            logger.error(f"Error getting message count: {e}")
+            return 0
+        finally:
+            db_pool.return_connection(conn)
+
+# =============================
+# AI SERVICE (Strategy Pattern)
+# =============================
+
+class AIServiceStrategy:
+    """Base strategy for AI models"""
+    def generate(self, prompt: str) -> Optional[str]:
+        raise NotImplementedError
+
+class DeepSeekStrategy(AIServiceStrategy):
+    """DeepSeek AI strategy"""
+    def generate(self, prompt: str) -> Optional[str]:
+        if not Config.DEEPSEEK_KEY:
+            return None
+        try:
+            headers = {
+                "Authorization": f"Bearer {Config.DEEPSEEK_KEY}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": "deepseek-chat",
+                "messages": [
+                    {"role": "system", "content": "You are JARVIS, an advanced AI assistant built by Krish Paliwal. Be helpful, accurate, and professional."},
+                    {"role": "user", "content": prompt[:4000]}
+                ],
+                "max_tokens": 2048,
+                "temperature": 0.7,
+                "stream": False
+            }
+            res = requests.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                json=data, headers=headers, timeout=30
+            )
+            if res.status_code == 200:
+                return res.json()['choices'][0]['message']['content']
+            logger.warning(f"DeepSeek API error: {res.status_code}")
+            return None
+        except Exception as e:
+            logger.error(f"DeepSeek exception: {e}")
+            return None
+
+class GroqStrategy(AIServiceStrategy):
+    """Groq AI strategy"""
+    def generate(self, prompt: str) -> Optional[str]:
+        if not Config.GROQ_KEY:
+            return None
+        try:
+            headers = {
+                "Authorization": f"Bearer {Config.GROQ_KEY}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": "llama3-70b-8192",
+                "messages": [
+                    {"role": "system", "content": "You are JARVIS, an advanced AI assistant built by Krish Paliwal. Be helpful, accurate, and professional."},
+                    {"role": "user", "content": prompt[:4000]}
+                ],
+                "max_tokens": 2048,
+                "temperature": 0.7
+            }
+            res = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                json=data, headers=headers, timeout=30
+            )
+            if res.status_code == 200:
+                return res.json()['choices'][0]['message']['content']
+            logger.warning(f"Groq API error: {res.status_code}")
+            return None
+        except Exception as e:
+            logger.error(f"Groq exception: {e}")
+            return None
+
+class GeminiStrategy(AIServiceStrategy):
+    """Gemini AI strategy"""
+    def generate(self, prompt: str) -> Optional[str]:
+        if not Config.GEMINI_KEY:
+            return None
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=Config.GEMINI_KEY)
+            model = genai.GenerativeModel('gemini-pro')
+            response = model.generate_content(
+                f"You are JARVIS, an advanced AI assistant built by Krish Paliwal. Be helpful, accurate, and professional.\n\nUser: {prompt[:3000]}",
+                generation_config={"temperature": 0.7, "max_output_tokens": 2048}
+            )
+            return response.text
+        except Exception as e:
+            logger.error(f"Gemini exception: {e}")
+            return None
+
+class AIService:
+    """AI Service with fallback strategy"""
+    
+    def __init__(self):
+        self.strategies = OrderedDict([
+            ('deepseek', DeepSeekStrategy()),
+            ('groq', GroqStrategy()),
+            ('gemini', GeminiStrategy())
+        ])
+    
+    def generate_response(self, prompt: str, preferred_model: str = None) -> Tuple[str, str, float]:
+        """
+        Generate AI response
+        Returns: (response, model_used, response_time)
+        """
+        start_time = time.time()
+        
+        # Sanitize prompt
+        prompt = SecurityValidator.sanitize_input(prompt, Config.MAX_MESSAGE_LENGTH)
+        
+        # Check for spam
+        if SecurityValidator.is_spam(prompt):
+            return "I notice your message seems repetitive. Could you please rephrase your question more clearly?", "fallback", 0
+        
+        strategies_to_try = self.strategies.copy()
+        
+        # Try preferred model first if specified
+        if preferred_model and preferred_model in strategies_to_try:
+            strategy = strategies_to_try.pop(preferred_model)
+            response = strategy.generate(prompt)
+            if response:
+                response_time = time.time() - start_time
+                logger.info(f"AI response from {preferred_model}: {response_time:.2f}s")
+                return response, preferred_model, round(response_time, 2)
+        
+        # Try remaining strategies
+        for model_name, strategy in strategies_to_try.items():
+            response = strategy.generate(prompt)
+            if response:
+                response_time = time.time() - start_time
+                logger.info(f"AI response from {model_name}: {response_time:.2f}s")
+                return response, model_name, round(response_time, 2)
+        
+        # All strategies failed
+        logger.error("All AI strategies failed")
+        return (
+            "I apologize, but I'm currently experiencing high demand. Our systems are temporarily unavailable. Please try again in a moment.",
+            "fallback",
+            round(time.time() - start_time, 2)
+        )
+
+ai_service = AIService()
+
+# =============================
+# FLASK APP CONFIGURATION
+# =============================
+
+# Validate configuration
+Config.validate()
 
 app = Flask(__name__, static_folder='.')
-
-# =============================
-# ENV VARIABLES (All required)
-# =============================
-SECRET_KEY = os.environ.get("SECRET_KEY")
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable is required")
-
-JWT_SECRET = os.environ.get("JWT_SECRET")
-if not JWT_SECRET:
-    raise ValueError("JWT_SECRET environment variable is required")
-
-app.secret_key = SECRET_KEY
-app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get("MAX_CONTENT_LENGTH", 10 * 1024 * 1024))
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Required for cross-site OAuth
+app.secret_key = Config.SECRET_KEY
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
+app.config['SESSION_COOKIE_SECURE'] = Config.SESSION_COOKIE_SECURE
+app.config['SESSION_COOKIE_HTTPONLY'] = Config.SESSION_COOKIE_HTTPONLY
+app.config['SESSION_COOKIE_SAMESITE'] = Config.SESSION_COOKIE_SAMESITE
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# =============================
-# CORS - RESTRICTED
-# =============================
-PRODUCTION_DOMAIN = os.environ.get("FRONTEND_URL", "https://jarvis-e76i.onrender.com")
-ALLOWED_ORIGINS = [PRODUCTION_DOMAIN]
+# CORS Configuration
+ALLOWED_ORIGINS = [Config.PRODUCTION_DOMAIN]
+if Config.ENVIRONMENT != 'production':
+    ALLOWED_ORIGINS.extend(["http://localhost:5000", "http://127.0.0.1:5000"])
 
-if os.environ.get("FLASK_ENV") != "production":
-    ALLOWED_ORIGINS.append("http://localhost:5000")
+CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True, methods=['GET', 'POST', 'PUT', 'DELETE'])
 
-CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
-
-# =============================
-# REDIS FOR RATE LIMITING
-# =============================
-redis_client = None
-REDIS_URL = os.environ.get("REDIS_URL")
-if REDIS_URL:
-    try:
-        redis_client = redis.from_url(REDIS_URL, decode_responses=True)
-        redis_client.ping()
-        logger.info("✅ Redis connected")
-    except Exception as e:
-        logger.warning(f"Redis connection failed: {e}")
-
-# Fallback rate limiting (in-memory)
-rate_limit_store = defaultdict(list)
-
-def is_rate_limited(user_id, ip, limit=5, window=60):
-    """Rate limiting with Redis fallback - 5 requests per minute"""
-    key = f"ratelimit:{user_id}:{ip}"
-    
-    if redis_client:
-        current = redis_client.get(key)
-        if current and int(current) >= limit:
-            return True
-        pipe = redis_client.pipeline()
-        pipe.incr(key)
-        pipe.expire(key, window)
-        pipe.execute()
-        return False
-    else:
-        now = time.time()
-        requests = rate_limit_store[key]
-        requests = [t for t in requests if now - t < window]
-        if len(requests) >= limit:
-            return True
-        requests.append(now)
-        rate_limit_store[key] = requests
-        return False
-
-def get_client_ip():
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0]
-    return request.remote_addr
+# Initialize services
+db_pool.initialize()
+redis_cache.initialize()
 
 # =============================
-# JWT AUTH (Single auth method)
+# AUTH DECORATOR
 # =============================
-JWT_EXPIRY_DAYS = 7
-
-def generate_token(user_id, email):
-    payload = {
-        'user_id': user_id,
-        'email': email,
-        'exp': datetime.utcnow() + timedelta(days=JWT_EXPIRY_DAYS),
-        'iat': datetime.utcnow()
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm='HS256')
-
-def verify_token(token):
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
-        return payload
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
-        return None
 
 def login_required(f):
+    """Decorator for protected routes"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Check Authorization header first
+        user = None
+        
+        # Check Authorization header (Bearer token)
         auth_header = request.headers.get('Authorization')
         if auth_header and auth_header.startswith('Bearer '):
             token = auth_header.split(' ')[1]
-            payload = verify_token(token)
+            payload = JWTService.verify_token(token)
             if payload:
-                g.user_id = payload['user_id']
-                g.user_email = payload['email']
-                return f(*args, **kwargs)
+                user = UserRepository.find_by_id(payload['user_id'])
         
-        # Fallback to session (for backward compatibility)
-        if 'user_id' in session:
-            conn = get_db_connection()
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute("SELECT session_token FROM users WHERE id = %s", (session['user_id'],))
-            result = cursor.fetchone()
-            cursor.close()
-            conn.close()
-            
-            if result and result['session_token'] == session.get('session_token'):
-                g.user_id = session['user_id']
-                g.user_email = session.get('user_email')
-                return f(*args, **kwargs)
+        # Fallback to session
+        if not user and 'user_id' in session:
+            user = UserRepository.find_by_id(session['user_id'])
+            if user:
+                # Verify session token matches
+                if user.session_token != session.get('session_token'):
+                    user = None
         
-        return jsonify({'success': False, 'error': 'Authentication required'}), 401
+        if not user:
+            return jsonify({'success': False, 'error': 'Authentication required', 'code': 'AUTH_REQUIRED'}), 401
+        
+        g.current_user = user
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+def admin_required(f):
+    """Decorator for admin routes"""
+    @wraps(f)
+    @login_required
+    def decorated_function(*args, **kwargs):
+        if not g.current_user.is_admin:
+            return jsonify({'success': False, 'error': 'Admin access required'}), 403
+        return f(*args, **kwargs)
     return decorated_function
 
 # =============================
-# DATABASE CONNECTION POOL
+# HELPER FUNCTIONS
 # =============================
-db_pool = None
 
-def init_db_pool():
-    global db_pool
-    try:
-        db_pool = psycopg2.pool.SimpleConnectionPool(
-            1, 10,
-            host=os.environ.get("DB_HOST", "localhost"),
-            port=os.environ.get("DB_PORT", "5432"),
-            user=os.environ.get("DB_USER", "postgres"),
-            password=os.environ.get("DB_PASSWORD", ""),
-            database=os.environ.get("DB_NAME", "jarvis_db"),
-            connect_timeout=10
-        )
-        logger.info("✅ Database connection pool initialized")
-    except Exception as e:
-        logger.error(f"Failed to create connection pool: {e}")
-        raise
+def get_client_ip() -> str:
+    """Get client IP address"""
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return request.remote_addr or '0.0.0.0'
 
-def get_db_connection():
-    if db_pool:
-        return db_pool.getconn()
-    # Fallback direct connection
-    return psycopg2.connect(
-        host=os.environ.get("DB_HOST", "localhost"),
-        port=os.environ.get("DB_PORT", "5432"),
-        user=os.environ.get("DB_USER", "postgres"),
-        password=os.environ.get("DB_PASSWORD", ""),
-        database=os.environ.get("DB_NAME", "jarvis_db"),
-        connect_timeout=10
-    )
+def check_rate_limit(key: str, limit: int, window: int) -> Tuple[bool, int]:
+    """Check rate limit"""
+    ip = get_client_ip()
+    rate_key = f"{key}:{ip}"
+    return rate_limiter.is_allowed(rate_key, limit, window)
 
-def return_db_connection(conn):
-    if db_pool:
-        db_pool.putconn(conn)
-    else:
-        conn.close()
+def json_response(data: Dict, status_code: int = 200) -> Tuple:
+    """Create JSON response"""
+    response = make_response(jsonify(data), status_code)
+    response.headers['Content-Type'] = 'application/json'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    return response
 
 # =============================
-# SYSTEM PROMPT
+# ROUTES: HEALTH & INDEX
 # =============================
-SYSTEM_PROMPT = """You are JARVIS, an AI assistant developed by Krish Palival. 
-You are designed to be helpful, intelligent, and professional. You provide accurate, thoughtful responses."""
 
-# =============================
-# AI FUNCTIONS with retry
-# =============================
-DEEPSEEK_KEY = os.environ.get("DEEPSEEK_KEY")
-GROQ_KEY = os.environ.get("GROQ_KEY")
-GEMINI_KEY = os.environ.get("GEMINI_KEY")
-
-def call_deepseek(prompt, retry=True):
-    try:
-        if not DEEPSEEK_KEY:
-            return None
-        headers = {"Authorization": f"Bearer {DEEPSEEK_KEY}", "Content-Type": "application/json"}
-        data = {
-            "model": "deepseek-chat",
-            "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt[:4000]}],
-            "max_tokens": 1024,
-            "temperature": 0.7
-        }
-        res = requests.post("https://api.deepseek.com/v1/chat/completions", json=data, headers=headers, timeout=15)
-        if res.status_code == 200:
-            return res.json()['choices'][0]['message']['content']
-        if retry:
-            time.sleep(1)
-            return call_deepseek(prompt, retry=False)
-        logger.warning(f"DeepSeek error: {res.status_code}")
-        return None
-    except Exception as e:
-        logger.error(f"DeepSeek exception: {e}")
-        return None
-
-def call_groq(prompt, retry=True):
-    try:
-        if not GROQ_KEY:
-            return None
-        headers = {"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"}
-        data = {
-            "model": "llama3-70b-8192",
-            "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt[:4000]}],
-            "max_tokens": 1024,
-            "temperature": 0.7
-        }
-        res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=data, headers=headers, timeout=15)
-        if res.status_code == 200:
-            return res.json()['choices'][0]['message']['content']
-        if retry:
-            time.sleep(1)
-            return call_groq(prompt, retry=False)
-        return None
-    except Exception as e:
-        logger.error(f"Groq exception: {e}")
-        return None
-
-def call_gemini(prompt, retry=True):
-    try:
-        if not GEMINI_KEY:
-            return None
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_KEY)
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(f"{SYSTEM_PROMPT}\n\nUser: {prompt[:3000]}")
-        return response.text
-    except Exception as e:
-        logger.error(f"Gemini exception: {e}")
-        return None
-
-def call_ai(prompt):
-    # Sanitize input
-    prompt = prompt.replace("<", "").replace(">", "").strip()
-    
-    if len(prompt) < 2:
-        return "Please write a longer message. I'm here to help!", "fallback"
-    
-    logger.info(f"AI call started for prompt length: {len(prompt)}")
-    
-    # Try DeepSeek first
-    response = call_deepseek(prompt)
-    if response:
-        logger.info("DeepSeek responded successfully")
-        return response, "deepseek"
-    
-    # Fallback to Groq
-    response = call_groq(prompt)
-    if response:
-        logger.info("Groq responded successfully")
-        return response, "groq"
-    
-    # Final fallback to Gemini
-    response = call_gemini(prompt)
-    if response:
-        logger.info("Gemini responded successfully")
-        return response, "gemini"
-    
-    logger.error("All AI services failed")
-    return "I'm currently experiencing high demand. Please try again in a moment.", "fallback"
-
-# =============================
-# HEALTH CHECK ENDPOINT
-# =============================
 @app.route('/health')
 def health_check():
-    status = {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "redis": redis_client is not None,
-        "database": False,
-        "version": "3.0.0"
-    }
+    """Health check endpoint"""
+    db_healthy = False
+    redis_healthy = False
     
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT 1")
-        cursor.close()
-        return_db_connection(conn)
-        status["database"] = True
-    except Exception as e:
-        status["status"] = "degraded"
-        logger.error(f"Health check DB failed: {e}")
+        conn = db_pool.get_connection()
+        conn.cursor().execute("SELECT 1")
+        db_pool.return_connection(conn)
+        db_healthy = True
+    except Exception:
+        pass
     
-    return jsonify(status)
+    if redis_cache._client:
+        try:
+            redis_cache._client.ping()
+            redis_healthy = True
+        except Exception:
+            pass
+    
+    status = "healthy" if db_healthy else "degraded"
+    
+    return jsonify({
+        'status': status,
+        'version': Config.VERSION,
+        'environment': Config.ENVIRONMENT,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'services': {
+            'database': db_healthy,
+            'redis': redis_healthy,
+            'deepseek': bool(Config.DEEPSEEK_KEY),
+            'groq': bool(Config.GROQ_KEY),
+            'gemini': bool(Config.GEMINI_KEY)
+        },
+        'uptime': round(time.time() - start_time, 2)
+    })
+
+@app.route('/')
+def index():
+    """Serve the main application"""
+    response = make_response(send_from_directory('.', 'index.html'))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 # =============================
-# DATABASE INIT
+# ROUTES: AUTHENTICATION
 # =============================
-def init_db():
-   def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            google_id VARCHAR(100) UNIQUE,
-            username VARCHAR(100),
-            email VARCHAR(255) UNIQUE,
-            display_name VARCHAR(255),
-            avatar_url TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_login TIMESTAMP,
-            total_logins INT DEFAULT 1,
-            session_token TEXT
-        )
-    """)
-    
-    # 🔥 FIX: Add is_admin column if it doesn't exist
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE")
-        logger.info("✅ Added is_admin column")
-    except Exception as e:
-        logger.warning(f"is_admin column may already exist: {e}")
-    
-    # Set admin users
-    cursor.execute("UPDATE users SET is_admin = TRUE WHERE email IN ('krish@gmail.com', 'admin@jarvis.ai')")
-    
-    # Rest of your tables...
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS login_logs (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            username VARCHAR(100),
-            email VARCHAR(255),
-            login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            ip_address VARCHAR(45),
-            user_agent TEXT,
-            success BOOLEAN DEFAULT TRUE,
-            error_message TEXT
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chat_sessions (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            title VARCHAR(255) DEFAULT 'New Chat',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
-            id SERIAL PRIMARY KEY,
-            session_id INTEGER REFERENCES chat_sessions(id) ON DELETE CASCADE,
-            role VARCHAR(10) NOT NULL,
-            content TEXT NOT NULL,
-            model_used VARCHAR(50),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions ON chat_sessions(user_id, updated_at)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_session_messages ON messages(session_id, created_at)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_login_logs ON login_logs(user_id, login_time)")
-    
-    conn.commit()
-    cursor.close()
-    return_db_connection(conn)
-    logger.info("✅ PostgreSQL database initialized")
-# =============================
-# GOOGLE OAUTH ROUTES
-# =============================
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", f"{PRODUCTION_DOMAIN}/login/callback")
-
-if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-    logger.warning("⚠️ Google OAuth credentials missing")
 
 @app.route('/login/google')
 def google_login():
-    if not GOOGLE_CLIENT_ID:
-        return jsonify({"error": "Google OAuth not configured"}), 500
-    auth_url = f"https://accounts.google.com/o/oauth2/auth?client_id={GOOGLE_CLIENT_ID}&redirect_uri={GOOGLE_REDIRECT_URI}&response_type=code&scope=email%20profile"
+    """Initiate Google OAuth login"""
+    if not Config.GOOGLE_CLIENT_ID:
+        return redirect(f"{Config.PRODUCTION_DOMAIN}?error=OAuth not configured")
+    
+    # Generate state for CSRF protection
+    state = secrets.token_hex(32)
+    session['oauth_state'] = state
+    
+    params = {
+        'client_id': Config.GOOGLE_CLIENT_ID,
+        'redirect_uri': Config.GOOGLE_REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'email profile',
+        'state': state,
+        'access_type': 'offline',
+        'prompt': 'consent'
+    }
+    
+    auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode(params)}"
+    logger.info(f"Redirecting to Google OAuth: {auth_url[:100]}...")
     return redirect(auth_url)
 
 @app.route('/login/callback')
 def google_callback():
+    """Handle Google OAuth callback"""
     code = request.args.get('code')
-    if not code:
-        return redirect(url_for('index', error='Login failed'))
+    state = request.args.get('state')
+    error = request.args.get('error')
     
-    token_data = {
-        'code': code,
-        'client_id': GOOGLE_CLIENT_ID,
-        'client_secret': GOOGLE_CLIENT_SECRET,
-        'redirect_uri': GOOGLE_REDIRECT_URI,
-        'grant_type': 'authorization_code'
-    }
+    # Check for errors
+    if error:
+        logger.error(f"Google OAuth error: {error}")
+        return redirect(f"{Config.PRODUCTION_DOMAIN}?error={error}")
+    
+    if not code:
+        logger.error("No code received from Google")
+        return redirect(f"{Config.PRODUCTION_DOMAIN}?error=No authorization code")
+    
+    # Verify state (CSRF protection)
+    saved_state = session.pop('oauth_state', None)
+    if saved_state and state != saved_state:
+        logger.error(f"State mismatch: saved={saved_state}, received={state}")
+        return redirect(f"{Config.PRODUCTION_DOMAIN}?error=Invalid state")
     
     try:
-        token_res = requests.post('https://oauth2.googleapis.com/token', data=token_data, timeout=10)
+        # Exchange code for tokens
+        token_data = {
+            'code': code,
+            'client_id': Config.GOOGLE_CLIENT_ID,
+            'client_secret': Config.GOOGLE_CLIENT_SECRET,
+            'redirect_uri': Config.GOOGLE_REDIRECT_URI,
+            'grant_type': 'authorization_code'
+        }
+        
+        logger.info("Exchanging code for tokens...")
+        token_res = requests.post('https://oauth2.googleapis.com/token', data=token_data, timeout=15)
+        
         if token_res.status_code != 200:
-            logger.error(f"Token exchange failed: {token_res.status_code}")
-            return redirect(url_for('index', error='Token exchange failed'))
+            logger.error(f"Token exchange failed: {token_res.status_code} - {token_res.text}")
+            return redirect(f"{Config.PRODUCTION_DOMAIN}?error=Token exchange failed")
         
         token_json = token_res.json()
         access_token = token_json.get('access_token')
         
-        user_res = requests.get('https://www.googleapis.com/oauth2/v1/userinfo', headers={'Authorization': f'Bearer {access_token}'}, timeout=10)
+        if not access_token:
+            logger.error("No access token received")
+            return redirect(f"{Config.PRODUCTION_DOMAIN}?error=No access token")
+        
+        # Get user info from Google
+        logger.info("Fetching user info from Google...")
+        user_res = requests.get(
+            'https://www.googleapis.com/oauth2/v1/userinfo',
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=15
+        )
+        
         if user_res.status_code != 200:
-            return redirect(url_for('index', error='Failed to get user info'))
+            logger.error(f"User info fetch failed: {user_res.status_code}")
+            return redirect(f"{Config.PRODUCTION_DOMAIN}?error=Failed to get user info")
         
         user_info = user_res.json()
+        logger.info(f"User info received for: {user_info.get('email')}")
         
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        cursor.execute("SELECT * FROM users WHERE google_id = %s OR email = %s", (user_info['id'], user_info['email']))
-        user = cursor.fetchone()
-        
-        if not user:
-            cursor.execute("""
-                INSERT INTO users (google_id, email, username, display_name, avatar_url) 
-                VALUES (%s, %s, %s, %s, %s) RETURNING id
-            """, (user_info['id'], user_info['email'], 
-                  user_info.get('name', user_info['email'].split('@')[0]).replace(' ', '_'), 
-                  user_info.get('name', user_info['email'].split('@')[0]), 
-                  user_info.get('picture', '')))
-            user_id = cursor.fetchone()['id']
-            conn.commit()
-        else:
-            user_id = user['id']
-            cursor.execute("UPDATE users SET last_login = NOW(), total_logins = total_logins + 1 WHERE id = %s", (user_id,))
-            conn.commit()
+        # Create or update user
+        user = UserRepository.create_or_update(
+            google_id=user_info['id'],
+            email=user_info['email'],
+            display_name=user_info.get('name', user_info['email'].split('@')[0]),
+            avatar_url=user_info.get('picture', '')
+        )
         
         # Generate JWT token
-        jwt_token = generate_token(user_id, user_info['email'])
-        cursor.execute("UPDATE users SET session_token = %s WHERE id = %s", (jwt_token, user_id))
-        conn.commit()
+        jwt_token = JWTService.create_token(user.id, user.email, user.is_admin)
         
-        cursor.close()
-        return_db_connection(conn)
+        # Update session token in database
+        UserRepository.update_session_token(user.id, jwt_token)
         
-        # Set session (for backward compatibility)
-        session['user_id'] = user_id
-        session['user_name'] = user_info.get('name', user_info['email'].split('@')[0])
-        session['user_email'] = user_info['email']
+        # Set session
+        session['user_id'] = user.id
+        session['user_email'] = user.email
+        session['user_name'] = user.display_name
         session['session_token'] = jwt_token
+        session['is_admin'] = user.is_admin
         
         # Log successful login
-        log_conn = get_db_connection()
-        log_cursor = log_conn.cursor()
-        log_cursor.execute("""
-            INSERT INTO login_logs (user_id, username, email, ip_address, user_agent, success) 
-            VALUES (%s, %s, %s, %s, %s, TRUE)
-        """, (user_id, session['user_name'], session['user_email'], get_client_ip(), request.headers.get('User-Agent', '')))
-        log_conn.commit()
-        log_cursor.close()
-        return_db_connection(log_conn)
+        UserRepository.log_login(
+            user_id=user.id,
+            email=user.email,
+            ip=get_client_ip(),
+            user_agent=request.headers.get('User-Agent', 'Unknown'),
+            success=True
+        )
         
-        return redirect(url_for('index'))
+        logger.info(f"✅ User {user.email} logged in successfully")
         
+        # Redirect to main app with token
+        return redirect(f"{Config.PRODUCTION_DOMAIN}?token={jwt_token}")
+        
+    except requests.exceptions.Timeout:
+        logger.error("Timeout during Google OAuth")
+        return redirect(f"{Config.PRODUCTION_DOMAIN}?error=Connection timeout")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error during OAuth: {e}")
+        return redirect(f"{Config.PRODUCTION_DOMAIN}?error=Network error")
     except Exception as e:
-        logger.error(f"OAuth error: {e}")
-        return redirect(url_for('index', error='Authentication failed'))
+        logger.error(f"Unexpected OAuth error: {e}", exc_info=True)
+        return redirect(f"{Config.PRODUCTION_DOMAIN}?error=Authentication failed")
+
+@app.route('/api/me')
+def get_current_user():
+    """Get current user info"""
+    # Check Bearer token
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        payload = JWTService.verify_token(token)
+        if payload:
+            user = UserRepository.find_by_id(payload['user_id'])
+            if user:
+                # Optionally refresh token
+                new_token = JWTService.refresh_token(token)
+                return jsonify({
+                    'success': True,
+                    'user': {
+                        'id': user.id,
+                        'name': user.display_name,
+                        'email': user.email,
+                        'avatar': user.avatar_url,
+                        'is_admin': user.is_admin
+                    },
+                    'token': new_token or token
+                })
+    
+    # Check session
+    if 'user_id' in session:
+        user = UserRepository.find_by_id(session['user_id'])
+        if user and user.session_token == session.get('session_token'):
+            return jsonify({
+                'success': True,
+                'user': {
+                    'id': user.id,
+                    'name': user.display_name,
+                    'email': user.email,
+                    'avatar': user.avatar_url,
+                    'is_admin': user.is_admin
+                }
+            })
+    
+    return jsonify({'success': False, 'error': 'Not authenticated'}), 401
 
 @app.route('/logout')
 def logout():
+    """Logout user"""
     if 'user_id' in session:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET session_token = NULL WHERE id = %s", (session['user_id'],))
-        conn.commit()
-        cursor.close()
-        return_db_connection(conn)
+        UserRepository.update_session_token(session['user_id'], None)
     session.clear()
-    return redirect(url_for('index'))
+    return redirect(Config.PRODUCTION_DOMAIN)
 
 @app.route('/logout-all', methods=['POST'])
 @login_required
 def logout_all_devices():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET session_token = NULL WHERE id = %s", (g.user_id,))
-    conn.commit()
-    cursor.close()
-    return_db_connection(conn)
+    """Logout from all devices"""
+    UserRepository.update_session_token(g.current_user.id, None)
     session.clear()
-    return jsonify({"success": True, "message": "Logged out from all devices"})
-
-@app.route('/api/me')
-def get_current_user():
-    auth_header = request.headers.get('Authorization')
-    if auth_header and auth_header.startswith('Bearer '):
-        token = auth_header.split(' ')[1]
-        payload = verify_token(token)
-        if payload:
-            return jsonify({'success': True, 'user': {
-                'id': payload['user_id'],
-                'name': payload['email'].split('@')[0],
-                'email': payload['email']
-            }, 'token': token})
-    
-    if 'user_id' in session:
-        return jsonify({'success': True, 'user': {
-            'id': session['user_id'],
-            'name': session.get('user_name'),
-            'email': session.get('user_email')
-        }})
-    
-    return jsonify({'success': False, 'error': 'Not logged in'}), 401
+    return jsonify({'success': True, 'message': 'Logged out from all devices'})
 
 # =============================
-# CHAT ROUTES
+# ROUTES: CHAT SESSIONS
 # =============================
-@app.route("/ai/sessions", methods=["GET"])
+
+@app.route('/ai/sessions', methods=['GET'])
 @login_required
 def get_sessions():
-    user_id = g.user_id
-    ip = get_client_ip()
-    
-    if is_rate_limited(user_id, ip, limit=30, window=60):
-        logger.warning(f"Rate limit hit for sessions: {user_id}")
-        return jsonify({"success": False, "error": "Too many requests"}), 429
+    """Get user's chat sessions"""
+    # Rate limiting
+    is_allowed, remaining = check_rate_limit('get_sessions', Config.RATE_LIMIT_SESSIONS, Config.RATE_LIMIT_WINDOW)
+    if not is_allowed:
+        return json_response({'success': False, 'error': 'Too many requests'}, 429)
     
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    offset = (page - 1) * per_page
+    per_page = min(request.args.get('per_page', 20, type=int), 50)
     
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    
-    cursor.execute("SELECT COUNT(*) FROM chat_sessions WHERE user_id = %s", (user_id,))
-    total = cursor.fetchone()['count']
-    
-    cursor.execute("""
-        SELECT id, title, created_at, updated_at 
-        FROM chat_sessions 
-        WHERE user_id = %s 
-        ORDER BY updated_at DESC 
-        LIMIT %s OFFSET %s
-    """, (user_id, per_page, offset))
-    sessions = cursor.fetchall()
-    
-    cursor.close()
-    return_db_connection(conn)
+    sessions, total = ChatSessionRepository.get_user_sessions(g.current_user.id, page, per_page)
     
     return jsonify({
-        "success": True, 
-        "sessions": sessions,
-        "pagination": {
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "pages": (total + per_page - 1) // per_page
+        'success': True,
+        'sessions': [asdict(s) for s in sessions],
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': max(1, (total + per_page - 1) // per_page)
         }
     })
 
-@app.route("/ai/session", methods=["POST"])
+@app.route('/ai/session', methods=['POST'])
 @login_required
 def create_session():
-    user_id = g.user_id
-    ip = get_client_ip()
+    """Create new chat session"""
+    is_allowed, _ = check_rate_limit('create_session', 20, Config.RATE_LIMIT_WINDOW)
+    if not is_allowed:
+        return json_response({'success': False, 'error': 'Too many requests'}, 429)
     
-    if is_rate_limited(user_id, ip, limit=20, window=60):
-        return jsonify({"success": False, "error": "Too many requests"}), 429
+    data = request.json or {}
+    title = data.get('title', 'New Chat')
     
-    data = request.json
-    title = data.get("title", "New Chat")
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO chat_sessions (user_id, title) VALUES (%s, %s) RETURNING id", (user_id, title[:100]))
-    session_id = cursor.fetchone()[0]
-    conn.commit()
-    cursor.close()
-    return_db_connection(conn)
-    
-    return jsonify({"success": True, "session_id": session_id})
-
-@app.route("/ai/session/<int:session_id>", methods=["GET"])
-@login_required
-def get_session_messages(session_id):
-    user_id = g.user_id
-    
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)
-    offset = (page - 1) * per_page
-    
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    
-    cursor.execute("SELECT id FROM chat_sessions WHERE id = %s AND user_id = %s", (session_id, user_id))
-    if not cursor.fetchone():
-        cursor.close()
-        return_db_connection(conn)
-        return jsonify({'success': False, 'error': 'Session not found'}), 404
-    
-    cursor.execute("""
-        SELECT role, content, created_at, model_used 
-        FROM messages 
-        WHERE session_id = %s 
-        ORDER BY created_at ASC 
-        LIMIT %s OFFSET %s
-    """, (session_id, per_page, offset))
-    messages = cursor.fetchall()
-    
-    cursor.execute("SELECT COUNT(*) FROM messages WHERE session_id = %s", (session_id,))
-    total = cursor.fetchone()['count']
-    
-    cursor.close()
-    return_db_connection(conn)
+    session = ChatSessionRepository.create_session(g.current_user.id, title)
     
     return jsonify({
-        "success": True, 
-        "messages": messages,
-        "pagination": {
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "pages": (total + per_page - 1) // per_page
+        'success': True,
+        'session_id': session.id,
+        'session': asdict(session)
+    })
+
+@app.route('/ai/session/<int:session_id>', methods=['GET'])
+@login_required
+def get_session(session_id):
+    """Get session messages"""
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 50, type=int), 100)
+    
+    session = ChatSessionRepository.get_session(session_id, g.current_user.id)
+    if not session:
+        return json_response({'success': False, 'error': 'Session not found'}, 404)
+    
+    messages, total = ChatSessionRepository.get_messages(session_id, g.current_user.id, page, per_page)
+    
+    return jsonify({
+        'success': True,
+        'session': asdict(session),
+        'messages': [asdict(m) for m in messages],
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': max(1, (total + per_page - 1) // per_page)
         }
     })
 
-@app.route("/ai/session/<int:session_id>/message", methods=["POST"])
+@app.route('/ai/session/<int:session_id>', methods=['DELETE'])
 @login_required
-def add_message(session_id):
-    user_id = g.user_id
-    ip = get_client_ip()
-    data = request.json
-    prompt = data.get("prompt", "").strip()
+def delete_session(session_id):
+    """Delete chat session"""
+    deleted = ChatSessionRepository.delete_session(session_id, g.current_user.id)
     
-    # Input validation
+    if deleted:
+        return jsonify({'success': True, 'message': 'Session deleted'})
+    return json_response({'success': False, 'error': 'Session not found'}, 404)
+
+# =============================
+# ROUTES: MESSAGES
+# =============================
+
+@app.route('/ai/session/<int:session_id>/message', methods=['POST'])
+@login_required
+def send_message(session_id):
+    """Send message and get AI response"""
+    # Rate limiting
+    is_allowed, remaining = check_rate_limit('send_message', Config.RATE_LIMIT_MESSAGES, Config.RATE_LIMIT_WINDOW)
+    if not is_allowed:
+        return json_response({
+            'success': False, 
+            'error': f'Rate limit exceeded. Try again in {Config.RATE_LIMIT_WINDOW} seconds.',
+            'retry_after': Config.RATE_LIMIT_WINDOW
+        }, 429)
+    
+    # Get and validate input
+    data = request.json or {}
+    prompt = data.get('prompt', '').strip()
+    preferred_model = data.get('model', 'deepseek')
+    
+    # Validate prompt
     if not prompt:
-        return jsonify({"success": False, "error": "Empty message"}), 400
+        return json_response({'success': False, 'error': 'Message cannot be empty'}, 400)
     
-    if len(prompt) > 5000:
-        return jsonify({"success": False, "error": "Message too long (max 5000 characters)"}), 400
+    if len(prompt) > Config.MAX_MESSAGE_LENGTH:
+        return json_response({'success': False, 'error': f'Message too long (max {Config.MAX_MESSAGE_LENGTH} characters)'}, 400)
     
-    # Spam detection
-    words = prompt.split()
-    if len(set(words)) < 3 and len(words) > 5:
-        return jsonify({"success": False, "error": "Message looks like spam. Please write a meaningful message."}), 400
+    # Spam check
+    if SecurityValidator.is_spam(prompt):
+        return json_response({'success': False, 'error': 'Message looks like spam'}, 400)
     
-    # Rate limit: 5 messages per minute
-    if is_rate_limited(user_id, ip, limit=5, window=60):
-        logger.warning(f"Rate limit hit for messages: {user_id}")
-        return jsonify({"success": False, "error": "Too many messages. Please wait a moment."}), 429
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Verify ownership
-    cursor.execute("SELECT user_id FROM chat_sessions WHERE id = %s", (session_id,))
-    result = cursor.fetchone()
-    if not result or result[0] != user_id:
-        cursor.close()
-        return_db_connection(conn)
-        return jsonify({"success": False, "error": "Unauthorized"}), 403
+    # Verify session ownership
+    session = ChatSessionRepository.get_session(session_id, g.current_user.id)
+    if not session:
+        return json_response({'success': False, 'error': 'Session not found'}, 404)
     
     # Save user message
-    cursor.execute("INSERT INTO messages (session_id, role, content) VALUES (%s, 'user', %s)", (session_id, prompt[:5000]))
+    user_message = ChatSessionRepository.add_message(session_id, 'user', prompt)
     
-    # Get AI response
-    start_time = time.time()
-    response, model_used = call_ai(prompt)
-    response_time = time.time() - start_time
+    # Get message count for title update
+    message_count = ChatSessionRepository.get_message_count(session_id)
+    is_first = message_count <= 2
     
-    logger.info(f"AI response time: {response_time:.2f}s, model: {model_used}")
+    # Generate AI response
+    response_text, model_used, response_time = ai_service.generate_response(prompt, preferred_model)
     
     # Save AI response
-    cursor.execute("INSERT INTO messages (session_id, role, content, model_used) VALUES (%s, 'assistant', %s, %s)", 
-                   (session_id, response[:5000], model_used))
-    cursor.execute("UPDATE chat_sessions SET updated_at = NOW() WHERE id = %s", (session_id,))
+    bot_message = ChatSessionRepository.add_message(session_id, 'assistant', response_text, model_used)
     
     # Update title if first message
-    cursor.execute("SELECT COUNT(*) as count FROM messages WHERE session_id = %s", (session_id,))
-    result = cursor.fetchone()
-    is_first = result[0] <= 2
-    
     if is_first:
-        title = prompt[:50] + "..." if len(prompt) > 50 else prompt
-        cursor.execute("UPDATE chat_sessions SET title = %s WHERE id = %s", (title, session_id))
+        title = prompt[:50] + ('...' if len(prompt) > 50 else '')
+        ChatSessionRepository.update_title(session_id, title)
     
-    conn.commit()
-    cursor.close()
-    return_db_connection(conn)
+    logger.info(f"Message processed - Session: {session_id}, Model: {model_used}, Time: {response_time}s")
     
     return jsonify({
-        "success": True, 
-        "response": response, 
-        "model": model_used, 
-        "response_time": round(response_time, 2),
-        "is_first_message": is_first
+        'success': True,
+        'response': response_text,
+        'model': model_used,
+        'response_time': response_time,
+        'is_first_message': is_first,
+        'remaining_requests': remaining,
+        'message_id': bot_message.id
     })
 
 # =============================
-# ADMIN DASHBOARD (DB-based)
+# ROUTES: ADMIN
 # =============================
-@app.route("/admin/stats", methods=["GET"])
-@login_required
+
+@app.route('/admin/stats')
+@admin_required
 def admin_stats():
-    # Check admin status from database
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute("SELECT is_admin FROM users WHERE id = %s", (g.user_id,))
-    result = cursor.fetchone()
-    
-    if not result or not result['is_admin']:
-        cursor.close()
-        return_db_connection(conn)
-        return jsonify({"success": False, "error": "Unauthorized"}), 403
-    
-    cursor.execute("SELECT COUNT(*) as total_users FROM users")
-    total_users = cursor.fetchone()['total_users']
-    
-    cursor.execute("SELECT COUNT(*) as total_sessions FROM chat_sessions")
-    total_sessions = cursor.fetchone()['total_sessions']
-    
-    cursor.execute("SELECT COUNT(*) as total_messages FROM messages")
-    total_messages = cursor.fetchone()['total_messages']
-    
-    cursor.execute("SELECT COUNT(*) as active_today FROM login_logs WHERE login_time > NOW() - INTERVAL '24 hours'")
-    active_today = cursor.fetchone()['active_today']
-    
-    cursor.close()
-    return_db_connection(conn)
-    
-    return jsonify({
-        "success": True,
-        "stats": {
-            "total_users": total_users,
-            "total_sessions": total_sessions,
-            "total_messages": total_messages,
-            "active_today": active_today
-        }
-    })
+    """Get admin statistics"""
+    conn = db_pool.get_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            stats = {}
+            
+            cur.execute("SELECT COUNT(*) as total FROM users")
+            stats['total_users'] = cur.fetchone()['total']
+            
+            cur.execute("SELECT COUNT(*) as total FROM chat_sessions")
+            stats['total_sessions'] = cur.fetchone()['total']
+            
+            cur.execute("SELECT COUNT(*) as total FROM messages")
+            stats['total_messages'] = cur.fetchone()['total']
+            
+            cur.execute("SELECT COUNT(*) as total FROM login_logs WHERE login_time > NOW() - INTERVAL '24 hours'")
+            stats['active_today'] = cur.fetchone()['total']
+            
+            cur.execute("""
+                SELECT model_used, COUNT(*) as count 
+                FROM messages 
+                WHERE model_used IS NOT NULL 
+                GROUP BY model_used 
+                ORDER BY count DESC
+            """)
+            stats['model_usage'] = [dict(row) for row in cur.fetchall()]
+            
+            return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        logger.error(f"Error getting admin stats: {e}")
+        return json_response({'success': False, 'error': 'Failed to get stats'}, 500)
+    finally:
+        db_pool.return_connection(conn)
 
-@app.route("/")
-def index():
-    return send_from_directory(".", "index.html")
+# =============================
+# DATABASE INITIALIZATION
+# =============================
+
+def init_database():
+    """Initialize database tables"""
+    conn = db_pool.get_connection()
+    try:
+        with conn.cursor() as cur:
+            logger.info("Initializing database...")
+            
+            # Users table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    google_id VARCHAR(100) UNIQUE,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    display_name VARCHAR(255),
+                    avatar_url TEXT,
+                    is_admin BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_login TIMESTAMP,
+                    total_logins INT DEFAULT 1,
+                    session_token TEXT
+                )
+            """)
+            
+            # Admin users
+            cur.execute("""
+                UPDATE users SET is_admin = TRUE 
+                WHERE email IN ('krish@gmail.com', 'admin@jarvis.ai')
+            """)
+            
+            # Login logs table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS login_logs (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    email VARCHAR(255),
+                    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    ip_address VARCHAR(45),
+                    user_agent TEXT,
+                    success BOOLEAN DEFAULT TRUE,
+                    error_message TEXT
+                )
+            """)
+            
+            # Chat sessions table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS chat_sessions (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    title VARCHAR(255) DEFAULT 'New Chat',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Messages table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS messages (
+                    id SERIAL PRIMARY KEY,
+                    session_id INTEGER REFERENCES chat_sessions(id) ON DELETE CASCADE,
+                    role VARCHAR(10) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+                    content TEXT NOT NULL,
+                    model_used VARCHAR(50),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Indexes for performance
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+                CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+                CREATE INDEX IF NOT EXISTS idx_sessions_user ON chat_sessions(user_id, updated_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at ASC);
+                CREATE INDEX IF NOT EXISTS idx_login_logs_user ON login_logs(user_id, login_time DESC);
+                CREATE INDEX IF NOT EXISTS idx_messages_model ON messages(model_used);
+            """)
+            
+            conn.commit()
+            logger.info("✅ Database initialized successfully")
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"❌ Database initialization failed: {e}")
+        raise
+    finally:
+        db_pool.return_connection(conn)
 
 # =============================
 # ERROR HANDLERS
 # =============================
+
+@app.errorhandler(400)
+def bad_request(e):
+    return json_response({'success': False, 'error': 'Bad request'}, 400)
+
+@app.errorhandler(401)
+def unauthorized(e):
+    return json_response({'success': False, 'error': 'Unauthorized'}, 401)
+
+@app.errorhandler(403)
+def forbidden(e):
+    return json_response({'success': False, 'error': 'Forbidden'}, 403)
+
 @app.errorhandler(404)
 def not_found(e):
-    return jsonify({"success": False, "error": "Resource not found"}), 404
+    if request.path.startswith('/api/'):
+        return json_response({'success': False, 'error': 'Resource not found'}, 404)
+    return send_from_directory('.', 'index.html')
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return json_response({'success': False, 'error': 'Method not allowed'}, 405)
+
+@app.errorhandler(429)
+def rate_limit_exceeded(e):
+    return json_response({
+        'success': False, 
+        'error': 'Too many requests',
+        'retry_after': Config.RATE_LIMIT_WINDOW
+    }, 429)
 
 @app.errorhandler(500)
 def internal_error(e):
-    logger.error(f"Internal server error: {e}")
-    return jsonify({"success": False, "error": "Something went wrong"}), 500
-
-@app.errorhandler(429)
-def rate_limit_error(e):
-    return jsonify({"success": False, "error": "Too many requests. Please try again later."}), 429
+    logger.error(f"Internal server error: {e}", exc_info=True)
+    return json_response({'success': False, 'error': 'Internal server error'}, 500)
 
 # =============================
-# RUN
+# APPLICATION STARTUP
 # =============================
+
+start_time = time.time()
+
 if __name__ == "__main__":
-    init_db_pool()
-    init_db()
-    logger.info("="*60)
-    logger.info("🚀 JARVIS SECURE BACKEND - PRODUCTION READY")
-    logger.info("✅ Rate limiting: 5 messages/minute")
-    logger.info("✅ JWT authentication: Enabled")
-    logger.info("✅ Database connection pool: Active")
-    logger.info("✅ CORS: Restricted to production domain")
-    logger.info("✅ Admin panel: DB-based authorization")
-    logger.info("✅ Health check: /health endpoint")
-    logger.info("="*60)
+    logger.info("=" * 60)
+    logger.info(f"🚀 {Config.APP_NAME} v{Config.VERSION}")
+    logger.info(f"📍 Environment: {Config.ENVIRONMENT}")
+    logger.info(f"🔗 Domain: {Config.PRODUCTION_DOMAIN}")
+    logger.info(f"💾 Database: {Config.DB_HOST}:{Config.DB_PORT}/{Config.DB_NAME}")
+    logger.info(f"📦 Redis: {'Connected' if redis_cache._client else 'Using fallback cache'}")
+    logger.info(f"🤖 AI Models: DeepSeek={'✅' if Config.DEEPSEEK_KEY else '❌'} | Groq={'✅' if Config.GROQ_KEY else '❌'} | Gemini={'✅' if Config.GEMINI_KEY else '❌'}")
+    logger.info(f"🔐 OAuth: {'✅' if Config.GOOGLE_CLIENT_ID else '❌'}")
+    logger.info(f"⚡ Rate Limiting: {Config.RATE_LIMIT_MESSAGES} msg/{Config.RATE_LIMIT_WINDOW}s")
+    logger.info("=" * 60)
     
+    # Initialize database
+    init_database()
+    
+    # Start server
     port = int(os.environ.get("PORT", 5000))
     
-    if os.environ.get("FLASK_ENV") == "production":
-        from waitress import serve
-        serve(app, host="0.0.0.0", port=port, threads=4)
+    if Config.ENVIRONMENT == "production":
+        try:
+            from waitress import serve
+            logger.info(f"🔧 Starting production server on port {port}")
+            serve(app, host="0.0.0.0", port=port, threads=8, connection_limit=500, channel_timeout=120)
+        except ImportError:
+            logger.warning("Waitress not installed, falling back to Flask development server")
+            app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
     else:
-        app.run(host="0.0.0.0", port=port, debug=True)
+        logger.info(f"🔧 Starting development server on port {port}")
+        app.run(host="0.0.0.0", port=port, debug=True, threaded=True)
