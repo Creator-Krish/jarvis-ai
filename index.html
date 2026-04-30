@@ -1476,6 +1476,36 @@
 
     <!-- FIXED: Complete JavaScript - No truncation -->
     <script>
+        // ==================== TOKEN MANAGEMENT (ADD THIS AT TOP OF SCRIPT) ====================
+function getTokenFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const error = urlParams.get('error');
+    
+    if (error) {
+        console.error('Auth error:', error);
+        showToast('Authentication failed: ' + error, 'error');
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return null;
+    }
+    
+    if (token) {
+        console.log('✅ Token found in URL, saving...');
+        localStorage.setItem('jwt_token', token);
+        // Clean URL (remove token for security)
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return token;
+    }
+    
+    return null;
+}
+
+// Call this immediately
+const urlToken = getTokenFromURL();
+if (urlToken) {
+    console.log('Token saved, checking login status...');
+}
     // ==================== COMPLETE JAVASCRIPT - NO TRUNCATION ====================
     
     // Security: HTML Sanitization
