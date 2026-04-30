@@ -2041,9 +2041,6 @@ def ai_stats():
 # =============================
 # DATABASE INITIALIZATION
 # =============================
-# =============================
-# DATABASE INITIALIZATION
-# =============================
 def init_database():
     """Initialize all database tables and indexes"""
     conn = db_pool.get_connection()
@@ -2128,6 +2125,10 @@ def init_database():
         return False
     finally:
         db_pool.return_connection(conn)
+
+
+# Remove the orphaned SQL code that was after the comment
+# (Delete lines that had the standalone SQL statements)
 # =============================
 # ERROR HANDLERS
 # =============================
