@@ -2041,97 +2041,25 @@ def ai_stats():
 # =============================
 # DATABASE INITIALIZATION
 # =============================
-def init_database():
-    """Initialize all database tables and indexes"""
-    conn = db_pool.get_connection()
-    if not conn:
-        logger.error("Cannot initialize database - no connection")
-        return False
-    
-    try:
-        with conn.cursor() as cur:
-            logger.info("Initializing database...")
-            
-            # Users table
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id SERIAL PRIMARY KEY,
-                    google_id VARCHAR(100) UNIQUE,
-                    email VARCHAR(255) UNIQUE NOT NULL,
-                    display_name VARCHAR(255),
-                    avatar_url TEXT,
-                    is_admin BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_login TIMESTAMP,
-                    total_logins INT DEFAULT 1,
-                    session_token TEXT
-                )
-            """)
-            
-            # Auto-promote admins
-            cur.execute("""
-                UPDATE users SET is_admin = TRUE 
-                WHERE email IN ('krish@gmail.com', 'admin@jarvis.ai')
-            """)
-            
-            # Login logs
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS login_logs (
-                    id SERIAL PRIMARY KEY,
-                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                    email VARCHAR(255),
-                    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    ip_address VARCHAR(45),
-                    user_agent TEXT,
-                    success BOOLEAN DEFAULT TRUE,
-                    error_message TEXT
-                )
-            """)
-            
-            # Chat sessions
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS chat_sessions (
-                    id SERIAL PRIMARY KEY,
-                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                    title VARCHAR(255) DEFAULT 'New Chat',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Messages
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS messages (
-                    id SERIAL PRIMARY KEY,
-                    session_id INTEGER REFERENCES chat_sessions(id) ON DELETE CASCADE,
-                    role VARCHAR(10) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
-                    content TEXT NOT NULL,
-                    model_used VARCHAR(50),
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Performance indexes
-            cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-                CREATE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
-                CREATE INDEX IF NOT EXISTS idx_sessions_user ON chat_sessions(user_id, updated_at DESC);
-                CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at ASC);
-                CREATE INDEX IF NOT EXISTS idx_login_logs_time ON login_logs(login_time DESC);
-                CREATE INDEX IF NOT EXISTS idx_messages_model ON messages(model_used);
-            """)
-            
-            conn.commit()
-            logger.info("✅ Database initialized successfully")
-            return True
-            
-    except Exception as e:
-        conn.rollback()
-        logger.error(f"❌ Database initialization failed: {e}")
-        return False
-    finally:
-        db_pool.return_connection(conn)
+# Add is_admin column if it doesn't exist
+try:
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE")
+    conn.commit()
+    logger.info("Added is_admin column")
+except Exception as e:
+    conn.rollback()
+    logger.warning(f"Could not add is_admin column: {e}")
 
+# Auto-promote admins
+try:
+    cur.execute("""
+        UPDATE users SET is_admin = TRUE 
+        WHERE email IN ('krish@gmail.com', 'admin@jarvis.ai')
+    """)
+    conn.commit()
+except Exception as e:
+    conn.rollback()
+    logger.warning(f"Could not update admin users: {e}")
 # =============================
 # ERROR HANDLERS
 # =============================
