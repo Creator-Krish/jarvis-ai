@@ -848,14 +848,6 @@
             box-shadow: none;
         }
 
-        .char-count {
-            font-size: 11px;
-            color: var(--text-muted);
-            position: absolute;
-            bottom: 8px;
-            right: 120px;
-        }
-
         /* ==================== MODAL ==================== */
         .modal {
             display: none;
@@ -1362,7 +1354,6 @@
                         <input type="text" id="input" 
                                placeholder="Ask JARVIS anything..." 
                                onkeydown="handleKeyPress(event)" 
-                               oninput="updateCharCount()"
                                autocomplete="off" 
                                maxlength="5000"
                                disabled>
@@ -1407,13 +1398,17 @@
                 </div>
             </div>
 
+            <!-- FIXED: Model names - No API exposure -->
             <div class="setting-section">
-                <div class="setting-title">🧠 AI Model</div>
+                <div class="setting-title">🧠 JARVIS Intelligence</div>
                 <select id="modelSelect" onchange="changeModel()">
-                    <option value="deepseek">⚡ JARVIS Technical (DeepSeek)</option>
-                    <option value="groq">🚀 JARVIS Lightning (Groq)</option>
-                    <option value="gemini">🧘 JARVIS Philosopher (Gemini)</option>
+                    <option value="deepseek">⚡ JARVIS Technical</option>
+                    <option value="groq">🚀 JARVIS Lightning</option>
+                    <option value="gemini">🧘 JARVIS Philosopher</option>
                 </select>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                    Different intelligence modes for different tasks
+                </p>
             </div>
 
             <div class="setting-section">
@@ -1459,12 +1454,12 @@
                         <span class="stats-value">Krish Paliwal</span>
                     </div>
                     <div class="stats-item">
-                        <span class="stats-label">AI Models</span>
-                        <span class="stats-value">DeepSeek + Groq + Gemini</span>
+                        <span class="stats-label">AI Architecture</span>
+                        <span class="stats-value">JARVIS Core v3</span>
                     </div>
                     <div class="stats-item">
                         <span class="stats-label">Security</span>
-                        <span class="stats-value">JWT + Rate Limited</span>
+                        <span class="stats-value">Enterprise Grade</span>
                     </div>
                 </div>
             </div>
@@ -1474,808 +1469,635 @@
     <!-- NOTIFICATION CONTAINER -->
     <div class="notification-container" id="notificationContainer"></div>
 
-    <!-- FIXED: Complete JavaScript - No truncation -->
     <script>
-        // ==================== TOKEN MANAGEMENT (ADD THIS AT TOP OF SCRIPT) ====================
-function getTokenFromURL() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const error = urlParams.get('error');
-    
-    if (error) {
-        console.error('Auth error:', error);
-        showToast('Authentication failed: ' + error, 'error');
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return null;
-    }
-    
-    if (token) {
-        console.log('✅ Token found in URL, saving...');
-        localStorage.setItem('jwt_token', token);
-        // Clean URL (remove token for security)
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return token;
-    }
-    
-    return null;
-}
-
-// Call this immediately
-const urlToken = getTokenFromURL();
-if (urlToken) {
-    console.log('Token saved, checking login status...');
-}
-    // ==================== COMPLETE JAVASCRIPT - NO TRUNCATION ====================
-    
-    // Security: HTML Sanitization
-    function sanitizeHTML(str) {
-        if (!str) return '';
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
-    // Global Variables
-    let currentSessionId = null;
-    let isProcessing = false;
-    let currentUser = null;
-    let userEmail = null;
-    let recognition = null;
-    let isListening = false;
-    let allSessions = [];
-
-    // ==================== PARTICLES BACKGROUND ====================
-    function initParticles() {
-        const canvas = document.getElementById('particles-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // ==================== TOKEN MANAGEMENT ====================
+        function getTokenFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const error = urlParams.get('error');
+            
+            if (error) {
+                console.error('Auth error:', error);
+                showToast('Authentication failed: ' + error, 'error');
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return null;
+            }
+            
+            if (token) {
+                localStorage.setItem('jwt_token', token);
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return token;
+            }
+            
+            return null;
         }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-        
-        class Particle {
-            constructor() {
-                this.reset();
+
+        getTokenFromURL();
+
+        // ==================== GLOBAL VARIABLES ====================
+        let currentSessionId = null;
+        let isProcessing = false;
+        let currentUser = null;
+        let userEmail = null;
+        let recognition = null;
+        let isListening = false;
+        let allSessions = [];
+
+        // ==================== HELPER FUNCTIONS ====================
+        function sanitizeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            const toast = document.createElement('div');
+            toast.className = `notification-toast toast-${type}`;
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+                <span class="toast-message">${sanitizeHTML(msg)}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chatMessages');
+            if (container) {
+                setTimeout(() => container.scrollTop = container.scrollHeight, 50);
             }
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 0.5;
-                this.speedX = (Math.random() - 0.5) * 0.3;
-                this.speedY = (Math.random() - 0.5) * 0.3;
-                this.opacity = Math.random() * 0.5 + 0.1;
+        }
+
+        // ==================== PARTICLES BACKGROUND ====================
+        function initParticles() {
+            const canvas = document.getElementById('particles-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
             }
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            class Particle {
+                constructor() {
                     this.reset();
                 }
-            }
-            draw() {
-                const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim();
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = accentColor || '#00ffff';
-                ctx.globalAlpha = this.opacity;
-                ctx.fill();
-                ctx.globalAlpha = 1;
-            }
-        }
-        
-        for (let i = 0; i < 50; i++) {
-            particles.push(new Particle());
-        }
-        
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-            // Draw connections
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 120) {
-                        ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#00ffff';
-                        ctx.globalAlpha = 0.05 * (1 - dist / 120);
-                        ctx.stroke();
-                        ctx.globalAlpha = 1;
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.speedX = (Math.random() - 0.5) * 0.3;
+                    this.speedY = (Math.random() - 0.5) * 0.3;
+                    this.opacity = Math.random() * 0.5 + 0.1;
+                }
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                        this.reset();
                     }
                 }
+                draw() {
+                    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = accentColor || '#00ffff';
+                    ctx.globalAlpha = this.opacity;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
             }
-            requestAnimationFrame(animate);
-        }
-        animate();
-    }
-
-    // ==================== GOOGLE LOGIN ====================
-    function googleLogin() {
-        window.location.href = '/login/google';
-    }
-
-    function logout() {
-        window.location.href = '/logout';
-    }
-
-    // ==================== CHECK LOGIN STATUS ====================
-    async function checkLoginStatus() {
-        try {
-            const res = await fetch('/api/me', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
-            });
-            const data = await res.json();
             
-            if (data.success && data.user) {
-                if (data.token) {
-                    localStorage.setItem('jwt_token', data.token);
+            for (let i = 0; i < 50; i++) particles.push(new Particle());
+            
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => { p.update(); p.draw(); });
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#00ffff';
+                            ctx.globalAlpha = 0.05 * (1 - dist / 120);
+                            ctx.stroke();
+                            ctx.globalAlpha = 1;
+                        }
+                    }
                 }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // ==================== AUTHENTICATION ====================
+        function googleLogin() {
+            window.location.href = '/login/google';
+        }
+
+        function logout() {
+            window.location.href = '/logout';
+        }
+
+        async function checkLoginStatus() {
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
                 
-                currentUser = data.user.name;
-                userEmail = data.user.email;
+                const res = await fetch('/api/me', {
+                    method: 'GET',
+                    headers: headers,
+                    credentials: 'include'
+                });
+                const data = await res.json();
                 
-                document.getElementById('loginScreen').classList.add('hidden');
-                const appEl = document.getElementById('app');
-                appEl.classList.add('visible');
-                document.getElementById('userName').innerText = currentUser;
-                document.getElementById('userAvatar').innerText = currentUser.charAt(0).toUpperCase();
-                document.getElementById('input').disabled = false;
-                document.getElementById('sendBtn').disabled = false;
-                
-                await loadSessions();
-                
-                if (!currentSessionId) {
-                    await createNewChat();
+                if (data.success && data.user) {
+                    if (data.token) localStorage.setItem('jwt_token', data.token);
+                    
+                    currentUser = data.user.name;
+                    userEmail = data.user.email;
+                    
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('app').classList.add('visible');
+                    document.getElementById('userName').innerText = currentUser;
+                    document.getElementById('userAvatar').innerText = currentUser.charAt(0).toUpperCase();
+                    document.getElementById('input').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                    
+                    await loadSessions();
+                    
+                    if (!currentSessionId) await createNewChat();
+                    
+                    showToast(`Welcome back, ${currentUser}! ✨`, 'success');
+                } else {
+                    document.getElementById('loginScreen').classList.remove('hidden');
+                    document.getElementById('app').classList.remove('visible');
                 }
-                
-                showToast(`Welcome back, ${currentUser}! ✨`, 'success');
-            } else {
+            } catch (error) {
+                console.error('Login check failed:', error);
                 document.getElementById('loginScreen').classList.remove('hidden');
                 document.getElementById('app').classList.remove('visible');
             }
-        } catch (error) {
-            console.error('Login check failed:', error);
-            showToast('Connection error. Please try again.', 'error');
         }
-    }
 
-    // ==================== THEME MANAGEMENT ====================
-    function setTheme(theme) {
-        if (theme === 'system') {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', theme);
-        }
-        localStorage.setItem('jarvis-theme', theme);
-        
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-theme') === theme);
-        });
-    }
-
-    function setAccentColor(colorNum) {
-        document.documentElement.setAttribute('data-theme-color', String(colorNum));
-        localStorage.setItem('jarvis-accent-color', String(colorNum));
-        
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-color') === String(colorNum));
-        });
-        
-        showToast('🎨 Theme updated!', 'success');
-    }
-
-    function loadTheme() {
-        const savedTheme = localStorage.getItem('jarvis-theme') || 'dark';
-        const savedColor = localStorage.getItem('jarvis-accent-color') || '1';
-        setTheme(savedTheme);
-        setAccentColor(parseInt(savedColor));
-    }
-
-    function changeFontSize() {
-        const size = document.getElementById('fontSizeRange').value;
-        document.documentElement.style.fontSize = size + 'px';
-        document.getElementById('fontSizeValue').textContent = size + 'px';
-        localStorage.setItem('jarvis-font-size', size);
-    }
-
-    function loadFontSize() {
-        const savedSize = localStorage.getItem('jarvis-font-size') || '14';
-        const rangeEl = document.getElementById('fontSizeRange');
-        if (rangeEl) {
-            rangeEl.value = savedSize;
-            document.documentElement.style.fontSize = savedSize + 'px';
-            const valueEl = document.getElementById('fontSizeValue');
-            if (valueEl) valueEl.textContent = savedSize + 'px';
-        }
-    }
-
-    function changeModel() {
-        const model = document.getElementById('modelSelect').value;
-        localStorage.setItem('jarvis-model', model);
-        const modelNames = {
-            'deepseek': 'JARVIS Technical',
-            'groq': 'JARVIS Lightning',
-            'gemini': 'JARVIS Philosopher'
-        };
-        showToast(`🤖 Switched to ${modelNames[model] || model}`, 'info');
-    }
-
-    function loadModel() {
-        const savedModel = localStorage.getItem('jarvis-model') || 'deepseek';
-        const selectEl = document.getElementById('modelSelect');
-        if (selectEl) selectEl.value = savedModel;
-    }
-
-    // ==================== SIDEBAR ====================
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('active');
-    }
-
-    // ==================== MODAL ====================
-    function openSettings() {
-        document.getElementById('settingsModal').classList.add('active');
-        if (window.innerWidth <= 768) {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar.classList.contains('open')) toggleSidebar();
-        }
-    }
-
-    function closeSettings() {
-        document.getElementById('settingsModal').classList.remove('active');
-    }
-
-    // ==================== TOAST NOTIFICATIONS ====================
-    function showToast(msg, type = 'info') {
-        const container = document.getElementById('notificationContainer');
-        const toast = document.createElement('div');
-        toast.className = `notification-toast toast-${type}`;
-        
-        const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-        toast.innerHTML = `
-            <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-            <span class="toast-message">${sanitizeHTML(msg)}</span>
-        `;
-        
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.classList.add('removing');
-            setTimeout(() => toast.remove(), 300);
-        }, 3500);
-    }
-
-    // ==================== LOAD SESSIONS ====================
-    async function loadSessions() {
-        try {
-            const res = await fetch('/ai/sessions?per_page=50', { credentials: 'include' });
-            const data = await res.json();
-            if (data.success && data.sessions) {
-                allSessions = data.sessions;
-                renderSidebar(allSessions);
-                
-                if (allSessions.length > 0 && !currentSessionId) {
-                    await loadChat(allSessions[0].id);
-                }
+        // ==================== THEME MANAGEMENT ====================
+        function setTheme(theme) {
+            if (theme === 'system') {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
             } else {
-                document.getElementById('chatHistoryList').innerHTML = `
-                    <div style="text-align:center; color:var(--text-muted); padding:20px;">
-                        No conversations yet
-                    </div>`;
+                document.documentElement.setAttribute('data-theme', theme);
             }
-        } catch (error) {
-            console.error('Failed to load sessions:', error);
-        }
-    }
-
-    function renderSidebar(sessions) {
-        const container = document.getElementById('chatHistoryList');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        if (!sessions || sessions.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center; color:var(--text-muted); padding:20px;">
-                    ✨ Start a new conversation!
-                </div>`;
-            return;
-        }
-        
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const yesterdayStart = new Date(todayStart);
-        yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-        const weekStart = new Date(todayStart);
-        weekStart.setDate(weekStart.getDate() - 6);
-        
-        const groups = {
-            '📝 Today': [],
-            '📅 Yesterday': [],
-            '📆 This Week': [],
-            '📁 Older': []
-        };
-        
-        sessions.forEach(session => {
-            const d = new Date(session.updated_at);
-            if (d >= todayStart) groups['📝 Today'].push(session);
-            else if (d >= yesterdayStart) groups['📅 Yesterday'].push(session);
-            else if (d >= weekStart) groups['📆 This Week'].push(session);
-            else groups['📁 Older'].push(session);
-        });
-        
-        Object.entries(groups).forEach(([title, items]) => {
-            if (items.length === 0) return;
-            
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'history-group';
-            groupDiv.innerHTML = `<div class="group-title">${title}</div>`;
-            
-            items.forEach(session => {
-                const item = document.createElement('div');
-                item.className = `chat-item ${currentSessionId === session.id ? 'active' : ''}`;
-                const sessionTitle = sanitizeHTML(session.title || 'New Conversation');
-                item.innerHTML = `
-                    <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" class="chat-title">${sessionTitle}</span>
-                    <button class="chat-delete" onclick="event.stopPropagation(); deleteSession(${session.id})" title="Delete">🗑️</button>
-                `;
-                item.onclick = () => loadChat(session.id);
-                groupDiv.appendChild(item);
+            localStorage.setItem('jarvis-theme', theme);
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-theme') === theme);
             });
-            
-            container.appendChild(groupDiv);
-        });
-    }
+        }
 
-    // ==================== DELETE SESSION ====================
-    async function deleteSession(sessionId) {
-        if (!confirm('Delete this conversation?')) return;
-        
-        try {
-            const res = await fetch(`/ai/session/${sessionId}`, {
-                method: 'DELETE',
-                credentials: 'include'
+        function setAccentColor(colorNum) {
+            document.documentElement.setAttribute('data-theme-color', String(colorNum));
+            localStorage.setItem('jarvis-accent-color', String(colorNum));
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-color') === String(colorNum));
             });
-            const data = await res.json();
-            if (data.success) {
-                if (currentSessionId === sessionId) {
-                    currentSessionId = null;
-                    document.getElementById('chatMessages').innerHTML = '';
-                }
-                await loadSessions();
-                if (!currentSessionId && allSessions.length > 0) {
-                    await loadChat(allSessions[0].id);
-                } else if (!currentSessionId) {
-                    await createNewChat();
-                }
-                showToast('Conversation deleted', 'success');
+            showToast('🎨 Theme updated!', 'success');
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('jarvis-theme') || 'dark';
+            const savedColor = localStorage.getItem('jarvis-accent-color') || '1';
+            setTheme(savedTheme);
+            setAccentColor(parseInt(savedColor));
+        }
+
+        function changeFontSize() {
+            const size = document.getElementById('fontSizeRange').value;
+            document.documentElement.style.fontSize = size + 'px';
+            document.getElementById('fontSizeValue').textContent = size + 'px';
+            localStorage.setItem('jarvis-font-size', size);
+        }
+
+        function loadFontSize() {
+            const savedSize = localStorage.getItem('jarvis-font-size') || '14';
+            const rangeEl = document.getElementById('fontSizeRange');
+            if (rangeEl) {
+                rangeEl.value = savedSize;
+                document.documentElement.style.fontSize = savedSize + 'px';
+                const valueEl = document.getElementById('fontSizeValue');
+                if (valueEl) valueEl.textContent = savedSize + 'px';
             }
-        } catch (error) {
-            showToast('Failed to delete', 'error');
         }
-    }
 
-    // ==================== LOAD CHAT ====================
-    async function loadChat(sessionId) {
-        if (currentSessionId === sessionId || isProcessing) return;
-        
-        currentSessionId = sessionId;
-        document.getElementById('chatMessages').innerHTML = '';
-        showTypingSkeleton();
-        
-        try {
-            const res = await fetch(`/ai/session/${sessionId}?per_page=100`, { credentials: 'include' });
-            const data = await res.json();
-            
-            document.getElementById('chatMessages').innerHTML = '';
-            
-            if (data.success && data.messages) {
-                if (data.messages.length === 0) {
-                    addSystemMessage('✨ New conversation. How can I help?');
-                } else {
-                    data.messages.forEach(msg => {
-                        addMessageToUI(msg.content, msg.role === 'user' ? 'user' : 'bot', msg.model_used);
-                    });
-                }
-                renderSidebar(allSessions);
-                scrollToBottom();
-            }
-        } catch (error) {
-            document.getElementById('chatMessages').innerHTML = '';
-            addSystemMessage('Failed to load messages. Please try again.');
+        // FIXED: Model names without API exposure
+        function changeModel() {
+            const model = document.getElementById('modelSelect').value;
+            localStorage.setItem('jarvis-model', model);
+            const modelNames = { 'deepseek': 'JARVIS Technical', 'groq': 'JARVIS Lightning', 'gemini': 'JARVIS Philosopher' };
+            showToast(`🧠 Switched to ${modelNames[model]} mode`, 'info');
         }
-        
-        if (window.innerWidth <= 768) {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar.classList.contains('open')) toggleSidebar();
-        }
-    }
 
-    function showTypingSkeleton() {
-        const container = document.getElementById('chatMessages');
-        const skeleton = document.createElement('div');
-        skeleton.className = 'message bot-message';
-        skeleton.innerHTML = `
-            <div class="message-content" style="padding:0; background:transparent; border:none;">
-                <div class="skeleton" style="width:200px; height:40px; margin-bottom:8px;"></div>
-                <div class="skeleton" style="width:150px; height:20px;"></div>
-            </div>`;
-        skeleton.id = 'loadingSkeleton';
-        container.appendChild(skeleton);
-    }
-
-    // ==================== CREATE NEW CHAT ====================
-    async function createNewChat() {
-        try {
-            const res = await fetch('/ai/session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: 'New Conversation' }),
-                credentials: 'include'
-            });
-            const data = await res.json();
-            if (data.success) {
-                currentSessionId = data.session_id;
-                document.getElementById('chatMessages').innerHTML = '';
-                addSystemMessage('✨ New conversation started. I\'m ready to assist!');
-                await loadSessions();
-                if (window.innerWidth <= 768) toggleSidebar();
-            }
-        } catch (error) {
-            showToast('Failed to create new chat', 'error');
+        function loadModel() {
+            const savedModel = localStorage.getItem('jarvis-model') || 'deepseek';
+            const selectEl = document.getElementById('modelSelect');
+            if (selectEl) selectEl.value = savedModel;
         }
-    }
 
-    // ==================== SEND MESSAGE ====================
-    async function sendMessage() {
-        if (isProcessing || !currentSessionId) return;
-        
-        const inputEl = document.getElementById('input');
-        const msg = inputEl.value.trim();
-        if (!msg) return;
-        
-        if (msg.length > 5000) {
-            showToast('Message too long (max 5000 characters)', 'warning');
-            return;
+        // ==================== SIDEBAR ====================
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
         }
-        
-        addMessageToUI(msg, 'user');
-        inputEl.value = '';
-        document.getElementById('sendBtn').disabled = true;
-        
-        showTypingIndicator();
-        
-        try {
-            const selectedModel = document.getElementById('modelSelect').value;
-            const res = await fetch(`/ai/session/${currentSessionId}/message`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: msg, model: selectedModel }),
-                credentials: 'include'
-            });
-            const data = await res.json();
-            
-            removeTypingIndicator();
-            
-            if (data.success) {
-                addMessageToUI(data.response, 'bot', data.model);
+
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+            if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        // ==================== CHAT FUNCTIONS ====================
+        async function loadSessions() {
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
                 
-                if (data.is_first_message) {
-                    await loadSessions();
+                const res = await fetch('/ai/sessions?per_page=50', { headers: headers, credentials: 'include' });
+                const data = await res.json();
+                if (data.success && data.sessions) {
+                    allSessions = data.sessions;
+                    renderSidebar(allSessions);
+                    if (allSessions.length > 0 && !currentSessionId) await loadChat(allSessions[0].id);
                 }
-            } else {
-                addSystemMessage(data.error || 'An error occurred. Please try again.');
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
             }
-        } catch (error) {
-            removeTypingIndicator();
-            addSystemMessage('Connection error. Please check your internet connection.');
-        } finally {
-            isProcessing = false;
-            document.getElementById('sendBtn').disabled = false;
-            document.getElementById('input').focus();
         }
-    }
 
-    // ==================== VOICE INPUT ====================
-    function toggleVoiceInput() {
-        if (!recognition) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                showToast('Voice input not supported in your browser', 'error');
+        function renderSidebar(sessions) {
+            const container = document.getElementById('chatHistoryList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            if (!sessions || sessions.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">✨ Start a new conversation!</div>`;
                 return;
             }
-            recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = true;
             
-            recognition.onresult = (event) => {
-                let transcript = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
-                }
-                document.getElementById('input').value = transcript;
-                
-                if (event.results[0].isFinal) {
-                    sendMessage();
-                }
-            };
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterdayStart = new Date(todayStart);
+            yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+            const weekStart = new Date(todayStart);
+            weekStart.setDate(weekStart.getDate() - 6);
             
-            recognition.onerror = (event) => {
-                isListening = false;
-                updateVoiceUI();
-                if (event.error !== 'aborted') {
-                    showToast('Voice recognition error: ' + event.error, 'error');
-                }
-            };
+            const groups = { '📝 Today': [], '📅 Yesterday': [], '📆 This Week': [], '📁 Older': [] };
             
-            recognition.onend = () => {
-                isListening = false;
-                updateVoiceUI();
-            };
+            sessions.forEach(session => {
+                const d = new Date(session.updated_at);
+                if (d >= todayStart) groups['📝 Today'].push(session);
+                else if (d >= yesterdayStart) groups['📅 Yesterday'].push(session);
+                else if (d >= weekStart) groups['📆 This Week'].push(session);
+                else groups['📁 Older'].push(session);
+            });
+            
+            Object.entries(groups).forEach(([title, items]) => {
+                if (items.length === 0) return;
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'history-group';
+                groupDiv.innerHTML = `<div class="group-title">${title}</div>`;
+                items.forEach(session => {
+                    const item = document.createElement('div');
+                    item.className = `chat-item ${currentSessionId === session.id ? 'active' : ''}`;
+                    const sessionTitle = sanitizeHTML(session.title || 'New Conversation');
+                    item.innerHTML = `
+                        <span class="chat-title">${sessionTitle}</span>
+                        <button class="chat-delete" onclick="event.stopPropagation(); deleteSession(${session.id})">🗑️</button>
+                    `;
+                    item.onclick = () => loadChat(session.id);
+                    groupDiv.appendChild(item);
+                });
+                container.appendChild(groupDiv);
+            });
         }
-        
-        if (isListening) {
-            recognition.stop();
-            isListening = false;
-        } else {
-            const lang = document.getElementById('voiceSelect')?.value || 'en-US';
-            recognition.lang = lang;
-            recognition.start();
-            isListening = true;
-        }
-        updateVoiceUI();
-    }
 
-    function updateVoiceUI() {
-        const voiceBtn = document.getElementById('voiceBtn');
-        const voiceInputBtn = document.getElementById('voiceInputBtn');
-        const voiceWave = document.getElementById('voiceWave');
-        
-        if (isListening) {
-            if (voiceBtn) voiceBtn.style.color = '#ff4444';
-            if (voiceInputBtn) voiceInputBtn.classList.add('recording');
-            if (voiceWave) voiceWave.classList.add('active');
-        } else {
-            if (voiceBtn) voiceBtn.style.color = '';
-            if (voiceInputBtn) voiceInputBtn.classList.remove('recording');
-            if (voiceWave) voiceWave.classList.remove('active');
-        }
-    }
-
-    // ==================== EXPORT CHATS ====================
-    async function exportChats() {
-        try {
-            showToast('Preparing export...', 'info');
-            const res = await fetch('/ai/sessions?per_page=100', { credentials: 'include' });
-            const data = await res.json();
-            
-            if (data.success && data.sessions) {
-                const exportData = [];
-                for (const session of data.sessions) {
-                    const msgRes = await fetch(`/ai/session/${session.id}?per_page=500`, { credentials: 'include' });
-                    const msgData = await msgRes.json();
-                    exportData.push({
-                        session: {
-                            id: session.id,
-                            title: session.title,
-                            created: session.created_at,
-                            updated: session.updated_at
-                        },
-                        messages: msgData.messages || []
-                    });
+        async function deleteSession(sessionId) {
+            if (!confirm('Delete this conversation?')) return;
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                
+                const res = await fetch(`/ai/session/${sessionId}`, { method: 'DELETE', headers: headers, credentials: 'include' });
+                const data = await res.json();
+                if (data.success) {
+                    if (currentSessionId === sessionId) {
+                        currentSessionId = null;
+                        document.getElementById('chatMessages').innerHTML = '';
+                    }
+                    await loadSessions();
+                    if (!currentSessionId && allSessions.length > 0) await loadChat(allSessions[0].id);
+                    else if (!currentSessionId) await createNewChat();
+                    showToast('Conversation deleted', 'success');
                 }
-                
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `jarvis-export-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                showToast('✅ Export complete!', 'success');
+            } catch (error) {
+                showToast('Failed to delete', 'error');
             }
-        } catch (error) {
-            showToast('Failed to export chats', 'error');
         }
-    }
 
-    // ==================== CLEAR ALL HISTORY ====================
-    async function clearAllHistory() {
-        if (!confirm('⚠️ This will permanently delete ALL conversations. This cannot be undone. Continue?')) return;
-        
-        try {
-            showToast('Clearing history...', 'info');
-            const res = await fetch('/ai/sessions?per_page=100', { credentials: 'include' });
-            const data = await res.json();
-            
-            if (data.success && data.sessions) {
-                for (const session of data.sessions) {
-                    await fetch(`/ai/session/${session.id}`, { method: 'DELETE', credentials: 'include' });
-                }
-            }
-            
-            currentSessionId = null;
+        async function loadChat(sessionId) {
+            if (currentSessionId === sessionId || isProcessing) return;
+            currentSessionId = sessionId;
             document.getElementById('chatMessages').innerHTML = '';
-            await loadSessions();
-            await createNewChat();
-            showToast('All history cleared', 'success');
-        } catch (error) {
-            showToast('Failed to clear history', 'error');
-        }
-    }
-
-    // ==================== FILE ATTACHMENT (Placeholder) ====================
-    function attachFile() {
-        showToast('📎 File upload coming in v3.2!', 'info');
-    }
-
-    function updateCharCount() {
-        const input = document.getElementById('input');
-        const count = input.value.length;
-        // Optional: add character counter display
-    }
-
-    // ==================== UI HELPERS ====================
-    function addMessageToUI(text, type, modelUsed = null) {
-        const container = document.getElementById('chatMessages');
-        if (!container) return;
-        
-        const div = document.createElement('div');
-        div.className = `message ${type}-message`;
-        
-        const modelBadge = (type === 'bot' && modelUsed) ? 
-            `<span style="font-size:10px; opacity:0.6;">via ${modelUsed}</span>` : '';
-        
-        div.innerHTML = `
-            <div class="message-content">${sanitizeHTML(text).replace(/\n/g, '<br>')}</div>
-            <div class="message-meta">
-                <span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                ${modelBadge}
-                <span class="message-actions">
-                    <button class="message-action-btn" onclick="navigator.clipboard.writeText('${sanitizeHTML(text).replace(/'/g, "\\'")}'); showToast('Copied!', 'success')">📋 Copy</button>
-                </span>
-            </div>
-        `;
-        
-        container.appendChild(div);
-        scrollToBottom();
-    }
-
-    function addSystemMessage(text) {
-        const container = document.getElementById('chatMessages');
-        if (!container) return;
-        
-        const div = document.createElement('div');
-        div.className = 'message system-message';
-        div.innerHTML = `<div class="message-content">${sanitizeHTML(text)}</div>`;
-        container.appendChild(div);
-        scrollToBottom();
-    }
-
-    function showTypingIndicator() {
-        const container = document.getElementById('chatMessages');
-        const indicator = document.createElement('div');
-        indicator.className = 'message bot-message';
-        indicator.id = 'typingIndicator';
-        indicator.innerHTML = `
-            <div class="typing-indicator">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>`;
-        container.appendChild(indicator);
-        scrollToBottom();
-    }
-
-    function removeTypingIndicator() {
-        const indicator = document.getElementById('typingIndicator');
-        if (indicator) indicator.remove();
-        const skeleton = document.getElementById('loadingSkeleton');
-        if (skeleton) skeleton.remove();
-    }
-
-    function scrollToBottom() {
-        const container = document.getElementById('chatMessages');
-        if (container) {
-            setTimeout(() => {
-                container.scrollTop = container.scrollHeight;
-            }, 50);
-        }
-    }
-
-    function handleKeyPress(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    }
-
-    // ==================== INITIALIZATION ====================
-    window.onload = () => {
-        initParticles();
-        loadTheme();
-        loadFontSize();
-        loadModel();
-        checkLoginStatus();
-        
-        // Close modal on outside click
-        window.onclick = function(event) {
-            const modal = document.getElementById('settingsModal');
-            if (event.target === modal) {
-                closeSettings();
+            
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                
+                const res = await fetch(`/ai/session/${sessionId}?per_page=100`, { headers: headers, credentials: 'include' });
+                const data = await res.json();
+                document.getElementById('chatMessages').innerHTML = '';
+                
+                if (data.success && data.messages) {
+                    if (data.messages.length === 0) addSystemMessage('✨ New conversation. How can I help?');
+                    else data.messages.forEach(msg => addMessageToUI(msg.content, msg.role === 'user' ? 'user' : 'bot', msg.model_used));
+                    renderSidebar(allSessions);
+                    scrollToBottom();
+                }
+            } catch (error) {
+                document.getElementById('chatMessages').innerHTML = '';
+                addSystemMessage('Failed to load messages. Please try again.');
             }
+            
+            if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
+        }
+
+        async function createNewChat() {
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                
+                const res = await fetch('/ai/session', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ title: 'New Conversation' }),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentSessionId = data.session_id;
+                    document.getElementById('chatMessages').innerHTML = '';
+                    addSystemMessage('✨ New conversation started. I\'m ready to assist!');
+                    await loadSessions();
+                    if (window.innerWidth <= 768) toggleSidebar();
+                }
+            } catch (error) {
+                showToast('Failed to create new chat', 'error');
+            }
+        }
+
+        async function sendMessage() {
+            if (isProcessing || !currentSessionId) return;
+            const inputEl = document.getElementById('input');
+            const msg = inputEl.value.trim();
+            if (!msg) return;
+            if (msg.length > 5000) { showToast('Message too long (max 5000 characters)', 'warning'); return; }
+            
+            addMessageToUI(msg, 'user');
+            inputEl.value = '';
+            document.getElementById('sendBtn').disabled = true;
+            isProcessing = true;
+            
+            showTypingIndicator();
+            
+            try {
+                const selectedModel = document.getElementById('modelSelect').value;
+                const token = localStorage.getItem('jwt_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                
+                const res = await fetch(`/ai/session/${currentSessionId}/message`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ prompt: msg, model: selectedModel }),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                removeTypingIndicator();
+                
+                if (data.success) {
+                    addMessageToUI(data.response, 'bot', data.model);
+                    if (data.is_first_message) await loadSessions();
+                } else {
+                    addSystemMessage(data.error || 'An error occurred. Please try again.');
+                }
+            } catch (error) {
+                removeTypingIndicator();
+                addSystemMessage('Connection error. Please check your internet connection.');
+            } finally {
+                isProcessing = false;
+                document.getElementById('sendBtn').disabled = false;
+                document.getElementById('input').focus();
+            }
+        }
+
+        // ==================== UI HELPERS ====================
+        function addMessageToUI(text, type, modelUsed = null) {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.className = `message ${type}-message`;
+            
+            // FIXED: Display model name without exposing API details
+            let modelDisplay = '';
+            if (type === 'bot' && modelUsed) {
+                const modelNames = { 'deepseek': 'JARVIS Technical', 'groq': 'JARVIS Lightning', 'gemini': 'JARVIS Philosopher', 'fallback': 'JARVIS Core' };
+                modelDisplay = `<span style="font-size:10px; opacity:0.6;">via ${modelNames[modelUsed] || 'JARVIS'}</span>`;
+            }
+            
+            div.innerHTML = `
+                <div class="message-content">${sanitizeHTML(text).replace(/\n/g, '<br>')}</div>
+                <div class="message-meta">
+                    <span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    ${modelDisplay}
+                    <span class="message-actions">
+                        <button class="message-action-btn" onclick="navigator.clipboard.writeText('${sanitizeHTML(text).replace(/'/g, "\\'")}'); showToast('Copied!', 'success')">📋 Copy</button>
+                    </span>
+                </div>
+            `;
+            container.appendChild(div);
+            scrollToBottom();
+        }
+
+        function addSystemMessage(text) {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.className = 'message system-message';
+            div.innerHTML = `<div class="message-content">${sanitizeHTML(text)}</div>`;
+            container.appendChild(div);
+            scrollToBottom();
+        }
+
+        function showTypingIndicator() {
+            const container = document.getElementById('chatMessages');
+            const indicator = document.createElement('div');
+            indicator.className = 'message bot-message';
+            indicator.id = 'typingIndicator';
+            indicator.innerHTML = `<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+            container.appendChild(indicator);
+            scrollToBottom();
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        // ==================== VOICE INPUT ====================
+        function toggleVoiceInput() {
+            if (!recognition) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) { showToast('Voice input not supported', 'error'); return; }
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                
+                recognition.onresult = (event) => {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) transcript += event.results[i][0].transcript;
+                    document.getElementById('input').value = transcript;
+                    if (event.results[0].isFinal) sendMessage();
+                };
+                recognition.onerror = () => { isListening = false; updateVoiceUI(); };
+                recognition.onend = () => { isListening = false; updateVoiceUI(); };
+            }
+            
+            if (isListening) { recognition.stop(); isListening = false; }
+            else {
+                const lang = document.getElementById('voiceSelect')?.value || 'en-US';
+                recognition.lang = lang;
+                recognition.start();
+                isListening = true;
+            }
+            updateVoiceUI();
+        }
+
+        function updateVoiceUI() {
+            const voiceWave = document.getElementById('voiceWave');
+            const voiceBtn = document.getElementById('voiceBtn');
+            const voiceInputBtn = document.getElementById('voiceInputBtn');
+            if (isListening) {
+                if (voiceWave) voiceWave.classList.add('active');
+                if (voiceBtn) voiceBtn.style.color = '#ff4444';
+                if (voiceInputBtn) voiceInputBtn.classList.add('recording');
+            } else {
+                if (voiceWave) voiceWave.classList.remove('active');
+                if (voiceBtn) voiceBtn.style.color = '';
+                if (voiceInputBtn) voiceInputBtn.classList.remove('recording');
+            }
+        }
+
+        // ==================== DATA MANAGEMENT ====================
+        async function exportChats() {
+            try {
+                showToast('Preparing export...', 'info');
+                const token = localStorage.getItem('jwt_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                
+                const res = await fetch('/ai/sessions?per_page=100', { headers: headers, credentials: 'include' });
+                const data = await res.json();
+                if (data.success && data.sessions) {
+                    const exportData = [];
+                    for (const session of data.sessions) {
+                        const msgRes = await fetch(`/ai/session/${session.id}?per_page=500`, { headers: headers, credentials: 'include' });
+                        const msgData = await msgRes.json();
+                        exportData.push({ session: { id: session.id, title: session.title, created: session.created_at, updated: session.updated_at }, messages: msgData.messages || [] });
+                    }
+                    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `jarvis-export-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('✅ Export complete!', 'success');
+                }
+            } catch (error) { showToast('Failed to export chats', 'error'); }
+        }
+
+        async function clearAllHistory() {
+            if (!confirm('⚠️ This will permanently delete ALL conversations. This cannot be undone. Continue?')) return;
+            try {
+                showToast('Clearing history...', 'info');
+                const token = localStorage.getItem('jwt_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                
+                const res = await fetch('/ai/sessions?per_page=100', { headers: headers, credentials: 'include' });
+                const data = await res.json();
+                if (data.success && data.sessions) {
+                    for (const session of data.sessions) await fetch(`/ai/session/${session.id}`, { method: 'DELETE', headers: headers, credentials: 'include' });
+                }
+                currentSessionId = null;
+                document.getElementById('chatMessages').innerHTML = '';
+                await loadSessions();
+                await createNewChat();
+                showToast('All history cleared', 'success');
+            } catch (error) { showToast('Failed to clear history', 'error'); }
+        }
+
+        function attachFile() { showToast('📎 File upload coming soon!', 'info'); }
+
+        function handleKeyPress(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+
+        // ==================== INITIALIZATION ====================
+        window.onload = () => {
+            initParticles();
+            loadTheme();
+            loadFontSize();
+            loadModel();
+            checkLoginStatus();
+            
+            window.onclick = (event) => { if (event.target === document.getElementById('settingsModal')) closeSettings(); };
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (localStorage.getItem('jarvis-theme') === 'system') setTheme('system'); });
+            
+            document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); createNewChat(); } if (e.key === 'Escape') closeSettings(); });
+            
+            setTimeout(() => { const input = document.getElementById('input'); if (input && !input.disabled) input.focus(); }, 500);
         };
-        
-        // Handle system theme changes
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            if (localStorage.getItem('jarvis-theme') === 'system') {
-                setTheme('system');
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768 && document.getElementById('sidebar').classList.contains('open')) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('active');
             }
         });
-        
-        // Keyboard shortcut: Ctrl+K for new chat
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                createNewChat();
-            }
-            if (e.key === 'Escape') {
-                closeSettings();
-            }
-        });
-        
-        // Focus input on load
-        setTimeout(() => {
-            const input = document.getElementById('input');
-            if (input && !input.disabled) input.focus();
-        }, 500);
-    };
 
-    // Handle window resize for responsive sidebar
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 768) {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar.classList.contains('open')) {
-                sidebar.classList.remove('open');
-                overlay.classList.remove('active');
-            }
-        }
-    });
-
-    // Service worker registration for PWA (optional)
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            // navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-    }
-
-    console.log('%c🚀 JARVIS v3.1.0 %cInitialized',
-        'color: #00ffff; font-size: 20px; font-weight: bold;',
-        'color: #ffffff; font-size: 14px;');
-    console.log('%cBuilt by Krish Paliwal %c| Enterprise AI Platform',
-        'color: #ff00ff; font-size: 12px;',
-        'color: #a0a0c0; font-size: 12px;');
+        console.log('%c🚀 JARVIS v3.1.0 %cInitialized', 'color: #00ffff; font-size: 20px; font-weight: bold;', 'color: #ffffff; font-size: 14px;');
+        console.log('%cBuilt by Krish Paliwal %c| Enterprise AI Platform', 'color: #ff00ff; font-size: 12px;', 'color: #a0a0c0; font-size: 12px;');
     </script>
 </body>
 </html>
