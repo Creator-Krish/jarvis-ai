@@ -125,13 +125,13 @@ class Config:
         "FRONTEND_URL", 
         "https://jarvis-e76i.onrender.com"
     )
-    FRONTEND_URL: str = PRODUCTION_DOMAIN  # Alias for consistency
+    FRONTEND_URL: str = PRODUCTION_DOMAIN
     
     # ── Security ────────────────────────────────────────
     SECRET_KEY: str = os.environ.get("SECRET_KEY", secrets.token_hex(32))
     JWT_SECRET: str = os.environ.get("JWT_SECRET", secrets.token_hex(32))
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRY_HOURS: int = 168  # 7 days
+    JWT_EXPIRY_HOURS: int = 168
     
     SESSION_COOKIE_SECURE: bool = True
     SESSION_COOKIE_HTTPONLY: bool = True
@@ -139,6 +139,7 @@ class Config:
     MAX_CONTENT_LENGTH: int = int(os.environ.get("MAX_CONTENT_LENGTH", 10 * 1024 * 1024))
     
     # ── Database ────────────────────────────────────────
+    # FIXED: Use the exact environment variable names from Render
     DB_HOST: str = os.environ.get("DB_HOST", "localhost")
     DB_PORT: int = int(os.environ.get("DB_PORT", 5432))
     DB_USER: str = os.environ.get("DB_USER", "postgres")
@@ -151,8 +152,8 @@ class Config:
     REDIS_URL: Optional[str] = os.environ.get("REDIS_URL")
     
     # ── Rate Limiting ───────────────────────────────────
-    RATE_LIMIT_MESSAGES: int = 10       # messages per window
-    RATE_LIMIT_WINDOW: int = 60         # seconds
+    RATE_LIMIT_MESSAGES: int = 10
+    RATE_LIMIT_WINDOW: int = 60
     RATE_LIMIT_SESSIONS: int = 30
     RATE_LIMIT_GLOBAL: int = 100
     
@@ -174,6 +175,8 @@ class Config:
     MAX_MESSAGE_LENGTH: int = 5000
     MAX_SESSION_TITLE: int = 100
     MAX_FILE_SIZE: int = 10 * 1024 * 1024
+    
+    # ... rest of the Config class remains the same
     
     # ── AI Model Configurations ─────────────────────────
     AI_MODELS: Dict[str, Dict] = {
@@ -680,6 +683,9 @@ class DatabasePool:
             return
         
         try:
+            # Log connection attempt (without password)
+            logger.info(f"Connecting to database: {Config.DB_HOST}:{Config.DB_PORT}/{Config.DB_NAME} as {Config.DB_USER}")
+            
             self._pool = pool.ThreadedConnectionPool(
                 Config.DB_MIN_CONN,
                 Config.DB_MAX_CONN,
@@ -688,18 +694,20 @@ class DatabasePool:
                 user=Config.DB_USER,
                 password=Config.DB_PASSWORD,
                 database=Config.DB_NAME,
-                connect_timeout=10,
+                connect_timeout=30,  # Increased timeout
                 keepalives=1,
                 keepalives_idle=30,
                 keepalives_interval=10,
-                keepalives_count=3
+                keepalives_count=3,
+                sslmode='require'  # Render requires SSL for external connections
             )
             self._initialized = True
             logger.info(f"✅ Database pool initialized ({Config.DB_MIN_CONN}-{Config.DB_MAX_CONN} connections)")
         except Exception as e:
             logger.error(f"❌ Database pool failed: {e}")
+            logger.error(f"Connection details - Host: {Config.DB_HOST}, Port: {Config.DB_PORT}, DB: {Config.DB_NAME}, User: {Config.DB_USER}")
             self._pool = None
-            self._initialized = True  # Don't retry
+            self._initialized = True
     
     def get_connection(self):
         """Get a connection from the pool"""
@@ -709,8 +717,11 @@ class DatabasePool:
         if self._pool:
             try:
                 return self._pool.getconn()
-            except pool.PoolError:
-                logger.warning("Pool exhausted, creating temporary connection")
+            except pool.PoolError as e:
+                logger.warning(f"Pool exhausted: {e}, creating temporary connection")
+                return self._create_direct_connection()
+            except Exception as e:
+                logger.error(f"Pool get connection error: {e}")
                 return self._create_direct_connection()
         
         return self._create_direct_connection()
@@ -737,14 +748,18 @@ class DatabasePool:
     def _create_direct_connection(self):
         """Create a direct database connection"""
         try:
-            return psycopg2.connect(
+            logger.info(f"Creating direct connection to {Config.DB_HOST}:{Config.DB_PORT}/{Config.DB_NAME}")
+            conn = psycopg2.connect(
                 host=Config.DB_HOST,
                 port=Config.DB_PORT,
                 user=Config.DB_USER,
                 password=Config.DB_PASSWORD,
                 database=Config.DB_NAME,
-                connect_timeout=10
+                connect_timeout=30,
+                sslmode='require'  # Render requires SSL
             )
+            logger.info("✅ Direct connection successful")
+            return conn
         except Exception as e:
             logger.error(f"Direct connection failed: {e}")
             return None
@@ -758,10 +773,6 @@ class DatabasePool:
                 pass
             self._pool = None
         self._initialized = False
-
-# Initialize database pool
-db_pool = DatabasePool()
-
 # =============================
 # USER REPOSITORY
 # =============================
