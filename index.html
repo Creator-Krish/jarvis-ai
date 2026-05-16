@@ -3098,8 +3098,11 @@
                 if (e.target === $("imageViewer")) closeImageViewer(); 
             });
             
-            $("signInBtn").addEventListener("click", startSignIn);
-            $("googleSignInBtn").addEventListener("click", startSignIn);
+            // Sign In buttons with safety check
+["signInBtn", "googleSignInBtn"].forEach(id => {
+    const btn = $(id);
+    if (btn) btn.addEventListener("click", startSignIn);
+});
             $("logoutBtnSide").addEventListener("click", signOut);
             $("mobileMenuBtn").addEventListener("click", openSidebar);
             $("collapseSidebarBtn").addEventListener("click", closeSidebar);
