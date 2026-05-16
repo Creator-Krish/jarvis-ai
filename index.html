@@ -2798,6 +2798,260 @@
             window.location.href = JARVIS_ROUTES.signOut;
         }
 
+        function renderHistory() {
+    const container = $("historyList");
+    const term = $("historySearch").value.trim().toLowerCase();
+    const filtered = state.conversations.filter(item => 
+        item.title.toLowerCase().includes(term)
+    );
+    container.innerHTML = "";
+
+    if (!filtered.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = term ? "No matching conversations." : "No conversations yet.";
+        container.appendChild(empty);
+        return;
+    }
+
+    const grouped = groupConversations(filtered);
+    Object.entries(grouped).forEach(([label, items]) => {
+        if (!items.length) return;
+        const group = document.createElement("section");
+        group.className = "history-group";
+        const heading = document.createElement("h2");
+        heading.className = "history-heading";
+        heading.textContent = label;
+        group.appendChild(heading);
+
+        items.forEach(conversation => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `history-item ${conversation.id === state.currentId ? "active" : ""}`;
+            button.setAttribute("role", "listitem");
+            button.addEventListener("click", () => loadConversation(conversation.id));
+
+            const icon = document.createElement("span");
+            icon.className = "ico";
+            icon.dataset.lucide = "message-square";
+            icon.textContent = "C";
+
+            const copy = document.createElement("span");
+            const title = document.createElement("span");
+            title.className = "history-title";
+            title.textContent = conversation.title || "New Conversation";
+            const time = document.createElement("span");
+            time.className = "history-time";
+            time.textContent = formatRelative(conversation.updatedAt);
+            copy.append(title, time);
+
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "history-delete";
+            del.setAttribute("aria-label", `Delete ${conversation.title || "conversation"}`);
+            del.innerHTML = '<span class="ico" data-lucide="x">X</span>';
+            del.addEventListener("click", event => {
+                event.stopPropagation();
+                deleteConversation(conversation.id);
+            });
+
+            button.append(icon, copy, del);
+            group.appendChild(button);
+        });
+        container.appendChild(group);
+    });
+}
+
+        function groupConversations(items) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const week = new Date(today);
+    week.setDate(today.getDate() - 6);
+
+    const groups = {
+        Today: [],
+        Yesterday: [],
+        "Last 7 Days": [],
+        Earlier: []
+    };
+
+    items.forEach(item => {
+        const date = new Date(item.updatedAt);
+        if (date >= today) groups.Today.push(item);
+        else if (date >= yesterday) groups.Yesterday.push(item);
+        else if (date >= week) groups["Last 7 Days"].push(item);
+        else groups.Earlier.push(item);
+    });
+    return groups;
+}
+
+    function formatRelative(dateLike) {
+    const date = new Date(dateLike);
+    if (Number.isNaN(date.getTime())) return "";
+    const diff = Date.now() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+        function renderMessages() {
+    const container = $("messages");
+    const conversation = currentConversation();
+    container.innerHTML = "";
+
+    if (!conversation || !conversation.messages?.length) {
+        renderWelcome(container);
+        return;
+    }
+
+    const hasNonSystem = conversation.messages.some(message => message.role !== "system");
+    if (!hasNonSystem) renderWelcome(container);
+
+    conversation.messages.forEach(message => {
+        container.appendChild(createMessageNode(message));
+    });
+}
+
+        function renderWelcome(container) {
+    const board = document.createElement("section");
+    board.className = "welcome-board";
+
+    const head = document.createElement("div");
+    head.className = "welcome-head";
+    const mark = document.createElement("div");
+    mark.className = "welcome-mark";
+    mark.innerHTML = '<span class="ico" data-lucide="scan-line">J</span>';
+    const copy = document.createElement("div");
+    const title = document.createElement("h3");
+    title.textContent = "JARVIS is ready.";
+    const sub = document.createElement("p");
+    sub.textContent = getMode().status;
+    copy.append(title, sub);
+    head.append(mark, copy);
+
+    const grid = document.createElement("div");
+    grid.className = "starter-grid";
+    STARTERS.forEach(starter => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "starter";
+        const icon = document.createElement("span");
+        icon.className = "ico";
+        icon.dataset.lucide = "corner-down-right";
+        icon.textContent = ">";
+        const strong = document.createElement("strong");
+        strong.textContent = starter.title;
+        const span = document.createElement("span");
+        span.textContent = starter.text;
+        button.append(icon, strong, span);
+        button.addEventListener("click", () => {
+            $("promptInput").value = starter.text;
+            autoResizeInput();
+            $("promptInput").focus();
+        });
+        grid.appendChild(button);
+    });
+
+    board.append(head, grid);
+    container.appendChild(board);
+}
+
+        function createMessageNode(message) {
+    const outer = document.createElement("article");
+    outer.className = `message ${message.role}-message`;
+
+    const shell = document.createElement("div");
+    shell.className = "message-shell";
+
+    const content = document.createElement("div");
+    content.className = "message-content";
+    renderMessageContent(content, message.content);
+
+    if (message.attachments?.length) {
+        const grid = document.createElement("div");
+        grid.className = "attachment-grid";
+        message.attachments.forEach(attachment => {
+            if (!attachment.url && !attachment.dataUrl) return;
+            const figure = document.createElement("figure");
+            figure.className = "attachment";
+            const img = document.createElement("img");
+            img.src = attachment.url || attachment.dataUrl;
+            img.alt = attachment.alt || attachment.caption || "JARVIS attachment";
+            img.loading = "lazy";
+            img.addEventListener("click", () => openImageViewer(img.src, img.alt, attachment.caption || message.content));
+            figure.appendChild(img);
+            if (attachment.caption) {
+                const caption = document.createElement("figcaption");
+                caption.textContent = attachment.caption;
+                figure.appendChild(caption);
+            }
+            grid.appendChild(figure);
+        });
+        content.appendChild(grid);
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "message-meta";
+    const time = document.createElement("span");
+    time.textContent = new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const mode = document.createElement("span");
+    mode.textContent = message.role === "assistant" ? getMode(message.mode).label : "";
+
+    const actions = document.createElement("span");
+    actions.className = "message-actions";
+    actions.append(
+        miniButton("copy", "Copy", () => copyText(message.content)),
+        miniButton("volume-2", "Speak", () => speak(message.content))
+    );
+
+    meta.append(time);
+    if (mode.textContent) meta.append(mode);
+    meta.append(actions);
+
+    shell.append(content, meta);
+    outer.appendChild(shell);
+    return outer;
+}
+
+        function renderMessageContent(container, text) {
+    const value = String(text || "");
+    const parts = value.split(/```/g);
+    parts.forEach((part, index) => {
+        if (!part) return;
+        if (index % 2 === 1) {
+            const pre = document.createElement("pre");
+            const code = document.createElement("code");
+            code.textContent = part.trim();
+            pre.appendChild(code);
+            container.appendChild(pre);
+            return;
+        }
+        const paragraphs = part.split(/\n{2,}/);
+        paragraphs.forEach(paragraph => {
+            if (!paragraph.trim()) return;
+            const p = document.createElement("p");
+            p.textContent = paragraph;
+            container.appendChild(p);
+        });
+    });
+}
+
+        function miniButton(iconName, label, handler) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mini-action";
+    btn.setAttribute("aria-label", label);
+    btn.innerHTML = `<span class="ico" data-lucide="${iconName}">${label.charAt(0)}</span>`;
+    btn.addEventListener("click", handler);
+    return btn;
+}
         function bindEvents() {
             $("newConversationBtn").addEventListener("click", () => createConversation());
             $("historySearch").addEventListener("input", renderHistory);
