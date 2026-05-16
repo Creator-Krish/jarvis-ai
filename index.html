@@ -2091,22 +2091,47 @@
             $("profileAvatarLarge").textContent = name.trim().charAt(0).toUpperCase() || "J";
         }
 
-        async function bootIdentity() {
-            getTokenFromUrl();
-            if (state.previewMode) {
-                setUser({ name: "Krish", email: "krish@jarvis.ai" });
-                await loadConversations();
-                openApp();
-                return;
-            }
-            try {
-                const data = await bridge(JARVIS_ROUTES.identity);
-                if (data.success === false || !data.user) throw new Error("No active session");
-                setUser(data.user);
-                await loadConversations();
-                openApp();
-            } catch { showAuth(); }
+       async function bootIdentity() {
+    // Extract token from URL first
+    const tokenFromUrl = getTokenFromUrl();
+    
+    if (state.previewMode) {
+        setUser({ name: "Krish", email: "krish@jarvis.ai" });
+        await loadConversations();
+        openApp();
+        return;
+    }
+    
+    // Check if we have any token
+    const storedToken = localStorage.getItem(STORAGE.token);
+    if (!storedToken && !tokenFromUrl) {
+        showAuth();
+        return;
+    }
+    
+    try {
+        const data = await bridge(JARVIS_ROUTES.identity);
+        if (data.success === false || !data.user) {
+            throw new Error("Invalid session");
         }
+        setUser(data.user);
+        await loadConversations();
+        openApp();
+    } catch (error) {
+        console.error("Identity check failed:", error);
+        // If we have a token but identity check fails, still try to open the app
+        if (storedToken) {
+            setUser({ 
+                name: "User", 
+                email: "user@jarvis.local" 
+            });
+            await loadConversations();
+            openApp();
+        } else {
+            showAuth();
+        }
+    }
+}
 
         function localConversations() {
             const saved = safeJsonParse(localStorage.getItem(STORAGE.conversations), []);
