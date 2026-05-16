@@ -1676,6 +1676,38 @@
                 <button class="icon-button" id="closeSettingsBtn" type="button" aria-label="Close settings">
                     <span class="ico" data-lucide="x">X</span>
                 </button>
+                <!-- Add this after the image-viewer div and before toast-region -->
+<div class="modal-backdrop" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+    <div class="dialog">
+        <div class="dialog-header">
+            <h3 id="profileTitle">Profile</h3>
+            <button class="icon-button" id="closeProfileBtn" type="button" aria-label="Close profile">
+                <span class="ico" data-lucide="x">X</span>
+            </button>
+        </div>
+        <div class="dialog-body">
+            <div class="settings-grid">
+                <section class="setting-block" style="text-align: center;">
+                    <div style="width: 64px; height: 64px; margin: 0 auto; border-radius: 16px; display: grid; place-items: center; background: rgba(var(--accent-rgb), 0.16); border: 2px solid rgba(var(--accent-rgb), 0.3); color: var(--accent); font-weight: 900; font-size: 28px;" id="profileAvatarLarge">J</div>
+                    <div style="margin-top: 12px;">
+                        <h2 id="profileName" style="margin: 0; font-size: 20px;">Operator</h2>
+                        <p id="profileEmail" style="margin: 4px 0 0; color: var(--text-3);">operator@jarvis.local</p>
+                    </div>
+                </section>
+                <div class="modal-actions">
+                    <button class="ghost-button" id="openSettingsFromProfile" type="button">
+                        <span class="ico" data-lucide="settings">S</span>
+                        Settings
+                    </button>
+                    <button class="danger-button" id="signOutFromProfile" type="button">
+                        <span class="ico" data-lucide="log-out">O</span>
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
             </div>
             <div class="dialog-body">
                 <div class="settings-grid">
@@ -2901,7 +2933,109 @@
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-        function renderMessages() {
+        function renderHistory() {
+    const container = $("historyList");
+    const term = ($("historySearch").value || "").trim().toLowerCase();
+    const filtered = state.conversations.filter(item => 
+        item.title.toLowerCase().includes(term)
+    );
+    container.innerHTML = "";
+
+    if (!filtered.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = term ? "No matching conversations." : "No conversations yet.";
+        container.appendChild(empty);
+        return;
+    }
+
+    const grouped = groupConversations(filtered);
+    Object.entries(grouped).forEach(([label, items]) => {
+        if (!items.length) return;
+        const group = document.createElement("section");
+        group.className = "history-group";
+        const heading = document.createElement("h2");
+        heading.className = "history-heading";
+        heading.textContent = label;
+        group.appendChild(heading);
+
+        items.forEach(conversation => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `history-item ${conversation.id === state.currentId ? "active" : ""}`;
+            button.setAttribute("role", "listitem");
+            button.addEventListener("click", () => loadConversation(conversation.id));
+
+            const icon = document.createElement("span");
+            icon.className = "ico";
+            icon.dataset.lucide = "message-square";
+            icon.textContent = "C";
+
+            const copy = document.createElement("span");
+            const title = document.createElement("span");
+            title.className = "history-title";
+            title.textContent = conversation.title || "New Conversation";
+            const time = document.createElement("span");
+            time.className = "history-time";
+            time.textContent = formatRelative(conversation.updatedAt);
+            copy.append(title, time);
+
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "history-delete";
+            del.setAttribute("aria-label", `Delete ${conversation.title || "conversation"}`);
+            del.innerHTML = '<span class="ico" data-lucide="x">X</span>';
+            del.addEventListener("click", event => {
+                event.stopPropagation();
+                deleteConversation(conversation.id);
+            });
+
+            button.append(icon, copy, del);
+            group.appendChild(button);
+        });
+        container.appendChild(group);
+    });
+}
+        function groupConversations(items) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const week = new Date(today);
+    week.setDate(today.getDate() - 6);
+
+    const groups = {
+        Today: [],
+        Yesterday: [],
+        "Last 7 Days": [],
+        Earlier: []
+    };
+
+    items.forEach(item => {
+        const date = new Date(item.updatedAt);
+        if (date >= today) groups.Today.push(item);
+        else if (date >= yesterday) groups.Yesterday.push(item);
+        else if (date >= week) groups["Last 7 Days"].push(item);
+        else groups.Earlier.push(item);
+    });
+    return groups;
+}
+
+function formatRelative(dateLike) {
+    const date = new Date(dateLike);
+    if (Number.isNaN(date.getTime())) return "";
+    const diff = Date.now() - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+        
+       function renderMessages() {
     const container = $("messages");
     const conversation = currentConversation();
     container.innerHTML = "";
@@ -3098,11 +3232,10 @@
                 if (e.target === $("imageViewer")) closeImageViewer(); 
             });
             
-            // Sign In buttons with safety check
-["signInBtn", "googleSignInBtn"].forEach(id => {
-    const btn = $(id);
-    if (btn) btn.addEventListener("click", startSignIn);
-});
+const signInBtn = $("signInBtn");
+const googleSignInBtn = $("googleSignInBtn");
+if (signInBtn) signInBtn.addEventListener("click", startSignIn);
+if (googleSignInBtn) googleSignInBtn.addEventListener("click", startSignIn);
             $("logoutBtnSide").addEventListener("click", signOut);
             $("mobileMenuBtn").addEventListener("click", openSidebar);
             $("collapseSidebarBtn").addEventListener("click", closeSidebar);
@@ -3232,7 +3365,19 @@
             bindEvents();
             initSignalCanvas();
             syncIcons();
-            
+
+        function openProfile() {
+    if (state.user) {
+        $("profileName").textContent = state.user.name || "Operator";
+        $("profileEmail").textContent = state.user.email || "operator@jarvis.local";
+        $("profileAvatarLarge").textContent = (state.user.name || "J").trim().charAt(0).toUpperCase();
+    }
+    $("profileModal").classList.add("active");
+}
+
+function closeProfile() { 
+    $("profileModal").classList.remove("active"); 
+}
             // FIX: Retry any queued failed messages on startup
             if (!state.previewMode) {
                 await retryPendingMessages();
