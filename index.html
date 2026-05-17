@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" data-theme="dark" data-accent="cyan" data-density="comfortable">
 <head>
@@ -6,57 +7,21 @@
     <meta name="theme-color" content="#08090d">
     <title>JARVIS: Just an Artificial Real Time Virtually Integrated System</title>
     <style>
-        /* Google Sign-In Button */
-.google-signin-btn {
-    width: 100%;
-    min-height: 52px;
-    border-radius: var(--radius);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    background: #ffffff;
-    color: #1f1f1f;
-    font-weight: 700;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 12px;
-}
-
-.google-signin-btn:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-    transform: translateY(-2px);
-    border-color: rgba(66, 133, 244, 0.5);
-}
-
-.google-signin-btn:active {
-    transform: translateY(0);
-}
-
-.google-signin-btn svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-}
-         :root {
+        :root {
             color-scheme: dark;
             --bg: #08090d;
-            --bg-2: #0d0f14;
-            --bg-3: #13161d;
-            --panel: rgba(16, 19, 26, 0.92);
-            --panel-solid: #10131a;
+            --bg-2: #0d1016;
+            --panel: rgba(14, 18, 25, 0.9);
+            --panel-solid: #10141c;
             --panel-soft: rgba(255, 255, 255, 0.04);
             --border: rgba(255, 255, 255, 0.1);
             --border-strong: rgba(255, 255, 255, 0.18);
-            --text: #f6f8fb;
-            --text-2: #b9c0ce;
-            --text-3: #757f91;
-            --danger: #ff5e7a;
-            --warning: #f4b942;
+            --text: #f4f7fb;
+            --text-2: #b8c1cf;
+            --text-3: #7d8797;
             --success: #2fe29b;
+            --warning: #f4b942;
+            --danger: #ff5e7a;
             --cyan: #34e7ff;
             --mint: #2fe29b;
             --amber: #f4b942;
@@ -64,30 +29,27 @@
             --violet: #a78bfa;
             --accent: var(--cyan);
             --accent-rgb: 52, 231, 255;
-            --shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-            --radius: 8px;
-            --speed: 180ms;
-            --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+            --shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
+            --radius: 10px;
             --message-font: 14px;
-            --sidebar-width: 318px;
-            --composer-height: 116px;
+            --sidebar-width: 308px;
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
+            font-family: Inter, "Segoe UI", system-ui, sans-serif;
         }
 
         [data-theme="light"] {
             color-scheme: light;
-            --bg: #f5f7fb;
+            --bg: #f4f7fb;
             --bg-2: #ffffff;
-            --bg-3: #edf1f7;
-            --panel: rgba(255, 255, 255, 0.9);
+            --panel: rgba(255, 255, 255, 0.92);
             --panel-solid: #ffffff;
-            --panel-soft: rgba(15, 23, 42, 0.045);
-            --border: rgba(12, 18, 30, 0.1);
-            --border-strong: rgba(12, 18, 30, 0.18);
+            --panel-soft: rgba(17, 24, 39, 0.045);
+            --border: rgba(15, 23, 42, 0.12);
+            --border-strong: rgba(15, 23, 42, 0.18);
             --text: #121722;
-            --text-2: #475268;
-            --text-3: #778197;
+            --text-2: #445168;
+            --text-3: #748095;
             --shadow: 0 18px 60px rgba(27, 39, 60, 0.16);
         }
 
@@ -96,235 +58,892 @@
         [data-accent="amber"] { --accent: var(--amber); --accent-rgb: 244, 185, 66; }
         [data-accent="rose"] { --accent: var(--rose); --accent-rgb: 255, 94, 122; }
         [data-accent="violet"] { --accent: var(--violet); --accent-rgb: 167, 139, 250; }
-        [data-density="compact"] { --message-font: 13px; --composer-height: 102px; }
-        [data-density="spacious"] { --message-font: 15px; --composer-height: 136px; }
+        [data-density="compact"] { --message-font: 13px; }
+        [data-density="spacious"] { --message-font: 15px; }
 
-        * { box-sizing: border-box; letter-spacing: 0; }
-
+        * { box-sizing: border-box; }
         html, body {
-            width: 100%; height: 100%; margin: 0; overflow: hidden;
-            background: var(--bg); color: var(--text);
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
-        }
-
-        body {
-            background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.05), transparent 34%),
-                        radial-gradient(circle at 20% 0%, rgba(244, 185, 66, 0.08), transparent 28%),
-                        linear-gradient(135deg, var(--bg), var(--bg-2));
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.05), transparent 36%), linear-gradient(135deg, var(--bg), var(--bg-2));
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            text-rendering: geometricPrecision;
         }
 
         button, input, select, textarea { font: inherit; }
-        button { border: 0; cursor: pointer; }
-        button:disabled { cursor: not-allowed; }
+        button { cursor: pointer; border: 0; }
         ::selection { background: rgba(var(--accent-rgb), 0.28); }
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
 
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), 0.36); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+        #signalCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.55;
+        }
 
-        .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+        .app-shell {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+            width: 100%;
+            height: 100%;
+        }
 
-        #signalCanvas { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.55; }
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            padding: calc(18px + var(--safe-top)) 14px 18px;
+            background: rgba(10, 12, 17, 0.82);
+            border-right: 1px solid var(--border);
+            backdrop-filter: blur(24px) saturate(130%);
+        }
 
-        .app-shell { position: relative; z-index: 1; display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); width: 100%; height: 100%; overflow: hidden; }
-
-        .sidebar { display: flex; flex-direction: column; min-width: 0; height: 100%; padding: calc(18px + var(--safe-top)) 14px 18px; background: rgba(10, 12, 17, 0.82); border-right: 1px solid var(--border); backdrop-filter: blur(28px) saturate(130%); }
         [data-theme="light"] .sidebar { background: rgba(255, 255, 255, 0.78); }
 
-        .brand-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-        .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-        .brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: var(--radius); background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.26), rgba(244, 185, 66, 0.12)), var(--panel-soft); border: 1px solid rgba(var(--accent-rgb), 0.34); box-shadow: inset 0 0 24px rgba(var(--accent-rgb), 0.1); color: var(--accent); font-weight: 900; }
-        .brand-copy { min-width: 0; }
-        .brand-title { margin: 0; font-size: 19px; line-height: 1.1; font-weight: 800; }
-        .brand-subtitle { margin: 4px 0 0; color: var(--text-3); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .brand-row, .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
 
-        .icon-button, .action-button, .ghost-button, .danger-button, .chip-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; border-radius: var(--radius); color: var(--text); background: transparent; transition: transform var(--speed) var(--ease), border-color var(--speed) var(--ease), background var(--speed) var(--ease), color var(--speed) var(--ease), opacity var(--speed) var(--ease); }
-        .icon-button { width: 38px; height: 38px; border: 1px solid transparent; color: var(--text-2); position: relative; }
-        .icon-button:hover, .icon-button:focus-visible { background: var(--panel-soft); border-color: var(--border); color: var(--accent); transform: translateY(-1px); outline: none; }
-        .icon-button.danger:hover, .icon-button.danger:focus-visible { color: var(--danger); border-color: rgba(255, 94, 122, 0.32); background: rgba(255, 94, 122, 0.08); }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
 
-        .ico { width: 18px; height: 18px; display: inline-grid; place-items: center; font-size: 15px; line-height: 1; }
-        .ico svg { width: 18px; height: 18px; display: block; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+        .brand-mark, .avatar {
+            display: grid;
+            place-items: center;
+            color: var(--accent);
+            background: rgba(var(--accent-rgb), 0.14);
+            border: 1px solid rgba(var(--accent-rgb), 0.3);
+            border-radius: var(--radius);
+            font-weight: 900;
+        }
 
-        .tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(-4px); padding: 7px 9px; background: var(--panel-solid); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-2); font-size: 12px; white-space: nowrap; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity var(--speed) var(--ease), transform var(--speed) var(--ease); z-index: 20; }
-        .icon-button:hover .tooltip, .icon-button:focus-visible .tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+        }
 
-        .primary-button { width: 100%; min-height: 44px; border-radius: var(--radius); color: #061015; background: linear-gradient(135deg, rgba(var(--accent-rgb), 1), rgba(244, 185, 66, 0.86)); font-weight: 800; box-shadow: 0 12px 30px rgba(var(--accent-rgb), 0.17); transition: transform var(--speed) var(--ease), box-shadow var(--speed) var(--ease), filter var(--speed) var(--ease); }
-        .primary-button:hover, .primary-button:focus-visible { transform: translateY(-1px); box-shadow: 0 16px 42px rgba(var(--accent-rgb), 0.24); filter: saturate(1.08); outline: none; }
-        .primary-button:disabled { opacity: 0.48; transform: none; box-shadow: none; }
+        .brand-title { margin: 0; font-size: 20px; }
+        .brand-subtitle { margin: 4px 0 0; color: var(--text-3); font-size: 12px; }
 
-        .sidebar-tools { display: grid; gap: 10px; margin-bottom: 14px; }
+        .icon-button, .primary-button, .chip-button, .ghost-button, .danger-button, .send-button, .google-signin-btn {
+            border-radius: var(--radius);
+            transition: 180ms ease;
+        }
+
+        .icon-button {
+            width: 38px;
+            height: 38px;
+            position: relative;
+            background: transparent;
+            color: var(--text-2);
+            border: 1px solid transparent;
+        }
+
+        .icon-button:hover, .icon-button:focus-visible,
+        .chip-button:hover, .chip-button:focus-visible,
+        .history-row:hover, .history-row:focus-visible,
+        .starter:hover, .starter:focus-visible {
+            background: var(--panel-soft);
+            border-color: var(--border);
+            color: var(--accent);
+            outline: none;
+            transform: translateY(-1px);
+        }
+
+        .tooltip {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 8px;
+            background: var(--panel-solid);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 12px;
+            color: var(--text-2);
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .icon-button:hover .tooltip,
+        .icon-button:focus-visible .tooltip { opacity: 1; }
+
+        .ico {
+            width: 18px;
+            height: 18px;
+            display: inline-grid;
+            place-items: center;
+        }
+
+        .ico svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .primary-button, .send-button {
+            color: #061015;
+            font-weight: 800;
+            background: linear-gradient(135deg, rgba(var(--accent-rgb), 1), rgba(244, 185, 66, 0.86));
+            box-shadow: 0 12px 30px rgba(var(--accent-rgb), 0.18);
+        }
+
+        .primary-button {
+            width: 100%;
+            min-height: 44px;
+        }
+
+        .send-button {
+            min-width: 86px;
+            height: 42px;
+            padding: 0 14px;
+        }
+
+        .primary-button:hover, .primary-button:focus-visible,
+        .send-button:hover, .send-button:focus-visible {
+            filter: saturate(1.06);
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .sidebar-tools { display: grid; gap: 10px; margin: 18px 0 14px; }
         .search-box { position: relative; }
-        .search-box .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
-        .search-box input { width: 100%; height: 42px; padding: 0 12px 0 38px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--panel-soft); color: var(--text); outline: none; transition: border-color var(--speed) var(--ease), box-shadow var(--speed) var(--ease); }
-        .search-box input:focus { border-color: rgba(var(--accent-rgb), 0.52); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+        .search-box .ico {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-3);
+        }
 
-        .mode-panel { padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel-soft); }
-        .mode-label { display: flex; align-items: center; justify-content: space-between; color: var(--text-3); font-size: 12px; margin-bottom: 8px; }
-        .mode-select { width: 100%; height: 40px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--panel-solid); color: var(--text); padding: 0 12px; outline: none; }
-        .mode-select:focus { border-color: rgba(var(--accent-rgb), 0.54); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+        .search-box input, .mode-select, .composer textarea {
+            width: 100%;
+            color: var(--text);
+            background: var(--panel-soft);
+            border: 1px solid var(--border);
+            outline: none;
+        }
 
-        .history { flex: 1; min-height: 0; overflow: auto; padding: 4px 2px 12px; }
-        .history-group { margin: 14px 0; }
-        .history-heading { margin: 0 0 8px; padding: 0 10px; color: var(--text-3); font-size: 12px; font-weight: 700; }
-        .history-item { width: 100%; display: grid; grid-template-columns: 20px minmax(0, 1fr) 30px; align-items: center; gap: 9px; min-height: 44px; margin: 4px 0; padding: 6px 6px 6px 10px; border-radius: var(--radius); color: var(--text-2); background: transparent; text-align: left; border: 1px solid transparent; }
-        .history-item:hover, .history-item:focus-visible { background: var(--panel-soft); border-color: var(--border); outline: none; }
-        .history-item.active { background: rgba(var(--accent-rgb), 0.12); border-color: rgba(var(--accent-rgb), 0.34); color: var(--text); }
-        .history-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 650; }
-        .history-time { display: block; margin-top: 2px; color: var(--text-3); font-size: 11px; font-weight: 500; }
-        .history-delete { width: 30px; height: 30px; border-radius: var(--radius); color: var(--text-3); background: transparent; opacity: 0; transition: opacity var(--speed) var(--ease), background var(--speed) var(--ease), color var(--speed) var(--ease); }
-        .history-item:hover .history-delete, .history-item:focus-within .history-delete, .history-item.active .history-delete { opacity: 1; }
-        .history-delete:hover, .history-delete:focus-visible { color: var(--danger); background: rgba(255, 94, 122, 0.1); outline: none; }
-        .empty-state { padding: 22px 14px; color: var(--text-3); text-align: center; font-size: 13px; }
+        .search-box input, .mode-select {
+            height: 42px;
+            padding: 0 12px 0 38px;
+            border-radius: var(--radius);
+        }
 
-        .sidebar-footer { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding-top: 14px; border-top: 1px solid var(--border); }
+        .mode-panel, .dialog, .composer, .welcome-board, .message-content, .auth-card {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
 
-        .workspace { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; height: 100%; overflow: hidden; }
+        .mode-panel { padding: 12px; border-radius: var(--radius); }
+        .mode-label {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-3);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
 
-        .topbar { height: calc(70px + var(--safe-top)); padding: calc(14px + var(--safe-top)) 22px 14px; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: rgba(8, 9, 13, 0.7); border-bottom: 1px solid var(--border); backdrop-filter: blur(28px) saturate(130%); }
-        [data-theme="light"] .topbar { background: rgba(255, 255, 255, 0.68); }
-        .topbar-left, .topbar-right { display: flex; align-items: center; min-width: 0; gap: 10px; }
+        .mode-select { padding-left: 12px; background: var(--panel-solid); }
+        .mode-select:focus, .search-box input:focus, .composer textarea:focus {
+            border-color: rgba(var(--accent-rgb), 0.5);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+        }
+
+        .history {
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            padding-right: 2px;
+        }
+
+        .history-heading {
+            margin: 14px 0 8px;
+            padding: 0 10px;
+            color: var(--text-3);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .history-row {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 20px minmax(0, 1fr) 30px;
+            gap: 9px;
+            align-items: center;
+            min-height: 44px;
+            margin: 4px 0;
+            padding: 6px 6px 6px 10px;
+            border-radius: var(--radius);
+            border: 1px solid transparent;
+            color: var(--text-2);
+            cursor: pointer;
+        }
+
+        .history-row.active {
+            background: rgba(var(--accent-rgb), 0.12);
+            border-color: rgba(var(--accent-rgb), 0.34);
+            color: var(--text);
+        }
+
+        .history-copy { min-width: 0; }
+        .history-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 13px;
+            font-weight: 650;
+        }
+
+        .history-time {
+            display: block;
+            margin-top: 2px;
+            color: var(--text-3);
+            font-size: 11px;
+        }
+
+        .history-delete {
+            width: 30px;
+            height: 30px;
+            background: transparent;
+            color: var(--text-3);
+            opacity: 0;
+        }
+
+        .history-row:hover .history-delete,
+        .history-row:focus-within .history-delete,
+        .history-row.active .history-delete { opacity: 1; }
+
+        .history-delete:hover, .history-delete:focus-visible {
+            color: var(--danger);
+            background: rgba(255, 94, 122, 0.1);
+            outline: none;
+        }
+
+        .empty-state {
+            padding: 24px 14px;
+            color: var(--text-3);
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .sidebar-footer {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .topbar {
+            height: calc(70px + var(--safe-top));
+            padding: calc(14px + var(--safe-top)) 22px 14px;
+            background: rgba(8, 9, 13, 0.7);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(24px) saturate(130%);
+        }
+
+        [data-theme="light"] .topbar { background: rgba(255, 255, 255, 0.7); }
+
+        .topbar-left, .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
         .mobile-menu { display: none; }
         .conversation-title { min-width: 0; }
-        .conversation-title h2 { margin: 0; font-size: 16px; line-height: 1.2; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .conversation-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--text-3); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .status-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--success); box-shadow: 0 0 0 4px rgba(47, 226, 155, 0.12); }
+        .conversation-title h2 {
+            margin: 0;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-        .user-pill { display: flex; align-items: center; gap: 9px; min-width: 0; max-width: 220px; height: 40px; padding: 4px 10px 4px 5px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--panel-soft); color: var(--text); }
-        .avatar { flex: 0 0 auto; width: 30px; height: 30px; border-radius: var(--radius); display: grid; place-items: center; background: rgba(var(--accent-rgb), 0.16); border: 1px solid rgba(var(--accent-rgb), 0.3); color: var(--accent); font-weight: 800; }
-        .user-pill span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 700; }
+        .conversation-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+            color: var(--text-3);
+            font-size: 12px;
+        }
 
-        .chat-stage { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; overflow: hidden; }
-        .messages { min-height: 0; overflow-y: auto; padding: 26px min(5vw, 58px) 22px; scroll-behavior: smooth; }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--success);
+            box-shadow: 0 0 0 4px rgba(47, 226, 155, 0.12);
+        }
 
-        .welcome-board { max-width: 980px; margin: 0 auto 22px; padding: 22px; border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08), rgba(244, 185, 66, 0.04)), var(--panel); box-shadow: var(--shadow); }
-        .welcome-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; margin-bottom: 18px; }
-        .welcome-mark { width: 48px; height: 48px; border-radius: var(--radius); display: grid; place-items: center; background: rgba(var(--accent-rgb), 0.12); color: var(--accent); border: 1px solid rgba(var(--accent-rgb), 0.3); }
-        .welcome-board h3 { margin: 0; font-size: clamp(22px, 2.5vw, 34px); line-height: 1.05; font-weight: 900; }
-        .welcome-board p { margin: 6px 0 0; color: var(--text-2); font-size: 14px; line-height: 1.5; }
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            min-width: 0;
+            max-width: 220px;
+            height: 40px;
+            padding: 4px 10px 4px 5px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            color: var(--text);
+        }
 
-        .starter-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-        .starter { min-height: 98px; padding: 13px; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(255, 255, 255, 0.035); color: var(--text); text-align: left; align-items: flex-start; justify-content: flex-start; }
+        .avatar {
+            width: 30px;
+            height: 30px;
+            font-weight: 800;
+        }
+
+        .chat-stage {
+            display: grid;
+            grid-template-rows: minmax(0, 1fr) auto;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .messages {
+            min-height: 0;
+            overflow-y: auto;
+            padding: 26px min(5vw, 58px) 20px;
+        }
+
+        .welcome-board {
+            max-width: 980px;
+            margin: 0 auto 20px;
+            padding: 22px;
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08), rgba(244, 185, 66, 0.04)), var(--panel);
+        }
+
+        .welcome-head {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .welcome-mark {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            color: var(--accent);
+            background: rgba(var(--accent-rgb), 0.12);
+            border: 1px solid rgba(var(--accent-rgb), 0.3);
+            border-radius: var(--radius);
+        }
+
+        .welcome-board h3 { margin: 0; font-size: clamp(22px, 2.4vw, 34px); }
+        .welcome-board p { margin: 6px 0 0; color: var(--text-2); line-height: 1.5; }
+
+        .starter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .starter {
+            padding: 13px;
+            min-height: 98px;
+            text-align: left;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.035);
+        }
+
         [data-theme="light"] .starter { background: rgba(15, 23, 42, 0.035); }
-        .starter:hover, .starter:focus-visible { border-color: rgba(var(--accent-rgb), 0.42); background: rgba(var(--accent-rgb), 0.08); transform: translateY(-1px); outline: none; }
-        .starter strong { display: block; font-size: 13px; margin-bottom: 6px; }
-        .starter span:last-child { display: block; color: var(--text-3); font-size: 12px; line-height: 1.4; }
+        .starter strong { display: block; margin: 6px 0; font-size: 13px; }
+        .starter span:last-child { color: var(--text-3); font-size: 12px; line-height: 1.4; }
 
-        .message { max-width: min(860px, 88%); display: grid; gap: 8px; margin: 16px auto; animation: messageIn 220ms var(--ease); }
+        .message {
+            max-width: min(860px, 88%);
+            margin: 16px auto;
+        }
+
         .message.user-message { margin-right: 0; }
         .message.assistant-message, .message.system-message { margin-left: 0; }
-        .message-shell { display: grid; gap: 8px; }
-        .message-content { width: fit-content; max-width: 100%; padding: 13px 15px; border-radius: var(--radius); font-size: var(--message-font); line-height: 1.65; overflow-wrap: anywhere; border: 1px solid var(--border); background: var(--panel); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14); }
-        .user-message .message-content { margin-left: auto; color: #061015; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.96), rgba(244, 185, 66, 0.82)); border-color: transparent; }
-        [data-theme="light"] .user-message .message-content { color: #071014; }
+
+        .message-content {
+            width: fit-content;
+            max-width: 100%;
+            padding: 13px 15px;
+            border-radius: var(--radius);
+            font-size: var(--message-font);
+            line-height: 1.65;
+            overflow-wrap: anywhere;
+        }
+
+        .user-message .message-content {
+            margin-left: auto;
+            color: #061015;
+            background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.96), rgba(244, 185, 66, 0.82));
+            border-color: transparent;
+        }
+
         .assistant-message .message-content { border-color: rgba(var(--accent-rgb), 0.18); }
-        .system-message { max-width: 620px; margin-left: auto; margin-right: auto; }
-        .system-message .message-content { width: 100%; text-align: center; color: var(--warning); background: rgba(244, 185, 66, 0.08); border-color: rgba(244, 185, 66, 0.26); box-shadow: none; }
+
+        .system-message {
+            max-width: 620px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .system-message .message-content {
+            width: 100%;
+            text-align: center;
+            color: var(--warning);
+            background: rgba(244, 185, 66, 0.08);
+            border-color: rgba(244, 185, 66, 0.26);
+            box-shadow: none;
+        }
+
         .message-content p { margin: 0; white-space: pre-wrap; }
         .message-content p + p { margin-top: 12px; }
-        .message-content pre { margin: 10px 0 0; padding: 12px; overflow: auto; border-radius: var(--radius); background: rgba(0, 0, 0, 0.28); border: 1px solid var(--border); }
-        [data-theme="light"] .message-content pre { background: rgba(15, 23, 42, 0.07); }
-        .message-content code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 12px; }
+        .message-content pre {
+            margin: 10px 0 0;
+            padding: 12px;
+            overflow: auto;
+            border-radius: var(--radius);
+            background: rgba(0, 0, 0, 0.26);
+            border: 1px solid var(--border);
+        }
 
-        .attachment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 220px)); gap: 8px; margin-top: 8px; }
-        .attachment { overflow: hidden; border-radius: var(--radius); border: 1px solid var(--border); background: var(--panel-soft); }
-        .attachment img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
-        .attachment figcaption { padding: 8px; color: var(--text-3); font-size: 11px; }
+        .message-content code {
+            font-family: Consolas, "SFMono-Regular", monospace;
+            font-size: 12px;
+        }
 
-        .message-meta { display: flex; align-items: center; gap: 8px; color: var(--text-3); font-size: 11px; padding: 0 3px; }
+        .attachment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 220px));
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .attachment {
+            overflow: hidden;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+        }
+
+        .attachment img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            cursor: zoom-in;
+        }
+
+        .attachment figcaption {
+            padding: 8px;
+            color: var(--text-3);
+            font-size: 11px;
+        }
+
+        .message-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 6px 3px 0;
+            color: var(--text-3);
+            font-size: 11px;
+        }
+
         .user-message .message-meta { justify-content: flex-end; }
-        .message-actions { display: inline-flex; align-items: center; gap: 4px; opacity: 0; transition: opacity var(--speed) var(--ease); }
+        .message-actions { display: inline-flex; gap: 4px; opacity: 0; }
         .message:hover .message-actions, .message:focus-within .message-actions { opacity: 1; }
-        .mini-action { width: 26px; height: 26px; border-radius: var(--radius); background: transparent; color: var(--text-3); }
-        .mini-action:hover, .mini-action:focus-visible { color: var(--accent); background: var(--panel-soft); outline: none; }
 
-        .typing { width: 72px; height: 34px; display: flex; align-items: center; justify-content: center; gap: 5px; border-radius: var(--radius); border: 1px solid rgba(var(--accent-rgb), 0.18); background: var(--panel); }
-        .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: typing 1s ease-in-out infinite; }
+        .mini-action {
+            width: 26px;
+            height: 26px;
+            border-radius: var(--radius);
+            background: transparent;
+            color: var(--text-3);
+        }
+
+        .mini-action:hover, .mini-action:focus-visible {
+            color: var(--accent);
+            background: var(--panel-soft);
+            outline: none;
+        }
+
+        .typing {
+            width: 72px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(var(--accent-rgb), 0.18);
+            background: var(--panel);
+        }
+
+        .typing span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: typing 1s ease-in-out infinite;
+        }
+
         .typing span:nth-child(2) { animation-delay: 120ms; }
         .typing span:nth-child(3) { animation-delay: 240ms; }
 
-        .composer-area { padding: 12px min(5vw, 58px) calc(18px + var(--safe-bottom)); border-top: 1px solid var(--border); background: rgba(8, 9, 13, 0.72); backdrop-filter: blur(24px) saturate(130%); }
-        [data-theme="light"] .composer-area { background: rgba(255, 255, 255, 0.72); }
-        .composer { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: 10px; max-width: 1100px; margin: 0 auto; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
-        .composer:focus-within { border-color: rgba(var(--accent-rgb), 0.48); box-shadow: var(--shadow), 0 0 0 3px rgba(var(--accent-rgb), 0.1); }
-        .composer textarea { min-height: 46px; max-height: 160px; width: 100%; resize: none; border: 0; padding: 12px 4px; background: transparent; color: var(--text); outline: none; font-size: 14px; line-height: 1.45; }
-        .composer textarea::placeholder { color: var(--text-3); }
-        .composer-left, .composer-right { display: flex; align-items: center; gap: 6px; }
-        .send-button { min-width: 84px; height: 42px; padding: 0 14px; border-radius: var(--radius); color: #061015; background: linear-gradient(135deg, var(--accent), var(--warning)); font-weight: 850; transition: transform var(--speed) var(--ease), opacity var(--speed) var(--ease); }
-        .send-button:hover, .send-button:focus-visible { transform: translateY(-1px); outline: none; }
-        .send-button:disabled { opacity: 0.5; transform: none; }
+        .composer-area {
+            padding: 12px min(5vw, 58px) calc(18px + var(--safe-bottom));
+            border-top: 1px solid var(--border);
+            background: rgba(8, 9, 13, 0.72);
+            backdrop-filter: blur(24px) saturate(130%);
+        }
 
-        .voice-wave { display: none; align-items: center; gap: 3px; height: 28px; padding: 0 4px; }
+        [data-theme="light"] .composer-area { background: rgba(255, 255, 255, 0.72); }
+
+        .composer {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: end;
+            gap: 10px;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 10px;
+            border-radius: var(--radius);
+        }
+
+        .composer textarea {
+            min-height: 46px;
+            max-height: 160px;
+            resize: none;
+            padding: 12px 10px;
+            border-radius: var(--radius);
+        }
+
+        .composer-left, .composer-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .voice-wave {
+            display: none;
+            align-items: center;
+            gap: 3px;
+            height: 28px;
+            padding: 0 4px;
+        }
+
         .voice-wave.active { display: flex; }
-        .voice-wave span { width: 3px; height: 16px; border-radius: 3px; background: var(--accent); animation: wave 900ms ease-in-out infinite; }
+        .voice-wave span {
+            width: 3px;
+            height: 16px;
+            border-radius: 3px;
+            background: var(--accent);
+            animation: wave 900ms ease-in-out infinite;
+        }
+
         .voice-wave span:nth-child(2) { animation-delay: 90ms; }
         .voice-wave span:nth-child(3) { animation-delay: 180ms; }
         .voice-wave span:nth-child(4) { animation-delay: 270ms; }
         .voice-wave span:nth-child(5) { animation-delay: 360ms; }
 
-        .modal-backdrop, .auth-gate, .image-viewer { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, 0.66); backdrop-filter: blur(18px); }
+        .modal-backdrop, .auth-gate, .image-viewer {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.66);
+            backdrop-filter: blur(18px);
+        }
+
         .modal-backdrop.active, .auth-gate.active, .image-viewer.active { display: flex; }
 
-        .dialog { width: min(680px, 100%); max-height: min(820px, 90vh); overflow: auto; border-radius: var(--radius); background: var(--panel-solid); border: 1px solid var(--border-strong); box-shadow: var(--shadow); }
-        .dialog-header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px; border-bottom: 1px solid var(--border); background: var(--panel-solid); }
-        .dialog-header h3 { margin: 0; font-size: 18px; }
-        .dialog-body { padding: 18px; }
+        .dialog, .auth-card {
+            width: min(680px, 100%);
+            max-height: min(86vh, 820px);
+            overflow: auto;
+            border-radius: var(--radius);
+            background: var(--panel-solid);
+            border: 1px solid var(--border-strong);
+        }
 
-        .settings-grid { display: grid; gap: 18px; }
-        .setting-block { display: grid; gap: 10px; }
-        .setting-block label, .setting-title { color: var(--text-2); font-size: 13px; font-weight: 800; }
+        .dialog-header {
+            position: sticky;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel-solid);
+        }
+
+        .dialog-header h3 { margin: 0; }
+        .dialog-body { padding: 18px; }
+        .settings-grid, .setting-block { display: grid; gap: 14px; }
+        .setting-title, .setting-block label {
+            color: var(--text-2);
+            font-size: 13px;
+            font-weight: 800;
+        }
+
         .segmented, .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
-        .chip-button { min-height: 38px; padding: 0 12px; border: 1px solid var(--border); color: var(--text-2); background: var(--panel-soft); }
-        .chip-button:hover, .chip-button:focus-visible, .chip-button.active { color: var(--text); border-color: rgba(var(--accent-rgb), 0.42); background: rgba(var(--accent-rgb), 0.12); outline: none; }
-        .swatch { width: 38px; height: 38px; border-radius: var(--radius); border: 1px solid var(--border); position: relative; }
-        .swatch.active::after { content: ""; position: absolute; inset: 11px; border: 2px solid #fff; border-radius: 999px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+
+        .chip-button, .ghost-button, .danger-button, .google-signin-btn {
+            min-height: 40px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            color: var(--text);
+        }
+
+        .chip-button.active {
+            color: var(--text);
+            border-color: rgba(var(--accent-rgb), 0.42);
+            background: rgba(var(--accent-rgb), 0.12);
+        }
+
+        .swatch {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .swatch.active::after {
+            content: "";
+            position: absolute;
+            inset: 11px;
+            border: 2px solid #fff;
+            border-radius: 999px;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+        }
+
         .swatch[data-accent="cyan"] { background: var(--cyan); }
         .swatch[data-accent="mint"] { background: var(--mint); }
         .swatch[data-accent="amber"] { background: var(--amber); }
         .swatch[data-accent="rose"] { background: var(--rose); }
         .swatch[data-accent="violet"] { background: var(--violet); }
 
-        .range-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+        .range-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: center;
+        }
+
         input[type="range"] { width: 100%; accent-color: var(--accent); }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-        .stat { min-height: 70px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--panel-soft); }
+        .stat {
+            min-height: 70px;
+            padding: 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+        }
+
         .stat span { display: block; color: var(--text-3); font-size: 12px; }
-        .stat strong { display: block; margin-top: 8px; color: var(--text); font-size: 18px; }
+        .stat strong { display: block; margin-top: 8px; font-size: 18px; }
+        .modal-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
 
-        .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
-        .ghost-button, .danger-button { min-height: 42px; padding: 0 14px; border: 1px solid var(--border); background: var(--panel-soft); color: var(--text); font-weight: 750; }
-        .ghost-button:hover, .ghost-button:focus-visible { border-color: rgba(var(--accent-rgb), 0.42); background: rgba(var(--accent-rgb), 0.1); outline: none; }
-        .danger-button { color: var(--danger); border-color: rgba(255, 94, 122, 0.25); background: rgba(255, 94, 122, 0.08); }
-        .danger-button:hover, .danger-button:focus-visible { border-color: rgba(255, 94, 122, 0.48); background: rgba(255, 94, 122, 0.14); outline: none; }
+        .ghost-button:hover, .ghost-button:focus-visible {
+            border-color: rgba(var(--accent-rgb), 0.42);
+            background: rgba(var(--accent-rgb), 0.1);
+            outline: none;
+        }
 
-        .auth-card { width: min(440px, 100%); padding: 24px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--panel-solid); box-shadow: var(--shadow); }
-        .auth-card h1 { margin: 0; font-size: 42px; line-height: 1; font-weight: 950; }
+        .danger-button {
+            color: var(--danger);
+            border-color: rgba(255, 94, 122, 0.25);
+            background: rgba(255, 94, 122, 0.08);
+        }
+
+        .danger-button:hover, .danger-button:focus-visible {
+            border-color: rgba(255, 94, 122, 0.48);
+            background: rgba(255, 94, 122, 0.14);
+            outline: none;
+        }
+
+        .auth-card {
+            width: min(440px, 100%);
+            padding: 24px;
+        }
+
+        .auth-brand {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .auth-brand .brand-mark {
+            width: 54px;
+            height: 54px;
+            font-size: 20px;
+        }
+
+        .auth-card h1 { margin: 0; font-size: 42px; line-height: 1; }
         .auth-card p { margin: 10px 0 22px; color: var(--text-2); line-height: 1.6; }
-        .auth-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-        .auth-brand .brand-mark { width: 54px; height: 54px; font-size: 20px; }
-        .auth-foot { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text-3); font-size: 12px; }
+
+        .google-signin-btn {
+            width: 100%;
+            min-height: 52px;
+            font-weight: 700;
+            font-size: 16px;
+            background: #ffffff;
+            color: #1f1f1f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 12px;
+        }
+
+        .google-signin-btn:hover, .google-signin-btn:focus-visible {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+            border-color: rgba(66, 133, 244, 0.5);
+            outline: none;
+        }
+
+        .auth-foot {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            color: var(--text-3);
+            font-size: 12px;
+        }
 
         .image-dialog { width: min(900px, 100%); }
-        .image-dialog img { display: block; width: 100%; max-height: 72vh; object-fit: contain; border-radius: var(--radius); background: var(--panel-soft); border: 1px solid var(--border); }
-        .image-caption { margin: 12px 0 0; color: var(--text-2); font-size: 13px; line-height: 1.5; }
+        .image-dialog img {
+            width: 100%;
+            max-height: 72vh;
+            object-fit: contain;
+            border-radius: var(--radius);
+            background: var(--panel-soft);
+            border: 1px solid var(--border);
+        }
 
-        .toast-region { position: fixed; z-index: 70; top: calc(18px + var(--safe-top)); right: 18px; width: min(380px, calc(100vw - 36px)); display: grid; gap: 10px; pointer-events: none; }
-        .toast { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--panel-solid); box-shadow: var(--shadow); pointer-events: auto; animation: toastIn 220ms var(--ease); }
+        .image-caption {
+            margin: 12px 0 0;
+            color: var(--text-2);
+            font-size: 13px;
+        }
+
+        .toast-region {
+            position: fixed;
+            top: calc(18px + var(--safe-top));
+            right: 18px;
+            z-index: 70;
+            width: min(380px, calc(100vw - 36px));
+            display: grid;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            display: grid;
+            grid-template-columns: 22px minmax(0, 1fr);
+            gap: 10px;
+            align-items: start;
+            padding: 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-strong);
+            background: var(--panel-solid);
+            box-shadow: var(--shadow);
+            pointer-events: auto;
+            animation: toastIn 220ms ease;
+        }
+
         .toast strong { display: block; margin-bottom: 2px; font-size: 13px; }
         .toast span:last-child { color: var(--text-2); font-size: 12px; line-height: 1.4; }
         .toast.success { border-color: rgba(47, 226, 155, 0.42); }
         .toast.error { border-color: rgba(255, 94, 122, 0.48); }
         .toast.warning { border-color: rgba(244, 185, 66, 0.48); }
 
-        .sidebar-overlay { display: none; position: fixed; inset: 0; z-index: 35; background: rgba(0, 0, 0, 0.55); }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 35;
+            background: rgba(0, 0, 0, 0.55);
+        }
+
         .sidebar-overlay.active { display: block; }
 
-        @keyframes messageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes typing { 0%, 100% { transform: translateY(0); opacity: 0.45; } 50% { transform: translateY(-5px); opacity: 1; } }
-        @keyframes wave { 0%, 100% { transform: scaleY(0.55); opacity: 0.5; } 50% { transform: scaleY(1.25); opacity: 1; } }
-        @keyframes toastIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); opacity: 0.45; }
+            50% { transform: translateY(-5px); opacity: 1; }
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.55); opacity: 0.5; }
+            50% { transform: scaleY(1.25); opacity: 1; }
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(16px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
 
         @media (max-width: 1040px) {
             .starter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -333,34 +952,38 @@
 
         @media (max-width: 820px) {
             .app-shell { grid-template-columns: 1fr; }
-            .sidebar { position: fixed; inset: 0 auto 0 0; width: min(86vw, var(--sidebar-width)); z-index: 40; transform: translateX(-102%); transition: transform 240ms var(--ease); box-shadow: var(--shadow); }
+            .sidebar {
+                position: fixed;
+                inset: 0 auto 0 0;
+                width: min(86vw, var(--sidebar-width));
+                z-index: 40;
+                transform: translateX(-102%);
+                transition: transform 240ms ease;
+            }
             .sidebar.open { transform: translateX(0); }
             .mobile-menu { display: inline-flex; }
-            .topbar { padding-left: 14px; padding-right: 14px; }
-            .user-pill { max-width: 44px; padding-right: 5px; }
-            .user-pill span:last-child { display: none; }
-            .messages { padding: 18px 14px 18px; }
+            .messages { padding: 18px 14px; }
             .composer-area { padding: 10px 12px calc(12px + var(--safe-bottom)); }
             .composer { grid-template-columns: 1fr; gap: 6px; }
             .composer-left, .composer-right { justify-content: space-between; }
+            .user-pill { max-width: 44px; padding-right: 5px; }
+            .user-pill span:last-child { display: none; }
             .message { max-width: 94%; }
         }
 
         @media (max-width: 560px) {
-            .topbar { height: calc(62px + var(--safe-top)); }
-            .conversation-title h2 { font-size: 14px; }
-            .conversation-meta { display: none; }
-            .topbar-right .icon-button:not(.always) { display: none; }
-            .welcome-board { padding: 16px; }
             .welcome-head { grid-template-columns: 1fr; }
-            .starter-grid { grid-template-columns: 1fr; }
+            .starter-grid, .stats-grid, .modal-actions { grid-template-columns: 1fr; }
             .message { max-width: 100%; }
-            .stats-grid, .modal-actions { grid-template-columns: 1fr; }
-            .auth-card h1 { font-size: 34px; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 1ms !important; }
+            *, *::before, *::after {
+                animation-duration: 1ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 1ms !important;
+                scroll-behavior: auto !important;
+            }
         }
     </style>
 </head>
@@ -372,7 +995,7 @@
             <div class="brand-row">
                 <div class="brand">
                     <div class="brand-mark">J</div>
-                    <div class="brand-copy">
+                    <div>
                         <h1 class="brand-title">JARVIS</h1>
                         <p class="brand-subtitle">Largest Database v5.0</p>
                     </div>
@@ -424,9 +1047,11 @@
                 </button>
             </div>
         </aside>
+
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
-        <main class="workspace" id="workspace">
-           <header class="topbar">
+
+        <main class="workspace">
+            <header class="topbar">
                 <div class="topbar-left">
                     <button class="icon-button mobile-menu" id="mobileMenuBtn" type="button" aria-label="Open sidebar">
                         <span class="ico" data-lucide="menu">M</span>
@@ -456,11 +1081,11 @@
                         <span class="ico" data-lucide="wand-sparkles">G</span>
                         <span class="tooltip">Create</span>
                     </button>
-                    <button class="icon-button always" id="settingsBtnTop" type="button" aria-label="Settings">
+                    <button class="icon-button" id="settingsBtnTop" type="button" aria-label="Settings">
                         <span class="ico" data-lucide="sliders-horizontal">S</span>
                         <span class="tooltip">Settings</span>
                     </button>
-                    <button class="user-pill" id="userPill" type="button" aria-label="Open settings">
+                    <button class="user-pill" id="userPill" type="button" aria-label="Open profile">
                         <span class="avatar" id="userAvatar">J</span>
                         <span id="userName">Operator</span>
                     </button>
@@ -502,19 +1127,18 @@
         </main>
     </div>
 
-    <!-- Auth Gate -->
     <div class="auth-gate active" id="authGate" role="dialog" aria-modal="true" aria-labelledby="authTitle">
         <div class="auth-card">
             <div class="auth-brand">
                 <div class="brand-mark">J</div>
                 <div>
                     <h1 id="authTitle">JARVIS</h1>
-                    <p>Just an Artificial Real-time Virtualy Integerated System</p>
+                    <p>Just an Artificial Real-time Virtually Integrated System</p>
                 </div>
             </div>
-            
+
             <button class="google-signin-btn" id="googleSignInBtn" type="button">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -535,7 +1159,6 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
     <div class="modal-backdrop" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
         <div class="dialog">
             <div class="dialog-header">
@@ -548,7 +1171,7 @@
                 <div class="settings-grid">
                     <section class="setting-block">
                         <div class="setting-title">Theme</div>
-                        <div class="segmented" id="themeControls">
+                        <div class="segmented">
                             <button class="chip-button" type="button" data-theme-choice="dark">Dark</button>
                             <button class="chip-button" type="button" data-theme-choice="light">Light</button>
                             <button class="chip-button" type="button" data-theme-choice="system">System</button>
@@ -586,7 +1209,7 @@
 
                     <section class="setting-block">
                         <div class="setting-title">Density</div>
-                        <div class="segmented" id="densityControls">
+                        <div class="segmented">
                             <button class="chip-button" type="button" data-density-choice="compact">Compact</button>
                             <button class="chip-button" type="button" data-density-choice="comfortable">Comfortable</button>
                             <button class="chip-button" type="button" data-density-choice="spacious">Spacious</button>
@@ -604,32 +1227,14 @@
                     <section class="setting-block">
                         <div class="setting-title">Workspace</div>
                         <div class="stats-grid">
-                            <div class="stat">
-                                <span>Conversations</span>
-                                <strong id="statConversations">0</strong>
-                            </div>
-                            <div class="stat">
-                                <span>Messages</span>
-                                <strong id="statMessages">0</strong>
-                            </div>
-                            <div class="stat">
-                                <span>Active Mode</span>
-                                <strong id="statMode">Prime</strong>
-                            </div>
-                            <div class="stat">
-                                <span>Interface</span>
-                                <strong>v5.0</strong>
-                            </div>
+                            <div class="stat"><span>Conversations</span><strong id="statConversations">0</strong></div>
+                            <div class="stat"><span>Messages</span><strong id="statMessages">0</strong></div>
+                            <div class="stat"><span>Active Mode</span><strong id="statMode">Prime</strong></div>
+                            <div class="stat"><span>Interface</span><strong>v5.0</strong></div>
                         </div>
                         <div class="modal-actions">
-                            <button class="ghost-button" id="exportBtnSettings" type="button">
-                                <span class="ico" data-lucide="download">D</span>
-                                Export Conversations
-                            </button>
-                            <button class="danger-button" id="clearBtnSettings" type="button">
-                                <span class="ico" data-lucide="trash-2">T</span>
-                                Delete History
-                            </button>
+                            <button class="ghost-button" id="exportBtnSettings" type="button">Export Conversations</button>
+                            <button class="danger-button" id="clearBtnSettings" type="button">Delete History</button>
                         </div>
                     </section>
                 </div>
@@ -637,7 +1242,6 @@
         </div>
     </div>
 
-    <!-- Profile Modal -->
     <div class="modal-backdrop" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
         <div class="dialog">
             <div class="dialog-header">
@@ -648,22 +1252,16 @@
             </div>
             <div class="dialog-body">
                 <div class="settings-grid">
-                    <section class="setting-block" style="text-align: center;">
-                        <div style="width: 64px; height: 64px; margin: 0 auto; border-radius: 16px; display: grid; place-items: center; background: rgba(var(--accent-rgb), 0.16); border: 2px solid rgba(var(--accent-rgb), 0.3); color: var(--accent); font-weight: 900; font-size: 28px;" id="profileAvatarLarge">J</div>
-                        <div style="margin-top: 12px;">
-                            <h2 id="profileName" style="margin: 0; font-size: 20px;">Operator</h2>
-                            <p id="profileEmail" style="margin: 4px 0 0; color: var(--text-3);">operator@jarvis.local</p>
+                    <section class="setting-block" style="text-align:center;">
+                        <div id="profileAvatarLarge" style="width:64px;height:64px;margin:0 auto;border-radius:16px;display:grid;place-items:center;background:rgba(var(--accent-rgb),0.16);border:2px solid rgba(var(--accent-rgb),0.3);color:var(--accent);font-weight:900;font-size:28px;">J</div>
+                        <div style="margin-top:12px;">
+                            <h2 id="profileName" style="margin:0;font-size:20px;">Operator</h2>
+                            <p id="profileEmail" style="margin:4px 0 0;color:var(--text-3);">operator@jarvis.local</p>
                         </div>
                     </section>
                     <div class="modal-actions">
-                        <button class="ghost-button" id="openSettingsFromProfile" type="button">
-                            <span class="ico" data-lucide="settings">S</span>
-                            Settings
-                        </button>
-                        <button class="danger-button" id="signOutFromProfile" type="button">
-                            <span class="ico" data-lucide="log-out">O</span>
-                            Sign Out
-                        </button>
+                        <button class="ghost-button" id="openSettingsFromProfile" type="button">Settings</button>
+                        <button class="danger-button" id="signOutFromProfile" type="button">Sign Out</button>
                     </div>
                 </div>
             </div>
@@ -684,11 +1282,10 @@
             </div>
         </div>
     </div>
+
     <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
     <script>
-        // ============ COMPLETE ERROR-FREE JAVASCRIPT ============
-        
         const JARVIS_ROUTES = {
             identity: "/jarvis/me",
             signIn: "/jarvis/sign-in",
@@ -720,7 +1317,7 @@
             settings: "jarvis:v5:settings",
             conversations: "jarvis:v5:conversations",
             token: "jarvis:token",
-            pendingMessages: "jarvis:v5:pending_messages"
+            pendingActions: "jarvis:v5:pending_actions"
         };
 
         const state = {
@@ -740,14 +1337,8 @@
                 mode: "jarvis-prime",
                 voice: "en-US"
             },
-            _lastSettingsToast: 0,
-            _SETTINGS_TOAST_DEBOUNCE_MS: 2500,
-            _pendingRetryQueue: []
+            lastSettingsToast: 0
         };
-
-        const els = {};
-
-        function $(id) { return document.getElementById(id); }
 
         const ICON_PATHS = {
             "panel-left-close": '<rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 3v18"></path><path d="m16 9-3 3 3 3"></path>',
@@ -777,240 +1368,95 @@
             "volume-2": '<path d="M11 5 6 9H3v6h3l5 4Z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19 6a9 9 0 0 1 0 12"></path>'
         };
 
-        function syncIcons() {
-            document.querySelectorAll(".ico[data-lucide]").forEach(icon => {
-                const name = icon.dataset.lucide;
-                if (icon.dataset.rendered === name) return;
-                const body = ICON_PATHS[name];
-                if (!body) return;
-                icon.dataset.rendered = name;
-                icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
-            });
-        }
-
-        function uid(prefix = "id") {
-            if (window.crypto && crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
-            return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-        }
-
-        function nowIso() { return new Date().toISOString(); }
-
-        function safeJsonParse(value, fallback) {
+        const $ = id => document.getElementById(id);
+        const nowIso = () => new Date().toISOString();
+        const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const safeJsonParse = (value, fallback) => {
+            if (!value) return fallback;
             try { return JSON.parse(value); } catch { return fallback; }
+        };
+
+        function readStorage(key, fallback) {
+            try { return safeJsonParse(localStorage.getItem(key), fallback); } catch { return fallback; }
         }
 
-        function getTokenFromUrl() {
-            const params = new URLSearchParams(window.location.search);
-            const token = params.get("token");
-            const error = params.get("error");
-            if (error) {
-                showToast("Sign-in failed", error, "error");
-                history.replaceState({}, document.title, window.location.pathname);
-                return null;
-            }
-            if (token) {
-                localStorage.setItem(STORAGE.token, token);
-                history.replaceState({}, document.title, window.location.pathname);
-            }
-            return token;
-        }
-
-        function isTokenValid(token) {
+        function writeStorage(key, value) {
             try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                return payload.exp * 1000 > Date.now();
+                localStorage.setItem(key, JSON.stringify(value));
+                return true;
             } catch {
                 return false;
             }
         }
 
-        async function bridge(path, options = {}) {
-            const headers = new Headers(options.headers || {});
-            if (!headers.has("Content-Type") && options.body) headers.set("Content-Type", "application/json");
-            const token = localStorage.getItem(STORAGE.token);
-            if (token) headers.set("Authorization", `Bearer ${token}`);
-            
-            const response = await fetch(path, { ...options, headers, credentials: "include" });
-            const text = await response.text();
-            const data = text ? safeJsonParse(text, { message: text }) : {};
-            
-            if (response.status === 401) {
-                localStorage.removeItem(STORAGE.token);
-                showAuth();
-                throw new Error("Session expired. Please sign in again.");
-            }
-            
-            if (!response.ok) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
-            return data;
+        function removeStorage(key) {
+            try { localStorage.removeItem(key); } catch {}
         }
 
-        function loadSettings() {
-            const saved = safeJsonParse(localStorage.getItem(STORAGE.settings), {});
-            state.settings = { ...state.settings, ...saved };
-            applySettings(false);
+        function uid(prefix = "id") {
+            if (window.crypto?.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
+            return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
         }
 
-        function saveSettings() {
-            localStorage.setItem(STORAGE.settings, JSON.stringify(state.settings));
+        function decodeJwtPayload(token) {
+            const [, payload] = String(token || "").split(".");
+            if (!payload) return null;
+            const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+            const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
+            return JSON.parse(atob(padded));
         }
 
-        function applySettings(announce = true) {
-            const theme = resolveTheme(state.settings.theme);
-            document.documentElement.dataset.theme = theme;
-            document.documentElement.dataset.accent = state.settings.accent;
-            document.documentElement.dataset.density = state.settings.density;
-            document.documentElement.style.setProperty("--message-font", `${state.settings.messageScale}px`);
-            $("messageScaleValue").textContent = `${state.settings.messageScale}px`;
-            $("messageScale").value = state.settings.messageScale;
-            $("voiceSelect").value = state.settings.voice;
-            setSelectValue("modeSelect", state.settings.mode);
-            setSelectValue("settingsModeSelect", state.settings.mode);
-            updateModeLabels();
-
-            document.querySelectorAll("[data-theme-choice]").forEach(btn => {
-                btn.classList.toggle("active", btn.dataset.themeChoice === state.settings.theme);
-            });
-            document.querySelectorAll("[data-accent]").forEach(btn => {
-                btn.classList.toggle("active", btn.dataset.accent === state.settings.accent);
-            });
-            document.querySelectorAll("[data-density-choice]").forEach(btn => {
-                btn.classList.toggle("active", btn.dataset.densityChoice === state.settings.density);
-            });
-
-            if (announce) {
-                const now = Date.now();
-                if (now - state._lastSettingsToast > state._SETTINGS_TOAST_DEBOUNCE_MS) {
-                    state._lastSettingsToast = now;
-                    showToast("Settings updated", "Settings updated successfully.", "success");
-                }
-            }
-            saveSettings();
-        }
-
-        function resolveTheme(choice) {
-            if (choice !== "system") return choice;
-            return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        }
-
-        function setSelectValue(id, value) { const s = $(id); if (s) s.value = value; }
-
-        function getMode(id = state.settings.mode) {
-            return JARVIS_MODES.find(mode => mode.id === id) || JARVIS_MODES[0];
-        }
-
-        function updateModeLabels() {
-            const mode = getMode();
-            $("modeSignal").textContent = mode.short;
-            $("statusText").textContent = state.processing ? "Thinking" : mode.status;
-            $("statMode").textContent = mode.short;
-        }
-
-        function buildModeOptions() {
-            [$("modeSelect"), $("settingsModeSelect")].forEach(select => {
-                select.innerHTML = "";
-                JARVIS_MODES.forEach(mode => {
-                    const opt = document.createElement("option");
-                    opt.value = mode.id;
-                    opt.textContent = mode.label;
-                    select.appendChild(opt);
-                });
-            });
-        }
-
-        function showToast(title, message = "", type = "info") {
-            const iconMap = { success: "check-circle-2", error: "circle-alert", warning: "triangle-alert", info: "info" };
-            const icon = iconMap[type] || "info";
-            const toast = document.createElement("div");
-            toast.className = `toast ${type}`;
-            const iconWrap = document.createElement("span");
-            iconWrap.className = "ico";
-            iconWrap.dataset.lucide = icon;
-            iconWrap.textContent = type === "success" ? "OK" : "!";
-            const copy = document.createElement("span");
-            const titleEl = document.createElement("strong");
-            titleEl.textContent = title;
-            const msgEl = document.createElement("span");
-            msgEl.textContent = message;
-            copy.append(titleEl, msgEl);
-            toast.append(iconWrap, copy);
-            $("toastRegion").appendChild(toast);
-            syncIcons();
-            window.setTimeout(() => {
-                toast.style.opacity = "0";
-                toast.style.transform = "translateX(16px)";
-                window.setTimeout(() => toast.remove(), 180);
-            }, 3600);
-        }
-
-        function openApp() {
-            $("authGate").classList.remove("active");
-            $("appShell").setAttribute("aria-hidden", "false");
-            state.ready = true;
-            renderAll();
-            window.setTimeout(() => $("promptInput").focus(), 150);
-        }
-
-        function showAuth() {
-            $("authGate").classList.add("active");
-            $("appShell").setAttribute("aria-hidden", "true");
-            state.ready = false;
-        }
-
-        function setUser(user) {
-            const name = user?.name || user?.email || "Operator";
-            state.user = { name, email: user?.email || "" };
-            $("userName").textContent = name;
-            $("userAvatar").textContent = name.trim().charAt(0).toUpperCase() || "J";
-            $("profileName").textContent = name;
-            $("profileEmail").textContent = user?.email || "operator@jarvis.local";
-            $("profileAvatarLarge").textContent = name.trim().charAt(0).toUpperCase() || "J";
-        }
-
-        async function bootIdentity() {
-            getTokenFromUrl();
-            
-            if (state.previewMode) {
-                setUser({ name: "Krish", email: "krish@jarvis.ai" });
-                await loadConversations();
-                openApp();
-                return;
-            }
-            
-            const storedToken = localStorage.getItem(STORAGE.token);
-            
-            if (!storedToken) {
-                showAuth();
-                return;
-            }
-            
-            if (!isTokenValid(storedToken)) {
-                localStorage.removeItem(STORAGE.token);
-                showAuth();
-                return;
-            }
-            
+        function isTokenValid(token) {
             try {
-                const data = await bridge(JARVIS_ROUTES.identity);
-                if (data.user) {
-                    setUser(data.user);
-                }
-            } catch (error) {
-                console.warn("Identity check failed, using local session:", error.message);
-                setUser({ name: "JARVIS User", email: "user@jarvis.local" });
+                const payload = decodeJwtPayload(token);
+                return Boolean(payload && payload.exp * 1000 > Date.now());
+            } catch {
+                return false;
             }
-            
-            await loadConversations();
-            openApp();
         }
 
-        function localConversations() {
-            const saved = safeJsonParse(localStorage.getItem(STORAGE.conversations), []);
-            return Array.isArray(saved) ? saved : [];
+        function getTokenFromUrl() {
+            const params = new URLSearchParams(location.search);
+            const token = params.get("token");
+            const error = params.get("error");
+            if (error) {
+                showToast("Sign-in failed", error, "error");
+                history.replaceState({}, document.title, location.pathname);
+                return null;
+            }
+            if (token) {
+                localStorage.setItem(STORAGE.token, token);
+                history.replaceState({}, document.title, location.pathname);
+            }
+            return token;
         }
 
-        function saveLocalConversations() {
-            if (!state.previewMode) return;
-            localStorage.setItem(STORAGE.conversations, JSON.stringify(state.conversations));
+        function normalizeImageSource(value) {
+            if (!value || typeof value !== "string") return "";
+            if (/^(data:|blob:|https?:|file:|\/)/i.test(value)) return value;
+            return `data:image/png;base64,${value}`;
+        }
+
+        function normalizeAttachment(raw) {
+            if (!raw || typeof raw !== "object") return null;
+            const url = normalizeImageSource(raw.url || raw.dataUrl || raw.image || raw.src || "");
+            return {
+                url,
+                dataUrl: url.startsWith("data:") ? url : "",
+                caption: String(raw.caption || raw.name || raw.alt || ""),
+                alt: String(raw.alt || raw.caption || raw.name || "JARVIS attachment")
+            };
+        }
+
+        function normalizeMessage(raw) {
+            return {
+                id: String(raw.id || raw.message_id || uid("message")),
+                role: ["assistant", "user", "system"].includes(raw.role) ? raw.role : "assistant",
+                content: String(raw.content || raw.text || ""),
+                mode: raw.mode || raw.model || raw.model_used || state.settings.mode,
+                createdAt: raw.createdAt || raw.created_at || raw.timestamp || nowIso(),
+                attachments: Array.isArray(raw.attachments) ? raw.attachments.map(normalizeAttachment).filter(Boolean) : []
+            };
         }
 
         function normalizeConversation(raw) {
@@ -1023,15 +1469,235 @@
             };
         }
 
-        function normalizeMessage(raw) {
-            return {
-                id: String(raw.id || raw.message_id || uid("message")),
-                role: raw.role === "assistant" || raw.role === "user" || raw.role === "system" ? raw.role : "assistant",
-                content: String(raw.content || raw.text || ""),
-                mode: raw.mode || raw.model || raw.model_used || state.settings.mode,
-                createdAt: raw.createdAt || raw.created_at || raw.timestamp || nowIso(),
-                attachments: Array.isArray(raw.attachments) ? raw.attachments : []
-            };
+        async function bridge(path, options = {}) {
+            const headers = new Headers(options.headers || {});
+            const hasBody = options.body !== undefined && options.body !== null;
+            if (hasBody && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
+                headers.set("Content-Type", "application/json");
+            }
+            const token = localStorage.getItem(STORAGE.token);
+            if (token) headers.set("Authorization", `Bearer ${token}`);
+
+            const response = await fetch(path, { ...options, headers, credentials: "include" });
+            if (response.status === 204) return {};
+            const text = await response.text();
+            const data = text ? safeJsonParse(text, { message: text }) : {};
+
+            if (response.status === 401) {
+                removeStorage(STORAGE.token);
+                showAuth();
+                throw new Error("Session expired. Please sign in again.");
+            }
+            if (!response.ok) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
+            return data;
+        }
+
+        function syncIcons() {
+            document.querySelectorAll(".ico[data-lucide]").forEach(icon => {
+                const name = icon.dataset.lucide;
+                if (icon.dataset.rendered === name) return;
+                const body = ICON_PATHS[name];
+                if (!body) return;
+                icon.dataset.rendered = name;
+                icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+            });
+        }
+
+        function resolveTheme(choice) {
+            if (choice !== "system") return choice;
+            return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+
+        function getMode(id = state.settings.mode) {
+            return JARVIS_MODES.find(mode => mode.id === id) || JARVIS_MODES[0];
+        }
+
+        function setSelectValue(id, value) {
+            const node = $(id);
+            if (node) node.value = value;
+        }
+
+        function updateModeLabels() {
+            const mode = getMode();
+            $("modeSignal").textContent = mode.short;
+            $("statusText").textContent = state.processing ? "Thinking" : mode.status;
+            $("statMode").textContent = mode.short;
+        }
+
+        function buildModeOptions() {
+            ["modeSelect", "settingsModeSelect"].forEach(id => {
+                const select = $(id);
+                select.innerHTML = "";
+                JARVIS_MODES.forEach(mode => {
+                    const option = document.createElement("option");
+                    option.value = mode.id;
+                    option.textContent = mode.label;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function saveSettings() {
+            writeStorage(STORAGE.settings, state.settings);
+        }
+
+        function applySettings(announce = true) {
+            document.documentElement.dataset.theme = resolveTheme(state.settings.theme);
+            document.documentElement.dataset.accent = state.settings.accent;
+            document.documentElement.dataset.density = state.settings.density;
+            document.documentElement.style.setProperty("--message-font", `${state.settings.messageScale}px`);
+            $("messageScaleValue").textContent = `${state.settings.messageScale}px`;
+            $("messageScale").value = String(state.settings.messageScale);
+            $("voiceSelect").value = state.settings.voice;
+            setSelectValue("modeSelect", state.settings.mode);
+            setSelectValue("settingsModeSelect", state.settings.mode);
+            document.querySelectorAll("[data-theme-choice]").forEach(btn => btn.classList.toggle("active", btn.dataset.themeChoice === state.settings.theme));
+            document.querySelectorAll("#accentControls [data-accent]").forEach(btn => btn.classList.toggle("active", btn.dataset.accent === state.settings.accent));
+            document.querySelectorAll("[data-density-choice]").forEach(btn => btn.classList.toggle("active", btn.dataset.densityChoice === state.settings.density));
+            updateModeLabels();
+            saveSettings();
+            if (announce && Date.now() - state.lastSettingsToast > 2500) {
+                state.lastSettingsToast = Date.now();
+                showToast("Settings updated", "Settings updated successfully.", "success");
+            }
+        }
+
+        function loadSettings() {
+            const saved = readStorage(STORAGE.settings, {});
+            state.settings = { ...state.settings, ...saved };
+            applySettings(false);
+        }
+
+        function currentConversation() {
+            return state.conversations.find(item => item.id === state.currentId) || null;
+        }
+
+        function localConversations() {
+            const saved = readStorage(STORAGE.conversations, []);
+            return Array.isArray(saved) ? saved : [];
+        }
+
+        function saveLocalConversations() {
+            if (state.previewMode) writeStorage(STORAGE.conversations, state.conversations);
+        }
+
+        function showToast(title, message = "", type = "info") {
+            const iconMap = { success: "check-circle-2", error: "circle-alert", warning: "triangle-alert", info: "info" };
+            const toast = document.createElement("div");
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span class="ico" data-lucide="${iconMap[type] || "info"}">!</span><span><strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span></span>`;
+            $("toastRegion").appendChild(toast);
+            syncIcons();
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateX(16px)";
+                setTimeout(() => toast.remove(), 180);
+            }, 3600);
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                "\"": "&quot;",
+                "'": "&#39;"
+            }[char]));
+        }
+
+        function setUser(user) {
+            const name = user?.name || user?.email || "Operator";
+            state.user = { name, email: user?.email || "" };
+            $("userName").textContent = name;
+            $("userAvatar").textContent = name.trim().charAt(0).toUpperCase() || "J";
+            $("profileName").textContent = name;
+            $("profileEmail").textContent = user?.email || "operator@jarvis.local";
+            $("profileAvatarLarge").textContent = name.trim().charAt(0).toUpperCase() || "J";
+        }
+
+        function showAuth() {
+            closeSidebar();
+            closeSettings();
+            closeProfile();
+            closeImageViewer();
+            $("authGate").classList.add("active");
+            $("appShell").setAttribute("aria-hidden", "true");
+            state.ready = false;
+        }
+
+        function openApp() {
+            $("authGate").classList.remove("active");
+            $("appShell").setAttribute("aria-hidden", "false");
+            state.ready = true;
+            renderAll();
+            scrollToBottom();
+            setTimeout(() => $("promptInput").focus(), 120);
+        }
+
+        function makeTitle(text) {
+            const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+            return cleaned.length > 48 ? `${cleaned.slice(0, 48)}...` : cleaned || "New Conversation";
+        }
+
+        function touchConversation(conversation) {
+            conversation.updatedAt = nowIso();
+            state.conversations = [conversation, ...state.conversations.filter(item => item.id !== conversation.id)];
+            saveLocalConversations();
+        }
+
+        function addLocalMessage(message) {
+            const conversation = currentConversation();
+            if (!conversation) return null;
+            const normalized = normalizeMessage(message);
+            conversation.messages.push(normalized);
+            if (conversation.title === "New Conversation" || conversation.title === "Command Session") {
+                const firstUser = conversation.messages.find(item => item.role === "user" && item.content.trim());
+                if (firstUser) conversation.title = makeTitle(firstUser.content.replace(/^Create image:\s*/i, "").replace(/^Analyze image:\s*/i, ""));
+            }
+            touchConversation(conversation);
+            renderAll();
+            scrollToBottom();
+            return normalized;
+        }
+
+        function createLocalConversation(title = "New Conversation") {
+            const conversation = { id: uid("conversation"), title, createdAt: nowIso(), updatedAt: nowIso(), messages: [] };
+            state.conversations.unshift(conversation);
+            return conversation;
+        }
+
+        async function createConversation(title = "New Conversation") {
+            if (state.previewMode) {
+                const conversation = createLocalConversation(title);
+                state.currentId = conversation.id;
+                saveLocalConversations();
+                renderAll();
+                closeSidebarOnMobile();
+                return conversation;
+            }
+            const data = await bridge(JARVIS_ROUTES.conversations, { method: "POST", body: JSON.stringify({ title }) });
+            const conversation = normalizeConversation(data.conversation || data.session || { id: data.conversation_id || uid("conversation"), title });
+            state.conversations.unshift(conversation);
+            state.currentId = conversation.id;
+            renderAll();
+            closeSidebarOnMobile();
+            return conversation;
+        }
+
+        async function loadConversation(id, rerender = true) {
+            if (!id) return;
+            state.currentId = id;
+            if (!state.previewMode) {
+                const data = await bridge(JARVIS_ROUTES.conversation(id));
+                const conversation = state.conversations.find(item => item.id === id);
+                if (conversation) {
+                    conversation.messages = (data.messages || data.conversation?.messages || data.session?.messages || []).map(normalizeMessage);
+                    conversation.title = data.conversation?.title || data.session?.title || conversation.title;
+                    conversation.updatedAt = data.conversation?.updated_at || data.session?.updated_at || conversation.updatedAt;
+                }
+            }
+            if (rerender) renderAll();
+            closeSidebarOnMobile();
         }
 
         async function loadConversations() {
@@ -1039,18 +1705,11 @@
                 state.conversations = localConversations().map(normalizeConversation);
                 if (!state.conversations.length) {
                     const first = createLocalConversation("Command Session");
-                    first.messages.push({
-                        id: uid("message"),
-                        role: "system",
-                        content: "JARVIS is online.",
-                        mode: state.settings.mode,
-                        createdAt: nowIso(),
-                        attachments: []
-                    });
+                    first.messages.push(normalizeMessage({ role: "system", content: "JARVIS is online." }));
                     state.currentId = first.id;
                     saveLocalConversations();
                 } else {
-                    state.currentId = state.currentId || state.conversations[0].id;
+                    state.currentId = state.conversations[0].id;
                 }
                 return;
             }
@@ -1058,144 +1717,80 @@
             const list = data.conversations || data.sessions || [];
             state.conversations = list.map(normalizeConversation);
             if (state.conversations.length) {
-                state.currentId = state.currentId || state.conversations[0].id;
+                state.currentId = state.conversations[0].id;
                 await loadConversation(state.currentId, false);
             } else {
                 await createConversation();
             }
         }
 
-        function createLocalConversation(title = "New Conversation") {
-            const c = { id: uid("conversation"), title, createdAt: nowIso(), updatedAt: nowIso(), messages: [] };
-            state.conversations.unshift(c);
-            return c;
-        }
-
-        async function createConversation(title = "New Conversation") {
-            if (state.previewMode) {
-                const c = createLocalConversation(title);
-                state.currentId = c.id;
-                saveLocalConversations();
-                renderAll();
-                closeSidebarOnMobile();
-                return c;
+        function queuePendingAction(action) {
+            const pending = readStorage(STORAGE.pendingActions, []);
+            const payload = { ...action, id: uid("pending"), queuedAt: nowIso() };
+            if (payload.kind === "image-analysis" && String(payload.image || "").length > 1500000) {
+                showToast("Retry skipped", "That image is too large to save for automatic retry. Please reattach it if needed.", "warning");
+                return false;
             }
-            const data = await bridge(JARVIS_ROUTES.conversations, {
-                method: "POST", body: JSON.stringify({ title })
-            });
-            const c = normalizeConversation(data.conversation || data.session || {
-                id: data.conversation_id || data.session_id, title
-            });
-            state.conversations.unshift(c);
-            state.currentId = c.id;
-            renderAll();
-            closeSidebarOnMobile();
-            return c;
-        }
-
-        async function loadConversation(id, rerender = true) {
-            if (!id || state.processing) return;
-            state.currentId = id;
-            if (!state.previewMode) {
-                const data = await bridge(JARVIS_ROUTES.conversation(id));
-                const c = state.conversations.find(item => item.id === id);
-                if (c) {
-                    const msgs = data.messages || data.conversation?.messages || data.session?.messages || [];
-                    c.messages = msgs.map(normalizeMessage);
-                    c.title = data.conversation?.title || data.session?.title || c.title;
-                    c.updatedAt = data.conversation?.updated_at || data.session?.updated_at || c.updatedAt;
-                }
+            pending.push(payload);
+            if (!writeStorage(STORAGE.pendingActions, pending)) {
+                showToast("Retry unavailable", "The retry queue is full, so this request was not saved.", "warning");
+                return false;
             }
-            if (rerender) renderAll();
-            closeSidebarOnMobile();
+            return true;
         }
 
-        function currentConversation() {
-            return state.conversations.find(item => item.id === state.currentId) || null;
-        }
-
-        function touchConversation(c) {
-            c.updatedAt = nowIso();
-            state.conversations = [c, ...state.conversations.filter(item => item.id !== c.id)];
-            saveLocalConversations();
-        }
-
-        function addLocalMessage(message) {
-            const c = currentConversation();
-            if (!c) return null;
-            const n = normalizeMessage(message);
-            c.messages.push(n);
-            if (c.title === "New Conversation" || c.title === "Command Session") {
-                const um = c.messages.find(m => m.role === "user" && m.content.trim());
-                if (um) c.title = makeTitle(um.content);
-            }
-            touchConversation(c);
-            renderAll();
-            scrollToBottom();
-            return n;
-        }
-
-        function queueFailedMessage(message) {
-            const pending = safeJsonParse(localStorage.getItem(STORAGE.pendingMessages), []);
-            pending.push({
-                ...message,
-                conversationId: state.currentId,
-                queuedAt: nowIso()
-            });
-            localStorage.setItem(STORAGE.pendingMessages, JSON.stringify(pending));
-            state._pendingRetryQueue = pending;
-        }
-
-        async function retryPendingMessages() {
-            const pending = safeJsonParse(localStorage.getItem(STORAGE.pendingMessages), []);
+        async function retryPendingActions() {
+            if (state.previewMode || state.processing) return;
+            const pending = readStorage(STORAGE.pendingActions, []);
             if (!pending.length) return;
-            
-            const successful = [];
-            for (const msg of pending) {
+            const remaining = [];
+            for (const action of pending) {
                 try {
-                    if (state.currentId !== msg.conversationId) {
-                        state.currentId = msg.conversationId;
+                    if (action.kind === "text") {
+                        await bridge(JARVIS_ROUTES.messages(action.conversationId), {
+                            method: "POST",
+                            body: JSON.stringify({ prompt: action.prompt, mode: action.mode })
+                        });
+                    } else if (action.kind === "image-create") {
+                        await bridge(JARVIS_ROUTES.imageCreate, {
+                            method: "POST",
+                            body: JSON.stringify({ prompt: action.prompt, conversation_id: action.conversationId, mode: action.mode || "jarvis-forge" })
+                        });
+                    } else if (action.kind === "image-analysis") {
+                        await bridge(JARVIS_ROUTES.imageAnalysis, {
+                            method: "POST",
+                            body: JSON.stringify({ image: action.image, conversation_id: action.conversationId, mode: action.mode || "jarvis-vision" })
+                        });
                     }
-                    await bridge(JARVIS_ROUTES.messages(state.currentId), {
-                        method: "POST",
-                        body: JSON.stringify({ prompt: msg.content, mode: msg.mode })
-                    });
-                    successful.push(msg);
                 } catch {
-                    // Will retry next time
+                    remaining.push(action);
                 }
             }
-            
-            const remaining = pending.filter(m => !successful.includes(m));
-            localStorage.setItem(STORAGE.pendingMessages, JSON.stringify(remaining));
-            state._pendingRetryQueue = remaining;
+            writeStorage(STORAGE.pendingActions, remaining);
         }
 
-        function makeTitle(text) {
-            const cleaned = text.replace(/\s+/g, " ").trim();
-            return cleaned.length > 48 ? `${cleaned.slice(0, 48)}...` : cleaned || "New Conversation";
-        }
-
-        function renderAll() {
-            renderHistory();
-            renderMessages();
-            renderStats();
-            renderHeader();
-            syncIcons();
-        }
-
-        function renderHeader() {
-            const c = currentConversation();
-            $("activeTitle").textContent = c?.title || "JARVIS Workspace";
-            const count = c?.messages?.filter(m => m.role !== "system").length || 0;
-            $("messageCount").textContent = `${count} ${count===1?"message":"messages"}`;
-            updateModeLabels();
-        }
-
-        function renderStats() {
-            const total = state.conversations.reduce((s, c) => s + (c.messages?.length || 0), 0);
-            $("statConversations").textContent = state.conversations.length;
-            $("statMessages").textContent = total;
+        async function bootIdentity() {
+            getTokenFromUrl();
+            if (state.previewMode) {
+                setUser({ name: "Krish", email: "krish@jarvis.ai" });
+                await loadConversations();
+                openApp();
+                return;
+            }
+            const token = localStorage.getItem(STORAGE.token);
+            if (!token || !isTokenValid(token)) {
+                removeStorage(STORAGE.token);
+                showAuth();
+                return;
+            }
+            try {
+                const data = await bridge(JARVIS_ROUTES.identity);
+                setUser(data.user || { name: "JARVIS User", email: "user@jarvis.local" });
+            } catch {
+                setUser({ name: "JARVIS User", email: "user@jarvis.local" });
+            }
+            await loadConversations();
+            openApp();
         }
 
         function showTyping() {
@@ -1209,8 +1804,8 @@
         }
 
         function hideTyping() {
-            const el = $("typingMessage");
-            if (el) el.remove();
+            const node = $("typingMessage");
+            if (node) node.remove();
         }
 
         function setProcessing(value) {
@@ -1221,82 +1816,24 @@
             updateModeLabels();
         }
 
-        async function sendMessage() {
-            const input = $("promptInput");
-            const text = input.value.trim();
-            if (!text || state.processing) return;
-            if (!currentConversation()) await createConversation();
-
-            input.value = "";
-            autoResizeInput();
-            
-            const tempUserMsg = {
-                role: "user",
-                content: text,
-                mode: state.settings.mode,
-                createdAt: nowIso()
-            };
-            addLocalMessage(tempUserMsg);
-
-            setProcessing(true);
-            showTyping();
-
-            try {
-                const response = state.previewMode ?
-                    await localReply(text) :
-                    await bridge(JARVIS_ROUTES.messages(state.currentId), {
-                        method: "POST",
-                        body: JSON.stringify({ prompt: text, mode: state.settings.mode })
-                    });
-
-                hideTyping();
-                
-                addLocalMessage({
-                    role: "assistant",
-                    content: response.response || response.message || response.content || "I am ready.",
-                    mode: response.mode || state.settings.mode,
-                    createdAt: nowIso(),
-                    attachments: response.attachments || []
-                });
-
-                if (!state.previewMode) {
-                    await loadConversation(state.currentId, false);
-                    renderAll();
-                }
-            } catch (error) {
-                hideTyping();
-                
-                addLocalMessage({
-                    role: "system",
-                    content: "JARVIS could not complete that request. Please try again.",
-                    mode: state.settings.mode,
-                    createdAt: nowIso()
-                });
-                
-                queueFailedMessage(tempUserMsg);
-                showToast("Request interrupted", error.message || "Unknown error", "error");
-            } finally {
-                setProcessing(false);
-                input.focus();
-            }
-        }
-
         async function localReply(prompt) {
             await wait(700);
             const mode = getMode();
             const lower = prompt.toLowerCase();
             if (lower.includes("plan") || lower.includes("build")) {
-                return { response: [
-                    `${mode.label} has structured the work:`,
-                    "1. Define outcome and success criteria.",
-                    "2. Identify smallest useful version.",
-                    "3. Build core path first.",
-                    "4. Polish after stable behavior.",
-                    "5. Verify desktop and mobile."
-                ].join("\n") };
+                return {
+                    response: [
+                        `${mode.label} has structured the work:`,
+                        "1. Define outcome and success criteria.",
+                        "2. Identify the smallest useful version.",
+                        "3. Build the core path first.",
+                        "4. Polish after stable behavior.",
+                        "5. Verify desktop and mobile."
+                    ].join("\n")
+                };
             }
             if (lower.includes("rewrite") || lower.includes("write")) {
-                return { response: "Sharper direction:\n\nLead with result, remove filler, keep every sentence useful." };
+                return { response: "Sharper direction:\n\nLead with result, remove filler, and keep every sentence useful." };
             }
             if (lower.includes("image") || lower.includes("visual")) {
                 return { response: "I would steer toward a high-contrast command surface with restrained motion." };
@@ -1304,78 +1841,42 @@
             return { response: `${mode.label} is online.\n\nSend the next detail and I will tighten it.` };
         }
 
-        function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-        async function attachImage() {
-            if (state.processing) return;
+        async function sendMessage() {
+            const input = $("promptInput");
+            const text = input.value.trim();
+            if (!text || state.processing) return;
             if (!currentConversation()) await createConversation();
-
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "image/*";
-            input.addEventListener("change", async e => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                if (file.size > 12 * 1024 * 1024) {
-                    showToast("Image too large", "Use an image below 12 MB.", "warning");
-                    return;
-                }
-
-                const dataUrl = await readFileAsDataUrl(file);
-                const tempMsg = {
-                    role: "user",
-                    content: `Analyze image: ${file.name}`,
-                    mode: "jarvis-vision",
+            input.value = "";
+            autoResizeInput();
+            addLocalMessage({ role: "user", content: text, mode: state.settings.mode, createdAt: nowIso() });
+            setProcessing(true);
+            showTyping();
+            try {
+                const response = state.previewMode ? await localReply(text) : await bridge(JARVIS_ROUTES.messages(state.currentId), {
+                    method: "POST",
+                    body: JSON.stringify({ prompt: text, mode: state.settings.mode })
+                });
+                hideTyping();
+                addLocalMessage({
+                    role: "assistant",
+                    content: response.response || response.message || response.content || "I am ready.",
+                    mode: response.mode || state.settings.mode,
                     createdAt: nowIso(),
-                    attachments: [{ dataUrl, caption: file.name, alt: file.name }]
-                };
-                addLocalMessage(tempMsg);
-
-                setProcessing(true);
-                showTyping();
-
-                try {
-                    const response = state.previewMode ?
-                        await localImageAnalysis(file) :
-                        await bridge(JARVIS_ROUTES.imageAnalysis, {
-                            method: "POST",
-                            body: JSON.stringify({
-                                image: dataUrl.split(",")[1],
-                                conversation_id: state.currentId,
-                                mode: "jarvis-vision"
-                            })
-                        });
-
-                    hideTyping();
-                    addLocalMessage({
-                        role: "assistant",
-                        content: response.analysis || response.response || "Image received.",
-                        mode: "jarvis-vision",
-                        createdAt: nowIso()
-                    });
-
-                    if (!state.previewMode) {
-                        await loadConversation(state.currentId, false);
-                        renderAll();
-                    }
-                } catch (error) {
-                    hideTyping();
-                    addLocalMessage({
-                        role: "system",
-                        content: "JARVIS Vision could not inspect that image.",
-                        mode: "jarvis-vision",
-                        createdAt: nowIso()
-                    });
-                    queueFailedMessage(tempMsg);
-                    showToast("Vision interrupted", error.message || "Unknown error", "error");
-                } finally { setProcessing(false); }
-            });
-            input.click();
-        }
-
-        async function localImageAnalysis(file) {
-            await wait(650);
-            return { analysis: `JARVIS Vision received ${file.name}.\n\nVisible details can be summarized once connected to your live vision engine.` };
+                    attachments: response.attachments || []
+                });
+                if (!state.previewMode) {
+                    await loadConversation(state.currentId, false);
+                    renderAll();
+                }
+            } catch (error) {
+                hideTyping();
+                addLocalMessage({ role: "system", content: "JARVIS could not complete that request. Please try again.", mode: state.settings.mode });
+                queuePendingAction({ kind: "text", conversationId: state.currentId, prompt: text, mode: state.settings.mode });
+                showToast("Request interrupted", error.message || "Unknown error", "error");
+            } finally {
+                setProcessing(false);
+                input.focus();
+            }
         }
 
         function readFileAsDataUrl(file) {
@@ -1387,66 +1888,71 @@
             });
         }
 
-        async function generateImage() {
-            const prompt = $("promptInput").value.trim();
-            if (!prompt) {
-                showToast("Add a prompt", "Describe what JARVIS Forge should create.", "warning");
-                $("promptInput").focus();
-                return;
-            }
+        async function localImageAnalysis(file) {
+            await wait(650);
+            return { analysis: `JARVIS Vision received ${file.name}.\n\nVisible details can be summarized once connected to your live vision engine.` };
+        }
+
+        async function attachImage() {
             if (state.processing) return;
             if (!currentConversation()) await createConversation();
-
-            $("promptInput").value = "";
-            autoResizeInput();
-
-            const tempMsg = {
-                role: "user",
-                content: `Create image: ${prompt}`,
-                mode: "jarvis-forge",
-                createdAt: nowIso()
-            };
-            addLocalMessage(tempMsg);
-
-            setProcessing(true);
-            showTyping();
-
-            try {
-                const response = state.previewMode ?
-                    await localImageCreate(prompt) :
-                    await bridge(JARVIS_ROUTES.imageCreate, {
-                        method: "POST",
-                        body: JSON.stringify({ prompt, conversation_id: state.currentId, mode: "jarvis-forge" })
-                    });
-
-                const imageUrl = response.image_url || response.url || response.dataUrl || response.image;
-                hideTyping();
-                
-                addLocalMessage({
-                    role: "assistant",
-                    content: response.caption || `Image created: ${prompt}`,
-                    mode: "jarvis-forge",
-                    createdAt: nowIso(),
-                    attachments: imageUrl ? [{ url: imageUrl, caption: prompt, alt: prompt }] : []
-                });
-
-                if (imageUrl) openImageViewer(imageUrl, prompt, prompt);
-
-                if (!state.previewMode) {
-                    await loadConversation(state.currentId, false);
-                    renderAll();
+            const picker = document.createElement("input");
+            picker.type = "file";
+            picker.accept = "image/*";
+            picker.addEventListener("change", async event => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                if (file.size > 12 * 1024 * 1024) {
+                    showToast("Image too large", "Use an image below 12 MB.", "warning");
+                    return;
                 }
-            } catch (error) {
-                hideTyping();
+                const dataUrl = await readFileAsDataUrl(file);
+                const base64 = String(dataUrl).split(",")[1] || "";
                 addLocalMessage({
-                    role: "system",
-                    content: "JARVIS Forge could not create that image.",
-                    mode: "jarvis-forge",
-                    createdAt: nowIso()
+                    role: "user",
+                    content: `Analyze image: ${file.name}`,
+                    mode: "jarvis-vision",
+                    attachments: [{ dataUrl, caption: file.name, alt: file.name }]
                 });
-                queueFailedMessage(tempMsg);
-                showToast("Forge interrupted", error.message || "Unknown error", "error");
-            } finally { setProcessing(false); }
+                setProcessing(true);
+                showTyping();
+                try {
+                    const response = state.previewMode ? await localImageAnalysis(file) : await bridge(JARVIS_ROUTES.imageAnalysis, {
+                        method: "POST",
+                        body: JSON.stringify({ image: base64, conversation_id: state.currentId, mode: "jarvis-vision" })
+                    });
+                    hideTyping();
+                    addLocalMessage({ role: "assistant", content: response.analysis || response.response || "Image received.", mode: "jarvis-vision" });
+                    if (!state.previewMode) {
+                        await loadConversation(state.currentId, false);
+                        renderAll();
+                    }
+                } catch (error) {
+                    hideTyping();
+                    addLocalMessage({ role: "system", content: "JARVIS Vision could not inspect that image.", mode: "jarvis-vision" });
+                    queuePendingAction({ kind: "image-analysis", conversationId: state.currentId, image: base64, mode: "jarvis-vision" });
+                    showToast("Vision interrupted", error.message || "Unknown error", "error");
+                } finally {
+                    setProcessing(false);
+                }
+            });
+            picker.click();
+        }
+
+        function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+            const words = String(text).split(/\s+/);
+            let line = "";
+            words.forEach(word => {
+                const test = line ? `${line} ${word}` : word;
+                if (ctx.measureText(test).width > maxWidth && line) {
+                    ctx.fillText(line, x, y);
+                    line = word;
+                    y += lineHeight;
+                } else {
+                    line = test;
+                }
+            });
+            if (line) ctx.fillText(line, x, y);
         }
 
         async function localImageCreate(prompt) {
@@ -1457,18 +1963,16 @@
             const ctx = canvas.getContext("2d");
             const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#34e7ff";
             const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#08090d";
-
-            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            grad.addColorStop(0, bg);
-            grad.addColorStop(0.46, "#151923");
-            grad.addColorStop(1, "#2a2116");
-            ctx.fillStyle = grad;
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, bg);
+            gradient.addColorStop(0.46, "#151923");
+            gradient.addColorStop(1, "#2a2116");
+            ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
             ctx.strokeStyle = accent;
             ctx.globalAlpha = 0.82;
             ctx.lineWidth = 3;
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 12; i += 1) {
                 ctx.beginPath();
                 const y = 150 + i * 42;
                 ctx.moveTo(120, y);
@@ -1486,25 +1990,159 @@
             return { dataUrl: canvas.toDataURL("image/png"), caption: `Image concept created: ${prompt}` };
         }
 
-        function wrapCanvasText(ctx, text, x, y, maxW, lh) {
-            const words = String(text).split(/\s+/);
-            let line = "";
-            words.forEach(w => {
-                const test = line ? `${line} ${w}` : w;
-                if (ctx.measureText(test).width > maxW && line) {
-                    ctx.fillText(line, x, y);
-                    line = w;
-                    y += lh;
-                } else line = test;
+        function openImageViewer(src, alt, caption) {
+            if (!src) return;
+            $("imageViewerImg").src = src;
+            $("imageViewerImg").alt = alt || "JARVIS image";
+            $("imageViewerCaption").textContent = caption || "";
+            $("imageViewer").classList.add("active");
+        }
+
+        function closeImageViewer() {
+            $("imageViewer").classList.remove("active");
+            $("imageViewerImg").src = "";
+        }
+
+        async function generateImage() {
+            const promptInput = $("promptInput");
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                showToast("Add a prompt", "Describe what JARVIS Forge should create.", "warning");
+                promptInput.focus();
+                return;
+            }
+            if (state.processing) return;
+            if (!currentConversation()) await createConversation();
+            promptInput.value = "";
+            autoResizeInput();
+            addLocalMessage({ role: "user", content: `Create image: ${prompt}`, mode: "jarvis-forge" });
+            setProcessing(true);
+            showTyping();
+            try {
+                const response = state.previewMode ? await localImageCreate(prompt) : await bridge(JARVIS_ROUTES.imageCreate, {
+                    method: "POST",
+                    body: JSON.stringify({ prompt, conversation_id: state.currentId, mode: "jarvis-forge" })
+                });
+                const imageUrl = normalizeImageSource(response.image_url || response.url || response.dataUrl || response.image || "");
+                hideTyping();
+                addLocalMessage({
+                    role: "assistant",
+                    content: response.caption || `Image created: ${prompt}`,
+                    mode: "jarvis-forge",
+                    attachments: imageUrl ? [{ url: imageUrl, caption: prompt, alt: prompt }] : []
+                });
+                if (imageUrl) openImageViewer(imageUrl, prompt, prompt);
+                if (!state.previewMode) {
+                    await loadConversation(state.currentId, false);
+                    renderAll();
+                }
+            } catch (error) {
+                hideTyping();
+                addLocalMessage({ role: "system", content: "JARVIS Forge could not create that image.", mode: "jarvis-forge" });
+                queuePendingAction({ kind: "image-create", conversationId: state.currentId, prompt, mode: "jarvis-forge" });
+                showToast("Forge interrupted", error.message || "Unknown error", "error");
+            } finally {
+                setProcessing(false);
+            }
+        }
+
+        function autoResizeInput() {
+            const input = $("promptInput");
+            input.style.height = "auto";
+            input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
+        }
+
+        function scrollToBottom() {
+            requestAnimationFrame(() => {
+                const messages = $("messages");
+                messages.scrollTop = messages.scrollHeight;
             });
-            if (line) ctx.fillText(line, x, y);
+        }
+
+        function copyText(text) {
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(text).then(
+                    () => showToast("Copied", "Message copied to clipboard.", "success"),
+                    fallbackCopy
+                );
+            } else {
+                fallbackCopy();
+            }
+
+            function fallbackCopy() {
+                const area = document.createElement("textarea");
+                area.value = text;
+                area.style.position = "fixed";
+                area.style.opacity = "0";
+                document.body.appendChild(area);
+                area.select();
+                const copied = document.execCommand("copy");
+                area.remove();
+                showToast(copied ? "Copied" : "Copy failed", copied ? "Message copied to clipboard." : "Clipboard access was not available.", copied ? "success" : "warning");
+            }
+        }
+
+        function speak(text) {
+            if (!window.speechSynthesis) {
+                showToast("Voice unavailable", "Speech playback is not supported here.", "warning");
+                return;
+            }
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = state.settings.voice;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function updateVoiceState() {
+            $("voiceWave").classList.toggle("active", state.listening);
+            ["voiceBtn", "voiceBtnTop"].forEach(id => {
+                const button = $(id);
+                if (button) button.style.color = state.listening ? "var(--danger)" : "";
+            });
+        }
+
+        function toggleVoice() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showToast("Voice unavailable", "Speech input is not supported in this browser.", "warning");
+                return;
+            }
+            if (!state.recognition) {
+                state.recognition = new SpeechRecognition();
+                state.recognition.continuous = false;
+                state.recognition.interimResults = true;
+                state.recognition.onresult = event => {
+                    let transcript = "";
+                    for (let i = event.resultIndex; i < event.results.length; i += 1) transcript += event.results[i][0].transcript;
+                    $("promptInput").value = transcript;
+                    autoResizeInput();
+                    if (event.results[event.results.length - 1].isFinal) sendMessage();
+                };
+                state.recognition.onerror = event => {
+                    state.listening = false;
+                    updateVoiceState();
+                    if (event.error !== "aborted") showToast("Voice stopped", event.error || "Recognition ended.", "warning");
+                };
+                state.recognition.onend = () => {
+                    state.listening = false;
+                    updateVoiceState();
+                };
+            }
+            if (state.listening) {
+                state.recognition.stop();
+                state.listening = false;
+            } else {
+                state.recognition.lang = state.settings.voice;
+                state.recognition.start();
+                state.listening = true;
+            }
+            updateVoiceState();
         }
 
         async function deleteConversation(id) {
-            const c = state.conversations.find(item => item.id === id);
-            if (!c) return;
-            if (!confirm(`Delete "${c.title}"?`)) return;
-
+            const conversation = state.conversations.find(item => item.id === id);
+            if (!conversation) return;
+            if (!confirm(`Delete "${conversation.title}"?`)) return;
             try {
                 if (!state.previewMode) await bridge(JARVIS_ROUTES.conversation(id), { method: "DELETE" });
                 state.conversations = state.conversations.filter(item => item.id !== id);
@@ -1512,7 +2150,7 @@
                 if (!state.currentId) await createConversation();
                 saveLocalConversations();
                 renderAll();
-                showToast("Conversation deleted", c.title, "success");
+                showToast("Conversation deleted", conversation.title, "success");
             } catch (error) {
                 showToast("Delete failed", error.message || "Unknown error", "error");
             }
@@ -1522,7 +2160,9 @@
             if (!confirm("Delete all conversations? This cannot be undone.")) return;
             try {
                 if (!state.previewMode) {
-                    for (const c of state.conversations) await bridge(JARVIS_ROUTES.conversation(c.id), { method: "DELETE" });
+                    for (const conversation of state.conversations) {
+                        await bridge(JARVIS_ROUTES.conversation(conversation.id), { method: "DELETE" });
+                    }
                 }
                 state.conversations = [];
                 state.currentId = null;
@@ -1539,22 +2179,22 @@
                 let exportData = state.conversations;
                 if (!state.previewMode) {
                     exportData = [];
-                    for (const c of state.conversations) {
-                        const data = await bridge(JARVIS_ROUTES.conversation(c.id));
+                    for (const conversation of state.conversations) {
+                        const data = await bridge(JARVIS_ROUTES.conversation(conversation.id));
                         exportData.push(normalizeConversation({
-                            ...c,
+                            ...conversation,
                             messages: data.messages || data.conversation?.messages || []
                         }));
                     }
                 }
                 const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `jarvis-export-${new Date().toISOString().slice(0,10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `jarvis-export-${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
                 URL.revokeObjectURL(url);
                 showToast("Export complete", "Conversation archive downloaded.", "success");
             } catch (error) {
@@ -1562,207 +2202,17 @@
             }
         }
 
-        function copyText(text) {
-            navigator.clipboard?.writeText(text).then(
-                () => showToast("Copied", "Message copied to clipboard.", "success"),
-                () => showToast("Copy failed", "Clipboard access was not available.", "warning")
-            );
+        function renderStats() {
+            $("statConversations").textContent = state.conversations.length;
+            $("statMessages").textContent = state.conversations.reduce((sum, conversation) => sum + (conversation.messages?.length || 0), 0);
         }
 
-        function speak(text) {
-            if (!window.speechSynthesis) {
-                showToast("Voice unavailable", "Speech playback is not supported here.", "warning");
-                return;
-            }
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = state.settings.voice;
-            utterance.rate = 1;
-            utterance.pitch = 1;
-            window.speechSynthesis.cancel();
-            window.speechSynthesis.speak(utterance);
-        }
-
-        function toggleVoice() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                showToast("Voice unavailable", "Speech input is not supported in this browser.", "warning");
-                return;
-            }
-
-            if (!state.recognition) {
-                state.recognition = new SpeechRecognition();
-                state.recognition.continuous = false;
-                state.recognition.interimResults = true;
-                state.recognition.onresult = e => {
-                    let transcript = "";
-                    for (let i = e.resultIndex; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-                    $("promptInput").value = transcript;
-                    autoResizeInput();
-                    if (e.results[e.results.length - 1].isFinal) sendMessage();
-                };
-                state.recognition.onerror = e => {
-                    state.listening = false;
-                    updateVoiceState();
-                    if (e.error !== "aborted") showToast("Voice stopped", e.error || "Recognition ended.", "warning");
-                };
-                state.recognition.onend = () => {
-                    state.listening = false;
-                    updateVoiceState();
-                };
-            }
-
-            if (state.listening) {
-                state.recognition.stop();
-                state.listening = false;
-            } else {
-                state.recognition.lang = state.settings.voice;
-                state.recognition.start();
-                state.listening = true;
-            }
-            updateVoiceState();
-        }
-
-        function updateVoiceState() {
-            $("voiceWave").classList.toggle("active", state.listening);
-            ["voiceBtn", "voiceBtnTop"].forEach(id => {
-                const btn = $(id);
-                if (btn) btn.style.color = state.listening ? "var(--danger)" : "";
-            });
-        }
-
-        function openSettings() {
-            renderStats();
-            $("settingsModal").classList.add("active");
-        }
-
-        function closeSettings() { $("settingsModal").classList.remove("active"); }
-
-        function openProfile() {
-            if (state.user) {
-                $("profileName").textContent = state.user.name || "Operator";
-                $("profileEmail").textContent = state.user.email || "operator@jarvis.local";
-                $("profileAvatarLarge").textContent = (state.user.name || "J").trim().charAt(0).toUpperCase();
-            }
-            $("profileModal").classList.add("active");
-        }
-
-        function closeProfile() { $("profileModal").classList.remove("active"); }
-
-        function openImageViewer(src, alt, caption) {
-            $("imageViewerImg").src = src;
-            $("imageViewerImg").alt = alt || "JARVIS image";
-            $("imageViewerCaption").textContent = caption || "";
-            $("imageViewer").classList.add("active");
-        }
-
-        function closeImageViewer() {
-            $("imageViewer").classList.remove("active");
-            $("imageViewerImg").src = "";
-        }
-
-        function openSidebar() {
-            $("sidebar").classList.add("open");
-            $("sidebarOverlay").classList.add("active");
-        }
-
-        function closeSidebar() {
-            $("sidebar").classList.remove("open");
-            $("sidebarOverlay").classList.remove("active");
-        }
-
-        function closeSidebarOnMobile() {
-            if (matchMedia("(max-width: 820px)").matches) closeSidebar();
-        }
-
-        function autoResizeInput() {
-            const input = $("promptInput");
-            input.style.height = "auto";
-            input.style.height = `${Math.min(input.scrollHeight,160)}px`;
-        }
-
-        function scrollToBottom() {
-            requestAnimationFrame(() => {
-                const c = $("messages");
-                c.scrollTop = c.scrollHeight;
-            });
-        }
-
-        function startSignIn() { window.location.href = JARVIS_ROUTES.signIn; }
-
-        function signOut() {
-            localStorage.removeItem(STORAGE.token);
-            localStorage.removeItem(STORAGE.pendingMessages);
-            state._pendingRetryQueue = [];
-            state.user = null;
-            state.conversations = [];
-            state.currentId = null;
-            window.history.replaceState({}, document.title, window.location.pathname);
-            showAuth();
-        }
-
-        function renderHistory() {
-            const container = $("historyList");
-            const term = ($("historySearch").value || "").trim().toLowerCase();
-            const filtered = state.conversations.filter(item =>
-                item.title.toLowerCase().includes(term)
-            );
-            container.innerHTML = "";
-
-            if (!filtered.length) {
-                const empty = document.createElement("div");
-                empty.className = "empty-state";
-                empty.textContent = term ? "No matching conversations." : "No conversations yet.";
-                container.appendChild(empty);
-                return;
-            }
-
-            const grouped = groupConversations(filtered);
-            Object.entries(grouped).forEach(([label, items]) => {
-                if (!items.length) return;
-                const group = document.createElement("section");
-                group.className = "history-group";
-                const heading = document.createElement("h2");
-                heading.className = "history-heading";
-                heading.textContent = label;
-                group.appendChild(heading);
-
-                items.forEach(conversation => {
-                    const button = document.createElement("button");
-                    button.type = "button";
-                    button.className = `history-item ${conversation.id === state.currentId ? "active" : ""}`;
-                    button.setAttribute("role", "listitem");
-                    button.addEventListener("click", () => loadConversation(conversation.id));
-
-                    const icon = document.createElement("span");
-                    icon.className = "ico";
-                    icon.dataset.lucide = "message-square";
-                    icon.textContent = "C";
-
-                    const copy = document.createElement("span");
-                    const title = document.createElement("span");
-                    title.className = "history-title";
-                    title.textContent = conversation.title || "New Conversation";
-                    const time = document.createElement("span");
-                    time.className = "history-time";
-                    time.textContent = formatRelative(conversation.updatedAt);
-                    copy.append(title, time);
-
-                    const del = document.createElement("button");
-                    del.type = "button";
-                    del.className = "history-delete";
-                    del.setAttribute("aria-label", `Delete ${conversation.title || "conversation"}`);
-                    del.innerHTML = '<span class="ico" data-lucide="x">X</span>';
-                    del.addEventListener("click", event => {
-                        event.stopPropagation();
-                        deleteConversation(conversation.id);
-                    });
-
-                    button.append(icon, copy, del);
-                    group.appendChild(button);
-                });
-                container.appendChild(group);
-            });
-            syncIcons();
+        function renderHeader() {
+            const conversation = currentConversation();
+            $("activeTitle").textContent = conversation?.title || "JARVIS Workspace";
+            const count = conversation?.messages?.filter(message => message.role !== "system").length || 0;
+            $("messageCount").textContent = `${count} ${count === 1 ? "message" : "messages"}`;
+            updateModeLabels();
         }
 
         function groupConversations(items) {
@@ -1772,14 +2222,7 @@
             yesterday.setDate(today.getDate() - 1);
             const week = new Date(today);
             week.setDate(today.getDate() - 6);
-
-            const groups = {
-                Today: [],
-                Yesterday: [],
-                "Last 7 Days": [],
-                Earlier: []
-            };
-
+            const groups = { Today: [], Yesterday: [], "Last 7 Days": [], Earlier: [] };
             items.forEach(item => {
                 const date = new Date(item.updatedAt);
                 if (date >= today) groups.Today.push(item);
@@ -1797,63 +2240,86 @@
             const mins = Math.floor(diff / 60000);
             if (mins < 1) return "Just now";
             if (mins < 60) return `${mins}m ago`;
-            const hrs = Math.floor(mins / 60);
-            if (hrs < 24) return `${hrs}h ago`;
-            const days = Math.floor(hrs / 24);
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
             if (days < 7) return `${days}d ago`;
             return date.toLocaleDateString([], { month: "short", day: "numeric" });
         }
 
-        function renderMessages() {
-            const container = $("messages");
-            const conversation = currentConversation();
+        function renderHistory() {
+            const container = $("historyList");
+            const term = $("historySearch").value.trim().toLowerCase();
+            const filtered = state.conversations.filter(item => item.title.toLowerCase().includes(term));
             container.innerHTML = "";
-
-            if (!conversation || !conversation.messages?.length) {
-                renderWelcome(container);
+            if (!filtered.length) {
+                const empty = document.createElement("div");
+                empty.className = "empty-state";
+                empty.textContent = term ? "No matching conversations." : "No conversations yet.";
+                container.appendChild(empty);
                 return;
             }
+            const grouped = groupConversations(filtered);
+            Object.entries(grouped).forEach(([label, items]) => {
+                if (!items.length) return;
+                const heading = document.createElement("h2");
+                heading.className = "history-heading";
+                heading.textContent = label;
+                container.appendChild(heading);
+                items.forEach(conversation => {
+                    const row = document.createElement("div");
+                    row.className = `history-row ${conversation.id === state.currentId ? "active" : ""}`;
+                    row.setAttribute("role", "button");
+                    row.setAttribute("tabindex", "0");
+                    row.setAttribute("aria-label", `Open ${conversation.title || "conversation"}`);
+                    row.addEventListener("click", event => {
+                        if (event.target.closest(".history-delete")) return;
+                        loadConversation(conversation.id);
+                    });
+                    row.addEventListener("keydown", event => {
+                        if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            loadConversation(conversation.id);
+                        }
+                    });
 
-            const hasNonSystem = conversation.messages.some(message => message.role !== "system");
-            if (!hasNonSystem) renderWelcome(container);
+                    const icon = document.createElement("span");
+                    icon.className = "ico";
+                    icon.dataset.lucide = "message-square";
+                    icon.textContent = "C";
 
-            conversation.messages.forEach(message => {
-                container.appendChild(createMessageNode(message));
+                    const copy = document.createElement("span");
+                    copy.className = "history-copy";
+                    copy.innerHTML = `<span class="history-title">${escapeHtml(conversation.title || "New Conversation")}</span><span class="history-time">${escapeHtml(formatRelative(conversation.updatedAt))}</span>`;
+
+                    const del = document.createElement("button");
+                    del.type = "button";
+                    del.className = "history-delete";
+                    del.setAttribute("aria-label", `Delete ${conversation.title || "conversation"}`);
+                    del.innerHTML = '<span class="ico" data-lucide="x">X</span>';
+                    del.addEventListener("click", event => {
+                        event.stopPropagation();
+                        deleteConversation(conversation.id);
+                    });
+
+                    row.append(icon, copy, del);
+                    container.appendChild(row);
+                });
             });
+            syncIcons();
         }
 
         function renderWelcome(container) {
             const board = document.createElement("section");
             board.className = "welcome-board";
-
-            const head = document.createElement("div");
-            head.className = "welcome-head";
-            const mark = document.createElement("div");
-            mark.className = "welcome-mark";
-            mark.innerHTML = '<span class="ico" data-lucide="scan-line">J</span>';
-            const copy = document.createElement("div");
-            const title = document.createElement("h3");
-            title.textContent = "JARVIS is ready.";
-            const sub = document.createElement("p");
-            sub.textContent = getMode().status;
-            copy.append(title, sub);
-            head.append(mark, copy);
-
+            board.innerHTML = `<div class="welcome-head"><div class="welcome-mark"><span class="ico" data-lucide="scan-line">J</span></div><div><h3>JARVIS is ready.</h3><p>${escapeHtml(getMode().status)}</p></div></div>`;
             const grid = document.createElement("div");
             grid.className = "starter-grid";
             STARTERS.forEach(starter => {
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "starter";
-                const icon = document.createElement("span");
-                icon.className = "ico";
-                icon.dataset.lucide = "corner-down-right";
-                icon.textContent = ">";
-                const strong = document.createElement("strong");
-                strong.textContent = starter.title;
-                const span = document.createElement("span");
-                span.textContent = starter.text;
-                button.append(icon, strong, span);
+                button.innerHTML = `<span class="ico" data-lucide="corner-down-right">></span><strong>${escapeHtml(starter.title)}</strong><span>${escapeHtml(starter.text)}</span>`;
                 button.addEventListener("click", () => {
                     $("promptInput").value = starter.text;
                     autoResizeInput();
@@ -1861,83 +2327,25 @@
                 });
                 grid.appendChild(button);
             });
-
-            board.append(head, grid);
+            board.appendChild(grid);
             container.appendChild(board);
         }
 
-        function createMessageNode(message) {
-            const outer = document.createElement("article");
-            outer.className = `message ${message.role}-message`;
-
-            const shell = document.createElement("div");
-            shell.className = "message-shell";
-
-            const content = document.createElement("div");
-            content.className = "message-content";
-            renderMessageContent(content, message.content);
-
-            if (message.attachments?.length) {
-                const grid = document.createElement("div");
-                grid.className = "attachment-grid";
-                message.attachments.forEach(attachment => {
-                    if (!attachment.url && !attachment.dataUrl) return;
-                    const figure = document.createElement("figure");
-                    figure.className = "attachment";
-                    const img = document.createElement("img");
-                    img.src = attachment.url || attachment.dataUrl;
-                    img.alt = attachment.alt || attachment.caption || "JARVIS attachment";
-                    img.loading = "lazy";
-                    img.addEventListener("click", () => openImageViewer(img.src, img.alt, attachment.caption || message.content));
-                    figure.appendChild(img);
-                    if (attachment.caption) {
-                        const caption = document.createElement("figcaption");
-                        caption.textContent = attachment.caption;
-                        figure.appendChild(caption);
-                    }
-                    grid.appendChild(figure);
-                });
-                content.appendChild(grid);
-            }
-
-            const meta = document.createElement("div");
-            meta.className = "message-meta";
-            const time = document.createElement("span");
-            time.textContent = new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-            const mode = document.createElement("span");
-            mode.textContent = message.role === "assistant" ? getMode(message.mode).label : "";
-
-            const actions = document.createElement("span");
-            actions.className = "message-actions";
-            actions.append(
-                miniButton("copy", "Copy", () => copyText(message.content)),
-                miniButton("volume-2", "Speak", () => speak(message.content))
-            );
-
-            meta.append(time);
-            if (mode.textContent) meta.append(mode);
-            meta.append(actions);
-
-            shell.append(content, meta);
-            outer.appendChild(shell);
-            return outer;
-        }
-
         function renderMessageContent(container, text) {
-            const value = String(text || "");
-            const parts = value.split(/```/g);
+            const parts = String(text || "").split(/```/g);
             parts.forEach((part, index) => {
                 if (!part) return;
                 if (index % 2 === 1) {
                     const pre = document.createElement("pre");
                     const code = document.createElement("code");
-                    code.textContent = part.trim();
+                    const trimmed = part.trim();
+                    const match = trimmed.match(/^([a-z0-9+#.-]+)?\n([\s\S]*)$/i);
+                    code.textContent = match ? match[2].trim() : trimmed;
                     pre.appendChild(code);
                     container.appendChild(pre);
                     return;
                 }
-                const paragraphs = part.split(/\n{2,}/);
-                paragraphs.forEach(paragraph => {
+                part.split(/\n{2,}/).forEach(paragraph => {
                     if (!paragraph.trim()) return;
                     const p = document.createElement("p");
                     p.textContent = paragraph;
@@ -1947,26 +2355,144 @@
         }
 
         function miniButton(iconName, label, handler) {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "mini-action";
-            btn.setAttribute("aria-label", label);
-            btn.innerHTML = `<span class="ico" data-lucide="${iconName}">${label.charAt(0)}</span>`;
-            btn.addEventListener("click", handler);
-            return btn;
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "mini-action";
+            button.setAttribute("aria-label", label);
+            button.innerHTML = `<span class="ico" data-lucide="${iconName}">${label.charAt(0)}</span>`;
+            button.addEventListener("click", handler);
+            return button;
+        }
+
+        function createMessageNode(message) {
+            const outer = document.createElement("article");
+            outer.className = `message ${message.role}-message`;
+            const content = document.createElement("div");
+            content.className = "message-content";
+            renderMessageContent(content, message.content);
+            if (message.attachments?.length) {
+                const grid = document.createElement("div");
+                grid.className = "attachment-grid";
+                message.attachments.forEach(attachment => {
+                    const src = attachment.url || attachment.dataUrl;
+                    if (!src) return;
+                    const figure = document.createElement("figure");
+                    figure.className = "attachment";
+                    figure.innerHTML = `<img src="${src}" alt="${escapeHtml(attachment.alt || attachment.caption || "JARVIS attachment")}">`;
+                    figure.querySelector("img").addEventListener("click", () => openImageViewer(src, attachment.alt, attachment.caption || message.content));
+                    if (attachment.caption) {
+                        const caption = document.createElement("figcaption");
+                        caption.textContent = attachment.caption;
+                        figure.appendChild(caption);
+                    }
+                    grid.appendChild(figure);
+                });
+                content.appendChild(grid);
+            }
+            const meta = document.createElement("div");
+            meta.className = "message-meta";
+            meta.appendChild(Object.assign(document.createElement("span"), {
+                textContent: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            }));
+            if (message.role === "assistant") {
+                meta.appendChild(Object.assign(document.createElement("span"), { textContent: getMode(message.mode).label }));
+            }
+            const actions = document.createElement("span");
+            actions.className = "message-actions";
+            actions.append(miniButton("copy", "Copy", () => copyText(message.content)), miniButton("volume-2", "Speak", () => speak(message.content)));
+            meta.appendChild(actions);
+            outer.append(content, meta);
+            return outer;
+        }
+
+        function renderMessages() {
+            const container = $("messages");
+            const conversation = currentConversation();
+            container.innerHTML = "";
+            if (!conversation || !conversation.messages?.length) {
+                renderWelcome(container);
+                syncIcons();
+                return;
+            }
+            if (!conversation.messages.some(message => message.role !== "system")) renderWelcome(container);
+            conversation.messages.forEach(message => container.appendChild(createMessageNode(message)));
+            syncIcons();
+        }
+
+        function renderAll() {
+            renderHistory();
+            renderMessages();
+            renderStats();
+            renderHeader();
+            syncIcons();
+        }
+
+        function openSidebar() {
+            $("sidebar").classList.add("open");
+            $("sidebarOverlay").classList.add("active");
+        }
+
+        function closeSidebar() {
+            $("sidebar").classList.remove("open");
+            $("sidebarOverlay").classList.remove("active");
+        }
+
+        function closeSidebarOnMobile() {
+            if (matchMedia("(max-width: 820px)").matches) closeSidebar();
+        }
+
+        function openSettings() {
+            renderStats();
+            $("settingsModal").classList.add("active");
+        }
+
+        function closeSettings() {
+            $("settingsModal").classList.remove("active");
+        }
+
+        function openProfile() {
+            if (state.user) setUser(state.user);
+            $("profileModal").classList.add("active");
+        }
+
+        function closeProfile() {
+            $("profileModal").classList.remove("active");
+        }
+
+        function startSignIn() {
+            if (state.previewMode) {
+                setUser({ name: "Krish", email: "krish@jarvis.ai" });
+                openApp();
+                return;
+            }
+            location.href = JARVIS_ROUTES.signIn;
+        }
+
+        async function signOut() {
+            if (!state.previewMode) {
+                try { await bridge(JARVIS_ROUTES.signOut, { method: "POST" }); }
+                catch { try { await bridge(JARVIS_ROUTES.signOut, { method: "GET" }); } catch {} }
+            }
+            removeStorage(STORAGE.token);
+            removeStorage(STORAGE.pendingActions);
+            state.user = null;
+            state.conversations = [];
+            state.currentId = null;
+            history.replaceState({}, document.title, location.pathname);
+            showAuth();
         }
 
         function bindEvents() {
             $("newConversationBtn").addEventListener("click", () => createConversation());
             $("historySearch").addEventListener("input", renderHistory);
-            $("composerForm").addEventListener("submit", e => {
-                e.preventDefault();
+            $("composerForm").addEventListener("submit", event => {
+                event.preventDefault();
                 sendMessage();
             });
             $("promptInput").addEventListener("input", autoResizeInput);
-            $("promptInput").addEventListener("keydown", e => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
+            $("promptInput").addEventListener("keydown", event => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
                     sendMessage();
                 }
             });
@@ -1975,95 +2501,80 @@
             ["generateImageBtn", "createImageBtnTop"].forEach(id => $(id).addEventListener("click", generateImage));
             ["voiceBtn", "voiceBtnTop"].forEach(id => $(id).addEventListener("click", toggleVoice));
             ["settingsBtnTop", "settingsBtnSide"].forEach(id => $(id).addEventListener("click", openSettings));
-            $("userPill").addEventListener("click", openProfile);
             ["exportBtnSide", "exportBtnSettings"].forEach(id => $(id).addEventListener("click", exportConversations));
             ["clearBtnSide", "clearBtnSettings"].forEach(id => $(id).addEventListener("click", clearAllHistory));
-
+            $("userPill").addEventListener("click", openProfile);
+            $("mobileMenuBtn").addEventListener("click", openSidebar);
+            $("collapseSidebarBtn").addEventListener("click", closeSidebar);
+            $("sidebarOverlay").addEventListener("click", closeSidebar);
             $("closeSettingsBtn").addEventListener("click", closeSettings);
-            $("settingsModal").addEventListener("click", e => {
-                if (e.target === $("settingsModal")) closeSettings();
-            });
-
             $("closeProfileBtn").addEventListener("click", closeProfile);
-            $("profileModal").addEventListener("click", e => {
-                if (e.target === $("profileModal")) closeProfile();
-            });
+            $("closeImageViewerBtn").addEventListener("click", closeImageViewer);
             $("openSettingsFromProfile").addEventListener("click", () => {
                 closeProfile();
                 openSettings();
             });
             $("signOutFromProfile").addEventListener("click", () => {
                 closeProfile();
-                signOut();
+                void signOut();
             });
+            $("logoutBtnSide").addEventListener("click", () => void signOut());
+            $("signInBtn").addEventListener("click", startSignIn);
+            $("googleSignInBtn").addEventListener("click", startSignIn);
 
-            $("closeImageViewerBtn").addEventListener("click", closeImageViewer);
-            $("imageViewer").addEventListener("click", e => {
-                if (e.target === $("imageViewer")) closeImageViewer();
-            });
+            $("settingsModal").addEventListener("click", event => { if (event.target === $("settingsModal")) closeSettings(); });
+            $("profileModal").addEventListener("click", event => { if (event.target === $("profileModal")) closeProfile(); });
+            $("imageViewer").addEventListener("click", event => { if (event.target === $("imageViewer")) closeImageViewer(); });
 
-            const signInBtn = $("signInBtn");
-            const googleSignInBtn = $("googleSignInBtn");
-            if (signInBtn) signInBtn.addEventListener("click", startSignIn);
-            if (googleSignInBtn) googleSignInBtn.addEventListener("click", startSignIn);
-            
-            $("logoutBtnSide").addEventListener("click", signOut);
-            $("mobileMenuBtn").addEventListener("click", openSidebar);
-            $("collapseSidebarBtn").addEventListener("click", closeSidebar);
-            $("sidebarOverlay").addEventListener("click", closeSidebar);
-
-            $("modeSelect").addEventListener("change", e => {
-                state.settings.mode = e.target.value;
+            $("modeSelect").addEventListener("change", event => {
+                state.settings.mode = event.target.value;
                 applySettings(false);
                 renderAll();
             });
-            $("settingsModeSelect").addEventListener("change", e => {
-                state.settings.mode = e.target.value;
+            $("settingsModeSelect").addEventListener("change", event => {
+                state.settings.mode = event.target.value;
                 applySettings();
                 renderAll();
             });
-            $("voiceSelect").addEventListener("change", e => {
-                state.settings.voice = e.target.value;
+            $("voiceSelect").addEventListener("change", event => {
+                state.settings.voice = event.target.value;
                 saveSettings();
             });
-            $("messageScale").addEventListener("input", e => {
-                state.settings.messageScale = Number(e.target.value);
+            $("messageScale").addEventListener("input", event => {
+                state.settings.messageScale = Number(event.target.value);
                 applySettings(false);
             });
 
-            document.querySelectorAll("[data-theme-choice]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    state.settings.theme = btn.dataset.themeChoice;
-                    applySettings();
-                });
-            });
-            document.querySelectorAll("[data-accent]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    state.settings.accent = btn.dataset.accent;
-                    applySettings();
-                    drawSignalBackground();
-                });
-            });
-            document.querySelectorAll("[data-density-choice]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    state.settings.density = btn.dataset.densityChoice;
-                    applySettings();
-                });
-            });
+            document.querySelectorAll("[data-theme-choice]").forEach(btn => btn.addEventListener("click", () => {
+                state.settings.theme = btn.dataset.themeChoice;
+                applySettings();
+            }));
+            document.querySelectorAll("#accentControls [data-accent]").forEach(btn => btn.addEventListener("click", () => {
+                state.settings.accent = btn.dataset.accent;
+                applySettings();
+                drawSignalBackground();
+            }));
+            document.querySelectorAll("[data-density-choice]").forEach(btn => btn.addEventListener("click", () => {
+                state.settings.density = btn.dataset.densityChoice;
+                applySettings();
+            }));
 
-            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+            const media = matchMedia("(prefers-color-scheme: dark)");
+            const onThemeChange = () => {
                 if (state.settings.theme === "system") applySettings(false);
-            });
+            };
+            if (typeof media.addEventListener === "function") media.addEventListener("change", onThemeChange);
+            else if (typeof media.addListener === "function") media.addListener(onThemeChange);
 
-            document.addEventListener("keydown", e => {
-                if (e.key === "Escape") {
+            document.addEventListener("keydown", event => {
+                if (event.key === "Escape") {
                     closeSettings();
+                    closeProfile();
                     closeImageViewer();
                     closeSidebar();
-                    closeProfile();
                 }
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-                    e.preventDefault();
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+                    event.preventDefault();
                     createConversation();
                 }
             });
@@ -2071,11 +2582,11 @@
 
         function initSignalCanvas() {
             drawSignalBackground();
-            window.addEventListener("resize", drawSignalBackground);
+            addEventListener("resize", drawSignalBackground);
             if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
                 let tick = 0;
                 const animate = () => {
-                    tick++;
+                    tick += 1;
                     if (tick % 4 === 0) drawSignalBackground(tick);
                     requestAnimationFrame(animate);
                 };
@@ -2086,16 +2597,15 @@
         function drawSignalBackground(tick = 0) {
             const canvas = $("signalCanvas");
             const ctx = canvas.getContext("2d");
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            const width = window.innerWidth;
-            const height = window.innerHeight;
+            const dpr = Math.min(devicePixelRatio || 1, 2);
+            const width = innerWidth;
+            const height = innerHeight;
             canvas.width = Math.floor(width * dpr);
             canvas.height = Math.floor(height * dpr);
             canvas.style.width = `${width}px`;
             canvas.style.height = `${height}px`;
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             ctx.clearRect(0, 0, width, height);
-
             const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#34e7ff";
             ctx.strokeStyle = "rgba(255,255,255,0.04)";
             ctx.lineWidth = 1;
@@ -2112,12 +2622,11 @@
                 ctx.lineTo(width, y);
                 ctx.stroke();
             }
-
             ctx.strokeStyle = accent;
             ctx.globalAlpha = 0.12;
             ctx.lineWidth = 1.5;
-            for (let i = 0; i < 7; i++) {
-                const y = (height * 0.18) + i * (height * 0.11);
+            for (let i = 0; i < 7; i += 1) {
+                const y = height * 0.18 + i * (height * 0.11);
                 ctx.beginPath();
                 ctx.moveTo(0, y);
                 for (let x = 0; x <= width; x += 90) {
@@ -2130,27 +2639,24 @@
         }
 
         async function init() {
-            Object.assign(els, { appShell: $("appShell") });
             buildModeOptions();
             loadSettings();
             bindEvents();
             initSignalCanvas();
             syncIcons();
-
-            if (!state.previewMode) {
-                await retryPendingMessages();
-            }
-
+            if (!state.previewMode) await retryPendingActions();
             await bootIdentity();
         }
 
         setInterval(() => {
-            if (state.ready && !state.processing && !state.previewMode) {
-                retryPendingMessages();
-            }
+            if (state.ready && !state.previewMode) retryPendingActions();
         }, 30000);
 
-        window.addEventListener("DOMContentLoaded", init);
+        addEventListener("beforeunload", () => {
+            if (state.recognition && state.listening) state.recognition.abort();
+        });
+
+        addEventListener("DOMContentLoaded", init);
     </script>
 </body>
 </html>
