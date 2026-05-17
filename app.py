@@ -1,15 +1,3 @@
-"""
-JARVIS Enterprise Backend v5.0 — Multi-Fallback AI with Google OAuth
-In-memory storage, branded public modes, private provider fallback chains.
-APIs: Gemini | DeepSeek | Groq | OpenRouter
-
-FIXES APPLIED:
-1. Critical: Token validation properly invalidated on logout
-2. Rate limiter memory leak fixed (periodic cleanup)
-3. Image provider routing guarded
-4. Session management improved
-"""
-
 from __future__ import annotations
 
 import base64
@@ -21,7 +9,7 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
@@ -52,7 +40,7 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)
 # ---------------------------------------------------------------------------
 class Config:
     APP_NAME = "JARVIS Enterprise"
-    VERSION = "5.0"
+    VERSION = "5.1"
     ENVIRONMENT = os.environ.get("FLASK_ENV", "production").lower()
     PORT = int(os.environ.get("PORT", "5000"))
 
@@ -70,16 +58,26 @@ class Config:
 
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", str(14 * 1024 * 1024)))
     MAX_MESSAGE_LENGTH = int(os.environ.get("MAX_MESSAGE_LENGTH", "8000"))
-    MAX_SESSION_TITLE = 120
+    MAX_SESSION_TITLE = int(os.environ.get("MAX_SESSION_TITLE", "120"))
     MAX_HISTORY_MESSAGES = int(os.environ.get("MAX_HISTORY_MESSAGES", "18"))
     MAX_IMAGE_BYTES = int(os.environ.get("MAX_IMAGE_BYTES", str(10 * 1024 * 1024)))
     REQUEST_TIMEOUT = int(os.environ.get("AI_REQUEST_TIMEOUT", "45"))
+    IMAGE_REQUEST_TIMEOUT = int(os.environ.get("AI_IMAGE_REQUEST_TIMEOUT", "75"))
 
     RATE_LIMIT_MESSAGES = int(os.environ.get("RATE_LIMIT_MESSAGES", "24"))
     RATE_LIMIT_SESSIONS = int(os.environ.get("RATE_LIMIT_SESSIONS", "80"))
     RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))
+    RATE_LIMIT_CLEANUP_INTERVAL = int(os.environ.get("RATE_LIMIT_CLEANUP_INTERVAL", "300"))
 
     ALLOW_DEV_LOGIN = os.environ.get("ALLOW_DEV_LOGIN", "false").lower() == "true"
+    ENABLE_MODEL_BOOT_PROBE = os.environ.get("ENABLE_MODEL_BOOT_PROBE", "false").lower() == "true"
+    MODEL_PROBE_TIMEOUT = int(os.environ.get("MODEL_PROBE_TIMEOUT", "12"))
+
+    ADMIN_EMAILS = {
+        email.strip().lower()
+        for email in os.environ.get("ADMIN_EMAILS", "krish@gmail.com,admin@jarvis.ai").split(",")
+        if email.strip()
+    }
 
     # Provider API keys
     DEEPSEEK_KEY = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("DEEPSEEK_KEY")
@@ -91,16 +89,14 @@ class Config:
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-    # Base URLs
+    # Provider base URLs
     DEEPSEEK_BASE = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
     GROQ_BASE = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
     OPENROUTER_BASE = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
     GEMINI_BASE = os.environ.get(
-        "GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"
+        "GEMINI_BASE_URL",
+        "https://generativelanguage.googleapis.com/v1beta",
     ).rstrip("/")
-
-    # FIX: Rate limiter cleanup interval (seconds)
-    RATE_LIMIT_CLEANUP_INTERVAL = int(os.environ.get("RATE_LIMIT_CLEANUP_INTERVAL", "300"))
 
     CORS_ORIGINS = [
         FRONTEND_URL,
@@ -111,21 +107,104 @@ class Config:
     ]
 
     @classmethod
-    def display(cls) -> None:
-        providers = {
-            "DeepSeek": bool(cls.DEEPSEEK_KEY),
-            "Groq": bool(cls.GROQ_KEY),
-            "Gemini": bool(cls.GEMINI_KEY),
-            "OpenRouter": bool(cls.OPENROUTER_KEY),
-            "Google OAuth": bool(cls.GOOGLE_CLIENT_ID and cls.GOOGLE_CLIENT_SECRET),
+    def provider_flags(cls) -> Dict[str, bool]:
+        return {
+            "deepseek": bool(cls.DEEPSEEK_KEY),
+            "groq": bool(cls.GROQ_KEY),
+            "gemini": bool(cls.GEMINI_KEY),
+            "openrouter": bool(cls.OPENROUTER_KEY),
+            "google_oauth": bool(cls.GOOGLE_CLIENT_ID and cls.GOOGLE_CLIENT_SECRET),
         }
+
+    @classmethod
+    def display(cls) -> None:
         logger.info("%s v%s starting", cls.APP_NAME, cls.VERSION)
         logger.info("Environment=%s Port=%s Frontend=%s", cls.ENVIRONMENT, cls.PORT, cls.FRONTEND_URL)
-        logger.info("Providers=%s", ", ".join(f"{k}:{'on' if v else 'off'}" for k, v in providers.items()))
+        logger.info(
+            "Providers=%s",
+            ", ".join(
+                f"{name}:{'on' if enabled else 'off'}"
+                for name, enabled in cls.provider_flags().items()
+            ),
+        )
 
 
 # ---------------------------------------------------------------------------
-# Data transfer objects
+# Utilities
+# ---------------------------------------------------------------------------
+def unix_now() -> float:
+    return time.time()
+
+
+def iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def new_id(prefix: str) -> str:
+    return f"{prefix}_{uuid.uuid4().hex}"
+
+
+def safe_json(response: requests.Response) -> Dict[str, Any]:
+    try:
+        data = response.json()
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def get_request_ip() -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",", 1)[0].strip()
+    return request.remote_addr or "0.0.0.0"
+
+
+def json_body() -> Dict[str, Any]:
+    return request.get_json(silent=True) or {}
+
+
+def current_iso_from_ts(timestamp: float) -> str:
+    return datetime.fromtimestamp(timestamp, timezone.utc).isoformat()
+
+
+# ---------------------------------------------------------------------------
+# Security
+# ---------------------------------------------------------------------------
+class Security:
+    HTML_RE = re.compile(r"<[^>]*>")
+    BAD_PROTOCOLS = re.compile(r"(?i)\b(javascript|data:text/html)\s*:")
+
+    @staticmethod
+    def sanitize(text: str, max_len: int = Config.MAX_MESSAGE_LENGTH) -> str:
+        if not text:
+            return ""
+        clean = text.replace("\x00", "")
+        clean = "".join(ch for ch in clean if ch in "\n\t" or ord(ch) >= 32)
+        clean = Security.HTML_RE.sub("", clean)
+        clean = Security.BAD_PROTOCOLS.sub("", clean)
+        return clean.strip()[:max_len]
+
+    @staticmethod
+    def title(text: str) -> str:
+        clean = Security.sanitize(text, Config.MAX_SESSION_TITLE).replace("\n", " ")
+        clean = re.sub(r"\s+", " ", clean).strip()
+        return (clean[:56] + "...") if len(clean) > 56 else (clean or "New Conversation")
+
+    @staticmethod
+    def token(length: int = 32) -> str:
+        return secrets.token_urlsafe(length)
+
+    @staticmethod
+    def is_low_signal(text: str) -> bool:
+        clean = text.strip()
+        if len(clean) < 2:
+            return True
+        words = clean.lower().split()
+        return len(words) > 8 and len(set(words)) <= 2
+
+
+# ---------------------------------------------------------------------------
+# DTOs
 # ---------------------------------------------------------------------------
 @dataclass
 class UserDTO:
@@ -138,7 +217,7 @@ class UserDTO:
     created_at: float = 0.0
     last_login: float = 0.0
     total_logins: int = 1
-    session_token: Optional[str] = None  # FIX: None means logged out
+    session_token: Optional[str] = None
 
 
 @dataclass
@@ -158,7 +237,7 @@ class MessageDTO:
     content: str
     mode: str = "jarvis-prime"
     created_at: float = 0.0
-    attachments: Optional[List[Dict[str, Any]]] = None
+    attachments: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -169,6 +248,9 @@ class ModelCandidate:
     max_tokens: int = 4096
     temperature: float = 0.7
     thinking: Optional[str] = None
+    supports_text: bool = True
+    supports_vision: bool = False
+    supports_image_generation: bool = False
 
 
 @dataclass(frozen=True)
@@ -179,94 +261,254 @@ class ModeSpec:
     chain: Tuple[ModelCandidate, ...]
 
 
+def c(
+    provider: str,
+    model: str,
+    public_mode: str,
+    max_tokens: int = 4096,
+    temperature: float = 0.7,
+    thinking: Optional[str] = None,
+    supports_text: bool = True,
+    supports_vision: bool = False,
+    supports_image_generation: bool = False,
+) -> ModelCandidate:
+    return ModelCandidate(
+        provider=provider,
+        model=model,
+        public_mode=public_mode,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        thinking=thinking,
+        supports_text=supports_text,
+        supports_vision=supports_vision,
+        supports_image_generation=supports_image_generation,
+    )
+
+
 # ---------------------------------------------------------------------------
-# Security helpers
+# Current mode routing
 # ---------------------------------------------------------------------------
-class Security:
-    HTML_RE = re.compile(r"<[^>]*>")
-    BAD_PROTOCOLS = re.compile(r"(?i)\b(javascript|data:text/html)\s*:")
+MODE_SPECS: Dict[str, ModeSpec] = {
+    "jarvis-prime": ModeSpec(
+        id="jarvis-prime",
+        label="JARVIS Prime",
+        description="Balanced flagship reasoning.",
+        chain=(
+            c("deepseek", "deepseek-chat", "jarvis-prime", 8192, 0.65, "high"),
+            c("gemini", "gemini-2.5-pro", "jarvis-prime", 8192, 0.65),
+            c("openrouter", "openai/gpt-4o", "jarvis-prime", 8192, 0.65),
+            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-prime", 8192, 0.65, supports_vision=True),
+            c("groq", "llama-3.3-70b-versatile", "jarvis-prime", 4096, 0.65),
+        ),
+    ),
+    "jarvis-swift": ModeSpec(
+        id="jarvis-swift",
+        label="JARVIS Swift",
+        description="Low-latency production answers.",
+        chain=(
+            c("groq", "llama-3.3-70b-versatile", "jarvis-swift", 4096, 0.55),
+            c("gemini", "gemini-2.5-flash", "jarvis-swift", 4096, 0.55),
+            c("openrouter", "google/gemini-2.5-flash-lite", "jarvis-swift", 4096, 0.55),
+            c("deepseek", "deepseek-chat", "jarvis-swift", 4096, 0.55, "disabled"),
+        ),
+    ),
+    "jarvis-deepcore": ModeSpec(
+        id="jarvis-deepcore",
+        label="JARVIS DeepCore",
+        description="Hard reasoning, coding, and analysis.",
+        chain=(
+            c("deepseek", "deepseek-reasoner", "jarvis-deepcore", 12000, 0.45, "max"),
+            c("gemini", "gemini-2.5-pro", "jarvis-deepcore", 12000, 0.45),
+            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-deepcore", 12000, 0.45, supports_vision=True),
+            c("openrouter", "google/gemini-2.5-flash", "jarvis-deepcore", 8192, 0.45),
+            c("openrouter", "x-ai/grok-2-1212", "jarvis-deepcore", 8192, 0.45),
+        ),
+    ),
+    "jarvis-oracle": ModeSpec(
+        id="jarvis-oracle",
+        label="JARVIS Oracle",
+        description="Broad multi-provider synthesis.",
+        chain=(
+            c("openrouter", "openai/gpt-4o", "jarvis-oracle", 12000, 0.6, supports_vision=True),
+            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-oracle", 12000, 0.6, supports_vision=True),
+            c("gemini", "gemini-2.5-pro", "jarvis-oracle", 12000, 0.6),
+            c("deepseek", "deepseek-chat", "jarvis-oracle", 8192, 0.6, "high"),
+            c("groq", "llama-3.3-70b-versatile", "jarvis-oracle", 4096, 0.6),
+        ),
+    ),
+    "jarvis-vision": ModeSpec(
+        id="jarvis-vision",
+        label="JARVIS Vision",
+        description="Image and multimodal understanding.",
+        chain=(
+            c("gemini", "gemini-2.5-pro", "jarvis-vision", 8192, 0.4, supports_vision=True),
+            c("gemini", "gemini-2.5-flash", "jarvis-vision", 8192, 0.4, supports_vision=True),
+            c("openrouter", "openai/gpt-4o", "jarvis-vision", 8192, 0.4, supports_vision=True),
+            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-vision", 8192, 0.4, supports_vision=True),
+        ),
+    ),
+    "jarvis-forge": ModeSpec(
+        id="jarvis-forge",
+        label="JARVIS Forge",
+        description="Image creation.",
+        chain=(
+            c("gemini-image", "imagen-4.0-ultra-generate-001", "jarvis-forge", supports_text=False, supports_image_generation=True),
+            c("gemini-image", "imagen-4.0-generate-001", "jarvis-forge", supports_text=False, supports_image_generation=True),
+            c("gemini-image", "imagen-4.0-fast-generate-001", "jarvis-forge", supports_text=False, supports_image_generation=True),
+        ),
+    ),
+}
 
-    @staticmethod
-    def sanitize(text: str, max_len: int = Config.MAX_MESSAGE_LENGTH) -> str:
-        if not text:
-            return ""
-        text = text.replace("\x00", "")
-        text = "".join(ch for ch in text if ch in "\n\t" or ord(ch) >= 32)
-        text = Security.HTML_RE.sub("", text)
-        text = Security.BAD_PROTOCOLS.sub("", text)
-        return text.strip()[:max_len]
+MODE_ALIASES = {
+    "prime": "jarvis-prime",
+    "swift": "jarvis-swift",
+    "deepcore": "jarvis-deepcore",
+    "oracle": "jarvis-oracle",
+    "vision": "jarvis-vision",
+    "forge": "jarvis-forge",
+    "image-gen": "jarvis-forge",
+    "deepseek": "jarvis-deepcore",
+    "groq": "jarvis-swift",
+    "gemini": "jarvis-prime",
+    "openrouter": "jarvis-oracle",
+}
 
-    @staticmethod
-    def title(text: str) -> str:
-        clean = Security.sanitize(text, Config.MAX_SESSION_TITLE).replace("\n", " ")
-        clean = re.sub(r"\s+", " ", clean).strip()
-        return (clean[:56] + "...") if len(clean) > 56 else (clean or "New Conversation")
 
-    @staticmethod
-    def token(length: int = 32) -> str:
-        return secrets.token_urlsafe(length)
+def normalize_mode(value: Optional[str]) -> str:
+    if not value:
+        return "jarvis-prime"
+    clean = value.strip().lower()
+    return clean if clean in MODE_SPECS else MODE_ALIASES.get(clean, "jarvis-prime")
 
-    @staticmethod
-    def is_low_signal(text: str) -> bool:
-        clean = text.strip()
-        if len(clean) < 2:
-            return True
-        words = clean.lower().split()
-        if len(words) > 8 and len(set(words)) <= 2:
-            return True
+
+# ---------------------------------------------------------------------------
+# Model diagnostics
+# ---------------------------------------------------------------------------
+class ModelDiagnostics:
+    DEPRECATED_MODELS = {
+        ("openrouter", "google/gemini-2.5-pro-exp-03-25"): "Deprecated by Google in favor of newer Gemini 2.5 Pro variants.",
+        ("groq", "mixtral-8x7b-32768"): "Deprecated by Groq in March 2025.",
+        ("openrouter", "google/gemini-2.0-flash-001"): "Going away; prefer Gemini 2.5 Flash or Flash-Lite.",
+    }
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._last_errors: Dict[Tuple[str, str], Dict[str, Any]] = {}
+        self._boot_probe: Dict[Tuple[str, str], Dict[str, Any]] = {}
+
+    def provider_configured(self, provider: str) -> bool:
+        if provider == "deepseek":
+            return bool(Config.DEEPSEEK_KEY)
+        if provider == "groq":
+            return bool(Config.GROQ_KEY)
+        if provider in {"gemini", "gemini-image"}:
+            return bool(Config.GEMINI_KEY)
+        if provider == "openrouter":
+            return bool(Config.OPENROUTER_KEY)
         return False
 
+    def deprecated_reason(self, provider: str, model: str) -> Optional[str]:
+        return self.DEPRECATED_MODELS.get((provider, model))
 
-def unix_now() -> float:
-    return time.time()
+    def record_failure(self, provider: str, model: str, error: Exception | str) -> None:
+        with self._lock:
+            self._last_errors[(provider, model)] = {
+                "error": str(error),
+                "timestamp": iso_now(),
+            }
+
+    def record_success(self, provider: str, model: str) -> None:
+        with self._lock:
+            self._last_errors.pop((provider, model), None)
+
+    def record_boot_probe(self, provider: str, model: str, ok: bool, detail: str) -> None:
+        with self._lock:
+            self._boot_probe[(provider, model)] = {
+                "ok": ok,
+                "detail": detail,
+                "timestamp": iso_now(),
+            }
+
+    def candidate_report(self, candidate: ModelCandidate) -> Dict[str, Any]:
+        deprecated = self.deprecated_reason(candidate.provider, candidate.model)
+        last_error = self._last_errors.get((candidate.provider, candidate.model))
+        boot_probe = self._boot_probe.get((candidate.provider, candidate.model))
+        return {
+            "provider": candidate.provider,
+            "model": candidate.model,
+            "configured": self.provider_configured(candidate.provider),
+            "deprecated": bool(deprecated),
+            "deprecation_reason": deprecated,
+            "supports_text": candidate.supports_text,
+            "supports_vision": candidate.supports_vision,
+            "supports_image_generation": candidate.supports_image_generation,
+            "last_error": last_error,
+            "boot_probe": boot_probe,
+        }
+
+    def mode_report(self, mode_id: str) -> Dict[str, Any]:
+        spec = MODE_SPECS[mode_id]
+        candidates = [self.candidate_report(candidate) for candidate in spec.chain]
+        available = any(item["configured"] and not item["deprecated"] for item in candidates)
+        return {
+            "id": spec.id,
+            "label": spec.label,
+            "description": spec.description,
+            "available": available,
+            "candidates": candidates,
+        }
+
+    def all_modes_report(self) -> Dict[str, Any]:
+        modes = [self.mode_report(mode_id) for mode_id in MODE_SPECS]
+        return {
+            "generated_at": iso_now(),
+            "modes": modes,
+        }
 
 
-def new_id(prefix: str) -> str:
-    return f"{prefix}_{uuid.uuid4().hex}"
+model_diagnostics = ModelDiagnostics()
 
 
 # ---------------------------------------------------------------------------
-# FIX: Rate limiter with periodic cleanup
+# Rate limiter
 # ---------------------------------------------------------------------------
 class SlidingWindowLimiter:
     def __init__(self) -> None:
         self.events: Dict[str, Deque[float]] = defaultdict(deque)
         self.lock = threading.RLock()
-        self._last_cleanup = unix_now()
-        self._cleanup_interval = Config.RATE_LIMIT_CLEANUP_INTERVAL
+        self.last_cleanup = unix_now()
 
     def check(self, key: str, limit: int, window: int) -> Tuple[bool, int, float]:
         now = unix_now()
         cutoff = now - window
         with self.lock:
-            # FIX: Periodic cleanup of stale keys
-            if now - self._last_cleanup > self._cleanup_interval:
-                self._cleanup_stale_keys(now, window)
-                self._last_cleanup = now
+            if now - self.last_cleanup >= Config.RATE_LIMIT_CLEANUP_INTERVAL:
+                self.cleanup(now)
+                self.last_cleanup = now
 
             bucket = self.events[key]
             while bucket and bucket[0] < cutoff:
                 bucket.popleft()
+
             if len(bucket) >= limit:
-                reset = bucket[0] + window
-                return False, 0, reset
+                return False, 0, bucket[0] + window
+
             bucket.append(now)
             return True, max(limit - len(bucket), 0), now + window
 
-    def _cleanup_stale_keys(self, now: float, window: int) -> None:
-        """Remove keys with empty or expired entries."""
-        stale_keys = []
-        cutoff = now - window
+    def cleanup(self, now: Optional[float] = None) -> None:
+        current = now or unix_now()
+        cutoff = current - Config.RATE_LIMIT_WINDOW
+        stale = []
         for key, bucket in self.events.items():
             while bucket and bucket[0] < cutoff:
                 bucket.popleft()
             if not bucket:
-                stale_keys.append(key)
-        for key in stale_keys:
+                stale.append(key)
+        for key in stale:
             del self.events[key]
-        
-        if stale_keys:
-            logger.debug("Rate limiter cleaned up %d stale keys", len(stale_keys))
+        if stale:
+            logger.debug("Rate limiter cleaned up %d stale keys", len(stale))
 
 
 rate_limiter = SlidingWindowLimiter()
@@ -283,8 +525,8 @@ class JWTService:
             "user_id": user.id,
             "email": user.email,
             "is_admin": user.is_admin,
-            "iat": now,
-            "exp": now + timedelta(hours=Config.JWT_EXPIRY_HOURS),
+            "iat": int(now.timestamp()),
+            "exp": int((now + timedelta(hours=Config.JWT_EXPIRY_HOURS)).timestamp()),
         }
         return jwt.encode(payload, Config.JWT_SECRET, algorithm=Config.JWT_ALGORITHM)
 
@@ -293,7 +535,8 @@ class JWTService:
         if not token:
             return None
         try:
-            return jwt.decode(token, Config.JWT_SECRET, algorithms=[Config.JWT_ALGORITHM])
+            data = jwt.decode(token, Config.JWT_SECRET, algorithms=[Config.JWT_ALGORITHM])
+            return data if isinstance(data, dict) else None
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
             return None
 
@@ -319,202 +562,135 @@ class Storage:
         self.lock = threading.RLock()
 
     def create_or_update_user(
-        self, google_id: Optional[str], email: str, name: str, avatar: str = ""
+        self,
+        google_id: Optional[str],
+        email: str,
+        name: str,
+        avatar: str = "",
     ) -> UserDTO:
-        email = (email or "").lower().strip()
-        if not email:
+        clean_email = (email or "").lower().strip()
+        if not clean_email:
             raise ValueError("Email is required")
+
         with self.lock:
-            uid = self.users_by_email.get(email) or (
-                self.users_by_google.get(google_id) if google_id else None
-            )
-            if uid and uid in self.users:
-                user = self.users[uid]
+            user_id = self.users_by_email.get(clean_email)
+            if not user_id and google_id:
+                user_id = self.users_by_google.get(google_id)
+
+            if user_id and user_id in self.users:
+                user = self.users[user_id]
                 user.google_id = google_id or user.google_id
-                user.display_name = name or email.split("@")[0]
+                user.display_name = name or user.display_name or clean_email.split("@")[0]
                 user.avatar_url = avatar or user.avatar_url
                 user.last_login = unix_now()
                 user.total_logins += 1
+                if google_id:
+                    self.users_by_google[google_id] = user.id
                 return user
+
             user = UserDTO(
                 id=new_id("usr"),
                 google_id=google_id,
-                email=email,
-                display_name=name or email.split("@")[0],
+                email=clean_email,
+                display_name=name or clean_email.split("@")[0],
                 avatar_url=avatar or "",
-                is_admin=email in {"krish@gmail.com", "admin@jarvis.ai"},
+                is_admin=clean_email in Config.ADMIN_EMAILS,
                 created_at=unix_now(),
                 last_login=unix_now(),
             )
             self.users[user.id] = user
-            self.users_by_email[email] = user.id
+            self.users_by_email[clean_email] = user.id
             if google_id:
                 self.users_by_google[google_id] = user.id
             return user
 
-    def get_user(self, uid: str) -> Optional[UserDTO]:
-        return self.users.get(uid)
+    def get_user(self, user_id: str) -> Optional[UserDTO]:
+        return self.users.get(user_id)
 
-    # FIX: Set session_token properly - None means logged out
-    def set_session_token(self, uid: str, token: Optional[str]) -> None:
+    def set_session_token(self, user_id: str, token: Optional[str]) -> None:
         with self.lock:
-            if uid in self.users:
-                self.users[uid].session_token = token
+            if user_id in self.users:
+                self.users[user_id].session_token = token
 
-    def create_session(self, uid: str, title: str = "New Conversation") -> SessionDTO:
+    def create_session(self, user_id: str, title: str = "New Conversation") -> SessionDTO:
+        now = unix_now()
         with self.lock:
-            now = unix_now()
-            sess = SessionDTO(
-                id=new_id("ses"), user_id=uid, title=Security.title(title),
-                created_at=now, updated_at=now,
+            session_obj = SessionDTO(
+                id=new_id("ses"),
+                user_id=user_id,
+                title=Security.title(title),
+                created_at=now,
+                updated_at=now,
             )
-            self.sessions[sess.id] = sess
-            self.user_sessions[uid].append(sess.id)
-            return sess
+            self.sessions[session_obj.id] = session_obj
+            self.user_sessions[user_id].append(session_obj.id)
+            return session_obj
 
-    def get_session(self, sid: str, uid: str) -> Optional[SessionDTO]:
-        sess = self.sessions.get(sid)
-        return sess if sess and sess.user_id == uid else None
+    def get_session(self, session_id: str, user_id: str) -> Optional[SessionDTO]:
+        session_obj = self.sessions.get(session_id)
+        if not session_obj or session_obj.user_id != user_id:
+            return None
+        return session_obj
 
-    def get_user_sessions(self, uid: str) -> List[SessionDTO]:
-        sids = list(self.user_sessions.get(uid, []))
-        sessions = [self.sessions[sid] for sid in sids if sid in self.sessions]
+    def get_user_sessions(self, user_id: str) -> List[SessionDTO]:
+        session_ids = list(self.user_sessions.get(user_id, []))
+        sessions = [self.sessions[sid] for sid in session_ids if sid in self.sessions]
         return sorted(sessions, key=lambda item: item.updated_at, reverse=True)
 
-    def delete_session(self, sid: str, uid: str) -> bool:
+    def delete_session(self, session_id: str, user_id: str) -> bool:
         with self.lock:
-            sess = self.sessions.get(sid)
-            if not sess or sess.user_id != uid:
+            session_obj = self.sessions.get(session_id)
+            if not session_obj or session_obj.user_id != user_id:
                 return False
-            self.sessions.pop(sid, None)
-            self.messages.pop(sid, None)
-            if sid in self.user_sessions.get(uid, []):
-                self.user_sessions[uid].remove(sid)
+            self.sessions.pop(session_id, None)
+            self.messages.pop(session_id, None)
+            if session_id in self.user_sessions.get(user_id, []):
+                self.user_sessions[user_id].remove(session_id)
             return True
 
-    def update_title(self, sid: str, title: str) -> None:
+    def update_title(self, session_id: str, title: str) -> None:
         with self.lock:
-            if sid in self.sessions:
-                self.sessions[sid].title = Security.title(title)
-                self.sessions[sid].updated_at = unix_now()
+            session_obj = self.sessions.get(session_id)
+            if session_obj:
+                session_obj.title = Security.title(title)
+                session_obj.updated_at = unix_now()
 
     def add_message(
-        self, sid: str, role: str, content: str, mode: str = "jarvis-prime",
+        self,
+        session_id: str,
+        role: str,
+        content: str,
+        mode: str = "jarvis-prime",
         attachments: Optional[List[Dict[str, Any]]] = None,
     ) -> MessageDTO:
         with self.lock:
-            if sid not in self.sessions:
+            if session_id not in self.sessions:
                 raise KeyError("Session not found")
-            msg = MessageDTO(
-                id=new_id("msg"), session_id=sid, role=role,
-                content=Security.sanitize(content), mode=normalize_mode(mode),
-                created_at=unix_now(), attachments=attachments or [],
+            message = MessageDTO(
+                id=new_id("msg"),
+                session_id=session_id,
+                role=role,
+                content=Security.sanitize(content),
+                mode=normalize_mode(mode),
+                created_at=unix_now(),
+                attachments=list(attachments or []),
             )
-            self.messages[sid].append(msg)
-            self.sessions[sid].updated_at = unix_now()
-            return msg
+            self.messages[session_id].append(message)
+            self.sessions[session_id].updated_at = unix_now()
+            return message
 
-    def get_messages(self, sid: str) -> List[MessageDTO]:
-        return sorted(self.messages.get(sid, []), key=lambda msg: msg.created_at)
+    def get_messages(self, session_id: str) -> List[MessageDTO]:
+        return sorted(self.messages.get(session_id, []), key=lambda message: message.created_at)
 
-    def count_messages(self, sid: str) -> int:
-        return len(self.messages.get(sid, []))
+    def count_messages(self, session_id: str) -> int:
+        return len(self.messages.get(session_id, []))
 
 
 storage = Storage()
 
 
 # ---------------------------------------------------------------------------
-# JARVIS mode → real model mapping
-# ---------------------------------------------------------------------------
-def c(
-    provider: str, model: str, public_mode: str, max_tokens: int = 4096,
-    temperature: float = 0.7, thinking: Optional[str] = None
-) -> ModelCandidate:
-    return ModelCandidate(provider, model, public_mode, max_tokens, temperature, thinking)
-
-
-MODE_SPECS: Dict[str, ModeSpec] = {
-    "jarvis-prime": ModeSpec(
-        "jarvis-prime", "JARVIS Prime", "Balanced flagship reasoning.",
-        (
-            c("deepseek", "deepseek-chat", "jarvis-prime", 8192, 0.65, "high"),
-            c("gemini", "gemini-2.5-pro-exp-03-25", "jarvis-prime", 8192, 0.65),
-            c("openrouter", "openai/gpt-4o", "jarvis-prime", 8192, 0.65),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-prime", 8192, 0.65),
-            c("groq", "llama-3.3-70b-versatile", "jarvis-prime", 4096, 0.65),
-        ),
-    ),
-    "jarvis-swift": ModeSpec(
-        "jarvis-swift", "JARVIS Swift", "Low-latency production answers.",
-        (
-            c("groq", "llama-3.3-70b-versatile", "jarvis-swift", 4096, 0.55),
-            c("groq", "mixtral-8x7b-32768", "jarvis-swift", 4096, 0.55),
-            c("deepseek", "deepseek-chat", "jarvis-swift", 4096, 0.55, "disabled"),
-            c("openrouter", "google/gemini-2.0-flash-001", "jarvis-swift", 4096, 0.55),
-        ),
-    ),
-    "jarvis-deepcore": ModeSpec(
-        "jarvis-deepcore", "JARVIS DeepCore", "Hard reasoning, coding, and analysis.",
-        (
-            c("deepseek", "deepseek-reasoner", "jarvis-deepcore", 12000, 0.45, "max"),
-            c("gemini", "gemini-2.5-pro-exp-03-25", "jarvis-deepcore", 12000, 0.45),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-deepcore", 12000, 0.45),
-            c("openrouter", "openai/gpt-4o", "jarvis-deepcore", 12000, 0.45),
-        ),
-    ),
-    "jarvis-oracle": ModeSpec(
-        "jarvis-oracle", "JARVIS Oracle", "Broad multi-provider synthesis.",
-        (
-            c("openrouter", "openai/gpt-4o", "jarvis-oracle", 12000, 0.6),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-oracle", 12000, 0.6),
-            c("openrouter", "google/gemini-2.5-pro-exp-03-25", "jarvis-oracle", 12000, 0.6),
-            c("openrouter", "x-ai/grok-2-1212", "jarvis-oracle", 8192, 0.6),
-            c("deepseek", "deepseek-chat", "jarvis-oracle", 8192, 0.6, "high"),
-        ),
-    ),
-    "jarvis-vision": ModeSpec(
-        "jarvis-vision", "JARVIS Vision", "Image and multimodal understanding.",
-        (
-            c("gemini", "gemini-2.5-pro-exp-03-25", "jarvis-vision", 8192, 0.5),
-            c("gemini", "gemini-2.0-flash-001", "jarvis-vision", 8192, 0.5),
-            c("openrouter", "openai/gpt-4o", "jarvis-vision", 8192, 0.5),
-        ),
-    ),
-    "jarvis-forge": ModeSpec(
-        "jarvis-forge", "JARVIS Forge", "Image creation.",
-        (
-            c("gemini-image", "imagen-4.0-ultra-generate-001", "jarvis-forge", 0, 0.0),
-            c("gemini-image", "imagen-4.0-generate-001", "jarvis-forge", 0, 0.0),
-            c("gemini-image", "imagen-4.0-fast-generate-001", "jarvis-forge", 0, 0.0),
-        ),
-    ),
-}
-
-MODE_ALIASES = {
-    "deepseek": "jarvis-deepcore",
-    "groq": "jarvis-swift",
-    "gemini": "jarvis-prime",
-    "openrouter": "jarvis-oracle",
-    "vision": "jarvis-vision",
-    "image-gen": "jarvis-forge",
-    "forge": "jarvis-forge",
-    "prime": "jarvis-prime",
-    "swift": "jarvis-swift",
-    "deepcore": "jarvis-deepcore",
-    "oracle": "jarvis-oracle",
-}
-
-
-def normalize_mode(value: Optional[str]) -> str:
-    if not value:
-        return "jarvis-prime"
-    value = value.strip().lower()
-    return value if value in MODE_SPECS else MODE_ALIASES.get(value, "jarvis-prime")
-
-
-# ---------------------------------------------------------------------------
-# AI service — multi-fallback text, vision, image generation
+# AI service
 # ---------------------------------------------------------------------------
 class ProviderUnavailable(Exception):
     pass
@@ -522,6 +698,7 @@ class ProviderUnavailable(Exception):
 
 class AIService:
     def __init__(self) -> None:
+        self.session = requests.Session()
         self.system_prompt = (
             "You are JARVIS, an advanced enterprise assistant created by Krish Paliwal. "
             "Be accurate, direct, professional, and useful. Structure answers clearly. "
@@ -530,133 +707,175 @@ class AIService:
         )
 
     def generate(
-        self, prompt: str, preferred_mode: Optional[str], history: Iterable[MessageDTO] = (),
+        self,
+        prompt: str,
+        preferred_mode: Optional[str],
+        history: Iterable[MessageDTO] = (),
     ) -> Tuple[str, str, float]:
-        start = unix_now()
+        started = unix_now()
         clean_prompt = Security.sanitize(prompt)
         if Security.is_low_signal(clean_prompt):
             return "Please send a clearer message so I can help properly.", "jarvis-prime", 0.0
 
         mode_id = normalize_mode(preferred_mode)
-        chain = MODE_SPECS[mode_id].chain
         messages = self._messages(clean_prompt, list(history))
+        chain = MODE_SPECS[mode_id].chain
         errors: List[str] = []
 
         for candidate in chain:
             try:
+                if not model_diagnostics.provider_configured(candidate.provider):
+                    raise ProviderUnavailable(f"{candidate.provider} key missing")
+                if model_diagnostics.deprecated_reason(candidate.provider, candidate.model):
+                    raise ProviderUnavailable("model is marked deprecated")
                 text = self._dispatch_text(candidate, messages)
                 if text:
-                    elapsed = round(unix_now() - start, 2)
+                    model_diagnostics.record_success(candidate.provider, candidate.model)
+                    elapsed = round(unix_now() - started, 2)
                     logger.info(
                         "JARVIS mode=%s provider=%s model=%s elapsed=%ss",
-                        mode_id, candidate.provider, candidate.model, elapsed,
+                        mode_id,
+                        candidate.provider,
+                        candidate.model,
+                        elapsed,
                     )
                     return text, mode_id, elapsed
             except Exception as exc:
+                model_diagnostics.record_failure(candidate.provider, candidate.model, exc)
                 errors.append(f"{candidate.provider}:{candidate.model}:{exc}")
                 logger.warning(
-                    "Model candidate failed mode=%s provider=%s model=%s error=%s",
-                    mode_id, candidate.provider, candidate.model, exc,
+                    "Candidate failed mode=%s provider=%s model=%s error=%s",
+                    mode_id,
+                    candidate.provider,
+                    candidate.model,
+                    exc,
                 )
 
-        elapsed = round(unix_now() - start, 2)
-        logger.error("All model candidates failed for mode=%s errors=%s", mode_id, " | ".join(errors[-5:]))
+        elapsed = round(unix_now() - started, 2)
+        logger.error("All candidates failed for mode=%s errors=%s", mode_id, " | ".join(errors[-6:]))
         return self._offline_reply(clean_prompt), mode_id, elapsed
 
-    def analyze_image(
-        self, image_b64: str, mime_type: str, prompt: str = ""
-    ) -> Tuple[str, str, float]:
-        start = unix_now()
+    def analyze_image(self, image_b64: str, mime_type: str, prompt: str = "") -> Tuple[str, str, float]:
+        started = unix_now()
         clean_prompt = Security.sanitize(prompt or "Describe this image in detail.")
-        candidates = MODE_SPECS["jarvis-vision"].chain
-        data_url = f"data:{mime_type};base64,{image_b64}"
-
-        for candidate in candidates:
+        for candidate in MODE_SPECS["jarvis-vision"].chain:
+            if not candidate.supports_vision:
+                continue
             try:
+                if not model_diagnostics.provider_configured(candidate.provider):
+                    raise ProviderUnavailable(f"{candidate.provider} key missing")
                 if candidate.provider == "gemini":
                     text = self._gemini_vision(candidate, image_b64, mime_type, clean_prompt)
                 elif candidate.provider == "openrouter":
+                    data_url = f"data:{mime_type};base64,{image_b64}"
                     text = self._openrouter_vision(candidate, data_url, clean_prompt)
                 else:
-                    # FIX: Skip non-vision providers explicitly
                     continue
                 if text:
-                    return text, "jarvis-vision", round(unix_now() - start, 2)
+                    model_diagnostics.record_success(candidate.provider, candidate.model)
+                    return text, "jarvis-vision", round(unix_now() - started, 2)
             except Exception as exc:
+                model_diagnostics.record_failure(candidate.provider, candidate.model, exc)
                 logger.warning(
                     "Vision candidate failed provider=%s model=%s error=%s",
-                    candidate.provider, candidate.model, exc,
+                    candidate.provider,
+                    candidate.model,
+                    exc,
                 )
-
         raise ProviderUnavailable(
-            "JARVIS Vision is unavailable. Check GEMINI_API_KEY or OPENROUTER_API_KEY."
+            "JARVIS Vision is unavailable. Check GEMINI_API_KEY, OPENROUTER_API_KEY, and model access."
         )
 
     def create_image(self, prompt: str, aspect_ratio: str = "1:1") -> Tuple[str, str, float]:
-        start = unix_now()
+        started = unix_now()
         clean_prompt = Security.sanitize(prompt, 1600)
         if not clean_prompt:
             raise ValueError("Prompt is required")
 
         for candidate in MODE_SPECS["jarvis-forge"].chain:
-            # FIX: Only process image generation candidates
-            if candidate.provider != "gemini-image":
+            if not candidate.supports_image_generation:
                 continue
             try:
-                image = self._imagen(candidate.model, clean_prompt, aspect_ratio)
-                if image:
-                    return image, "jarvis-forge", round(unix_now() - start, 2)
+                if not model_diagnostics.provider_configured(candidate.provider):
+                    raise ProviderUnavailable(f"{candidate.provider} key missing")
+                image_url = self._imagen(candidate.model, clean_prompt, aspect_ratio)
+                if image_url:
+                    model_diagnostics.record_success(candidate.provider, candidate.model)
+                    return image_url, "jarvis-forge", round(unix_now() - started, 2)
             except Exception as exc:
+                model_diagnostics.record_failure(candidate.provider, candidate.model, exc)
                 logger.warning("Forge candidate failed model=%s error=%s", candidate.model, exc)
 
         raise ProviderUnavailable(
-            "JARVIS Forge is unavailable. Check GEMINI_API_KEY and image model access."
+            "JARVIS Forge is unavailable. Check GEMINI_API_KEY and Imagen model access."
         )
 
-    # --- internal helpers ---
+    def probe_candidate(self, candidate: ModelCandidate) -> Tuple[bool, str]:
+        try:
+            if candidate.supports_image_generation:
+                self._imagen(candidate.model, "simple abstract sphere", "1:1")
+                return True, "image generation probe passed"
+            if candidate.supports_vision:
+                sample_png = (
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO0pNxsAAAAASUVORK5CYII="
+                )
+                self.analyze_image(sample_png, "image/png", "What is visible in this image?")
+                return True, "vision probe passed"
+            text = self._dispatch_text(candidate, self._messages("Reply with the word READY.", []))
+            return (bool(text), "text probe passed" if text else "empty response")
+        except Exception as exc:
+            return False, str(exc)
+
     def _messages(self, prompt: str, history: List[MessageDTO]) -> List[Dict[str, str]]:
         messages = [{"role": "system", "content": self.system_prompt}]
-        recent = [m for m in history if m.role in {"user", "assistant"}][-Config.MAX_HISTORY_MESSAGES:]
-        for msg in recent:
-            messages.append({"role": msg.role, "content": msg.content})
+        recent = [item for item in history if item.role in {"user", "assistant"}][-Config.MAX_HISTORY_MESSAGES :]
+        for item in recent:
+            messages.append({"role": item.role, "content": item.content})
         messages.append({"role": "user", "content": prompt})
         return messages
 
-    def _dispatch_text(
-        self, candidate: ModelCandidate, messages: List[Dict[str, str]]
-    ) -> Optional[str]:
-        # FIX: Guard against image-only providers
-        if candidate.provider == "gemini-image":
+    def _dispatch_text(self, candidate: ModelCandidate, messages: List[Dict[str, str]]) -> Optional[str]:
+        if not candidate.supports_text:
             return None
-            
         if candidate.provider == "deepseek":
-            if not Config.DEEPSEEK_KEY:
-                raise ProviderUnavailable("DeepSeek key missing")
             return self._openai_compatible(
-                Config.DEEPSEEK_BASE, Config.DEEPSEEK_KEY, candidate, messages, {}, deepseek=True,
+                base_url=Config.DEEPSEEK_BASE,
+                api_key=Config.DEEPSEEK_KEY or "",
+                candidate=candidate,
+                messages=messages,
+                provider_headers={},
+                deepseek=True,
             )
         if candidate.provider == "groq":
-            if not Config.GROQ_KEY:
-                raise ProviderUnavailable("Groq key missing")
             return self._openai_compatible(
-                Config.GROQ_BASE, Config.GROQ_KEY, candidate, messages, {},
+                base_url=Config.GROQ_BASE,
+                api_key=Config.GROQ_KEY or "",
+                candidate=candidate,
+                messages=messages,
+                provider_headers={},
             )
         if candidate.provider == "openrouter":
-            if not Config.OPENROUTER_KEY:
-                raise ProviderUnavailable("OpenRouter key missing")
             return self._openai_compatible(
-                Config.OPENROUTER_BASE, Config.OPENROUTER_KEY, candidate, messages,
-                {"HTTP-Referer": Config.FRONTEND_URL, "X-Title": "JARVIS Enterprise"},
+                base_url=Config.OPENROUTER_BASE,
+                api_key=Config.OPENROUTER_KEY or "",
+                candidate=candidate,
+                messages=messages,
+                provider_headers={
+                    "HTTP-Referer": Config.FRONTEND_URL,
+                    "X-Title": Config.APP_NAME,
+                },
             )
         if candidate.provider == "gemini":
-            if not Config.GEMINI_KEY:
-                raise ProviderUnavailable("Gemini key missing")
             return self._gemini_text(candidate, messages)
         return None
 
     def _openai_compatible(
-        self, base_url: str, api_key: str, candidate: ModelCandidate,
-        messages: List[Dict[str, str]], provider_headers: Dict[str, str],
+        self,
+        base_url: str,
+        api_key: str,
+        candidate: ModelCandidate,
+        messages: List[Dict[str, str]],
+        provider_headers: Dict[str, str],
         deepseek: bool = False,
     ) -> Optional[str]:
         payload: Dict[str, Any] = {
@@ -666,39 +885,43 @@ class AIService:
             "temperature": candidate.temperature,
         }
         if deepseek and candidate.thinking:
-            payload["thinking"] = {
-                "type": "disabled" if candidate.thinking == "disabled" else "enabled"
-            }
+            payload["thinking"] = {"type": "disabled" if candidate.thinking == "disabled" else "enabled"}
             if candidate.thinking in {"high", "max"}:
                 payload["reasoning_effort"] = candidate.thinking
 
-        response = requests.post(
+        response = self.session.post(
             f"{base_url}/chat/completions",
             json=payload,
-            headers={"Authorization": f"Bearer {api_key}",
-                     "Content-Type": "application/json", **provider_headers},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                **provider_headers,
+            },
             timeout=Config.REQUEST_TIMEOUT,
         )
         if response.status_code >= 400:
             raise RuntimeError(self._error_text(response))
-        data = response.json()
+        data = safe_json(response)
         choice = (data.get("choices") or [{}])[0]
-        message = choice.get("message") or {}
-        return (message.get("content") or "").strip()
+        content = ((choice.get("message") or {}).get("content") or "").strip()
+        if not content:
+            raise RuntimeError("provider returned empty content")
+        return content
 
-    def _gemini_text(
-        self, candidate: ModelCandidate, messages: List[Dict[str, str]]
-    ) -> Optional[str]:
+    def _gemini_text(self, candidate: ModelCandidate, messages: List[Dict[str, str]]) -> Optional[str]:
         system_text = self.system_prompt
         contents = []
-        for msg in messages:
-            if msg["role"] == "system":
-                system_text = msg["content"]
+        for item in messages:
+            if item["role"] == "system":
+                system_text = item["content"]
                 continue
-            contents.append({
-                "role": "model" if msg["role"] == "assistant" else "user",
-                "parts": [{"text": msg["content"]}],
-            })
+            contents.append(
+                {
+                    "role": "model" if item["role"] == "assistant" else "user",
+                    "parts": [{"text": item["content"]}],
+                }
+            )
+
         payload = {
             "systemInstruction": {"parts": [{"text": system_text}]},
             "contents": contents,
@@ -707,7 +930,8 @@ class AIService:
                 "maxOutputTokens": candidate.max_tokens,
             },
         }
-        response = requests.post(
+
+        response = self.session.post(
             f"{Config.GEMINI_BASE}/models/{candidate.model}:generateContent",
             params={"key": Config.GEMINI_KEY},
             json=payload,
@@ -715,22 +939,34 @@ class AIService:
         )
         if response.status_code >= 400:
             raise RuntimeError(self._error_text(response))
-        return self._gemini_text_from_response(response.json())
+        text = self._gemini_text_from_response(safe_json(response))
+        if not text:
+            raise RuntimeError("provider returned empty content")
+        return text
 
     def _gemini_vision(
-        self, candidate: ModelCandidate, image_b64: str, mime_type: str, prompt: str
+        self,
+        candidate: ModelCandidate,
+        image_b64: str,
+        mime_type: str,
+        prompt: str,
     ) -> Optional[str]:
         payload = {
-            "contents": [{
-                "role": "user",
-                "parts": [
-                    {"text": prompt},
-                    {"inline_data": {"mime_type": mime_type, "data": image_b64}},
-                ],
-            }],
-            "generationConfig": {"temperature": 0.4, "maxOutputTokens": candidate.max_tokens},
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": prompt},
+                        {"inline_data": {"mime_type": mime_type, "data": image_b64}},
+                    ],
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.4,
+                "maxOutputTokens": candidate.max_tokens,
+            },
         }
-        response = requests.post(
+        response = self.session.post(
             f"{Config.GEMINI_BASE}/models/{candidate.model}:generateContent",
             params={"key": Config.GEMINI_KEY},
             json=payload,
@@ -738,70 +974,76 @@ class AIService:
         )
         if response.status_code >= 400:
             raise RuntimeError(self._error_text(response))
-        return self._gemini_text_from_response(response.json())
+        text = self._gemini_text_from_response(safe_json(response))
+        if not text:
+            raise RuntimeError("provider returned empty content")
+        return text
 
-    def _openrouter_vision(
-        self, candidate: ModelCandidate, data_url: str, prompt: str
-    ) -> Optional[str]:
+    def _openrouter_vision(self, candidate: ModelCandidate, data_url: str, prompt: str) -> Optional[str]:
         payload = {
             "model": candidate.model,
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": data_url}},
-                ],
-            }],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ],
+                }
+            ],
             "max_tokens": candidate.max_tokens,
             "temperature": candidate.temperature,
         }
-        response = requests.post(
+        response = self.session.post(
             f"{Config.OPENROUTER_BASE}/chat/completions",
             json=payload,
             headers={
                 "Authorization": f"Bearer {Config.OPENROUTER_KEY}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": Config.FRONTEND_URL,
-                "X-Title": "JARVIS Enterprise",
+                "X-Title": Config.APP_NAME,
             },
             timeout=Config.REQUEST_TIMEOUT,
         )
         if response.status_code >= 400:
             raise RuntimeError(self._error_text(response))
-        data = response.json()
-        return ((data.get("choices") or [{}])[0].get("message") or {}).get("content", "").strip()
+        data = safe_json(response)
+        content = (((data.get("choices") or [{}])[0].get("message") or {}).get("content") or "").strip()
+        if not content:
+            raise RuntimeError("provider returned empty content")
+        return content
 
     def _imagen(self, model: str, prompt: str, aspect_ratio: str) -> Optional[str]:
-        if not Config.GEMINI_KEY:
-            raise ProviderUnavailable("Gemini key missing")
-        safe_ar = aspect_ratio if aspect_ratio in {"1:1", "3:4", "4:3", "9:16", "16:9"} else "1:1"
+        safe_ratio = aspect_ratio if aspect_ratio in {"1:1", "3:4", "4:3", "9:16", "16:9"} else "1:1"
         payload = {
             "instances": [{"prompt": prompt[:1800]}],
             "parameters": {
                 "sampleCount": 1,
-                "aspectRatio": safe_ar,
+                "aspectRatio": safe_ratio,
                 "personGeneration": "allow_adult",
             },
         }
-        response = requests.post(
+        response = self.session.post(
             f"{Config.GEMINI_BASE}/models/{model}:predict",
             params={"key": Config.GEMINI_KEY},
             json=payload,
-            timeout=max(Config.REQUEST_TIMEOUT, 60),
+            timeout=Config.IMAGE_REQUEST_TIMEOUT,
         )
         if response.status_code >= 400:
             raise RuntimeError(self._error_text(response))
-        data = response.json()
+        data = safe_json(response)
         predictions = data.get("predictions") or []
         if not predictions:
-            return None
-        item = predictions[0]
+            raise RuntimeError("provider returned no image")
+        first = predictions[0]
         encoded = (
-            item.get("bytesBase64Encoded")
-            or item.get("image", {}).get("bytesBase64Encoded")
-            or item.get("imageBytes")
+            first.get("bytesBase64Encoded")
+            or (first.get("image") or {}).get("bytesBase64Encoded")
+            or first.get("imageBytes")
         )
-        return f"data:image/png;base64,{encoded}" if encoded else None
+        if not encoded:
+            raise RuntimeError("provider returned malformed image payload")
+        return f"data:image/png;base64,{encoded}"
 
     @staticmethod
     def _gemini_text_from_response(data: Dict[str, Any]) -> Optional[str]:
@@ -811,11 +1053,13 @@ class AIService:
 
     @staticmethod
     def _error_text(response: requests.Response) -> str:
-        try:
-            data = response.json()
-            return data.get("error", {}).get("message") or data.get("error") or response.text[:500]
-        except Exception:
-            return response.text[:500]
+        data = safe_json(response)
+        return (
+            (data.get("error") or {}).get("message")
+            if isinstance(data.get("error"), dict)
+            else data.get("error")
+            or response.text[:500]
+        )
 
     @staticmethod
     def _offline_reply(prompt: str) -> str:
@@ -824,7 +1068,7 @@ class AIService:
             return "Hello. JARVIS is online, but the live model network is temporarily unavailable."
         return (
             "JARVIS could not reach the live model network for this request. "
-            "Check provider keys, model access, and service status, then try again."
+            "Check provider keys, account access, and current model availability, then try again."
         )
 
 
@@ -832,7 +1076,7 @@ ai_service = AIService()
 
 
 # ---------------------------------------------------------------------------
-# Flask app
+# App
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent
 app = Flask(__name__, static_folder=str(ROOT))
@@ -849,54 +1093,49 @@ CORS(app, origins=Config.CORS_ORIGINS, supports_credentials=True)
 
 
 # ---------------------------------------------------------------------------
-# Serializers & helpers
+# Serialization
 # ---------------------------------------------------------------------------
-def get_ip() -> str:
-    forwarded = request.headers.get("X-Forwarded-For", "")
-    return forwarded.split(",", 1)[0].strip() if forwarded else (request.remote_addr or "0.0.0.0")
-
-
 def serialize_user(user: UserDTO) -> Dict[str, Any]:
     return {
-        "id": user.id, "name": user.display_name, "email": user.email,
-        "avatar": user.avatar_url, "is_admin": user.is_admin,
+        "id": user.id,
+        "name": user.display_name,
+        "email": user.email,
+        "avatar": user.avatar_url,
+        "is_admin": user.is_admin,
     }
 
 
-def serialize_session(sess: SessionDTO) -> Dict[str, Any]:
-    data = asdict(sess)
-    data["createdAt"] = datetime.fromtimestamp(sess.created_at, timezone.utc).isoformat()
-    data["updatedAt"] = datetime.fromtimestamp(sess.updated_at, timezone.utc).isoformat()
+def serialize_session(session_obj: SessionDTO) -> Dict[str, Any]:
+    data = asdict(session_obj)
+    data["createdAt"] = current_iso_from_ts(session_obj.created_at)
+    data["updatedAt"] = current_iso_from_ts(session_obj.updated_at)
     return data
 
 
-def serialize_message(msg: MessageDTO) -> Dict[str, Any]:
-    data = asdict(msg)
-    data["model_used"] = msg.mode
-    data["createdAt"] = datetime.fromtimestamp(msg.created_at, timezone.utc).isoformat()
+def serialize_message(message: MessageDTO) -> Dict[str, Any]:
+    data = asdict(message)
+    data["model_used"] = message.mode
+    data["createdAt"] = current_iso_from_ts(message.created_at)
     return data
 
 
-def json_body() -> Dict[str, Any]:
-    return request.get_json(silent=True) or {}
-
-
-# FIX: Proper token validation - None session_token means logged out
+# ---------------------------------------------------------------------------
+# Auth helpers
+# ---------------------------------------------------------------------------
 def current_user_from_token() -> Optional[UserDTO]:
     token = JWTService.from_request()
     if token:
         payload = JWTService.verify(token)
         if payload:
             user = storage.get_user(payload.get("user_id", ""))
-            # FIX: Only accept token if session_token is explicitly set AND matches
             if user and user.session_token is not None and user.session_token == token:
                 return user
-    uid = session.get("user_id")
-    if uid:
-        user = storage.get_user(uid)
-        # Also verify session token from Flask session if available
-        sess_token = session.get("session_token")
-        if user and user.session_token is not None and sess_token == user.session_token:
+
+    session_user_id = session.get("user_id")
+    session_token = session.get("session_token")
+    if session_user_id and session_token:
+        user = storage.get_user(session_user_id)
+        if user and user.session_token is not None and user.session_token == session_token:
             return user
     return None
 
@@ -909,6 +1148,21 @@ def login_required(fn: Callable) -> Callable:
             return jsonify({"success": False, "error": "Authentication required"}), 401
         g.user = user
         return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def admin_required(fn: Callable) -> Callable:
+    @wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        user = current_user_from_token()
+        if not user:
+            return jsonify({"success": False, "error": "Authentication required"}), 401
+        if not user.is_admin:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+        g.user = user
+        return fn(*args, **kwargs)
+
     return wrapper
 
 
@@ -917,22 +1171,24 @@ def limit_or_429(key: str, limit: int, window: int) -> Optional[Tuple[Any, int]]
     if allowed:
         g.rate_remaining = remaining
         return None
-    retry = max(round(reset - unix_now(), 2), 0)
-    return jsonify({"success": False, "error": "Rate limited", "retry_after": retry}), 429
+    retry_after = max(round(reset - unix_now(), 2), 0)
+    return jsonify({"success": False, "error": "Rate limited", "retry_after": retry_after}), 429
 
 
 def parse_image_payload(value: str) -> Tuple[str, str]:
     if not value:
         raise ValueError("No image provided")
-    value = value.strip()
+
+    clean = value.strip()
     mime = "image/png"
-    if value.startswith("data:"):
-        header, _, encoded = value.partition(",")
+    if clean.startswith("data:"):
+        header, _, encoded = clean.partition(",")
         match = re.match(r"data:([^;]+);base64", header)
         if match:
             mime = match.group(1)
-        value = encoded
-    raw = base64.b64decode(value, validate=True)
+        clean = encoded
+
+    raw = base64.b64decode(clean, validate=True)
     if len(raw) > Config.MAX_IMAGE_BYTES:
         raise ValueError("Image is too large")
     if not mime.startswith("image/"):
@@ -941,7 +1197,7 @@ def parse_image_payload(value: str) -> Tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# Routes — static & health
+# Routes: static and health
 # ---------------------------------------------------------------------------
 @app.get("/")
 def index() -> Any:
@@ -952,27 +1208,45 @@ def index() -> Any:
 @app.get("/health")
 @app.get("/jarvis/health")
 def health() -> Any:
-    return jsonify({
-        "success": True, "status": "healthy", "version": Config.VERSION,
-        "modes": [{"id": s.id, "label": s.label, "description": s.description} for s in MODE_SPECS.values()],
-    })
+    return jsonify(
+        {
+            "success": True,
+            "status": "healthy",
+            "version": Config.VERSION,
+            "time": iso_now(),
+            "modes": [
+                {"id": spec.id, "label": spec.label, "description": spec.description}
+                for spec in MODE_SPECS.values()
+            ],
+        }
+    )
 
 
 @app.get("/jarvis/modes")
 def modes() -> Any:
-    return jsonify({
-        "success": True,
-        "modes": [{"id": s.id, "label": s.label, "description": s.description} for s in MODE_SPECS.values()],
-    })
+    return jsonify(
+        {
+            "success": True,
+            "modes": [
+                {"id": spec.id, "label": spec.label, "description": spec.description}
+                for spec in MODE_SPECS.values()
+            ],
+        }
+    )
+
+
+@app.get("/jarvis/diagnostics/modes")
+@admin_required
+def mode_diagnostics() -> Any:
+    return jsonify({"success": True, **model_diagnostics.all_modes_report()})
 
 
 # ---------------------------------------------------------------------------
-# Auth — Google OAuth
+# Auth: Google OAuth
 # ---------------------------------------------------------------------------
 @app.get("/jarvis/sign-in")
 @app.get("/login/google")
 def google_login() -> Any:
-    # Dev-mode fallback (only in development with ALLOW_DEV_LOGIN=true)
     if Config.ENVIRONMENT == "development" and Config.ALLOW_DEV_LOGIN and not Config.GOOGLE_CLIENT_ID:
         user = storage.create_or_update_user(None, "operator@jarvis.local", "Operator")
         token = JWTService.create(user)
@@ -1002,35 +1276,45 @@ def google_login() -> Any:
 def google_callback() -> Any:
     if request.args.get("error"):
         return redirect(f"{Config.FRONTEND_URL}?error={request.args.get('error')}")
+
     code = request.args.get("code")
     state = request.args.get("state")
     saved_state = session.pop("oauth_state", None)
     if not code:
         return redirect(f"{Config.FRONTEND_URL}?error=No+code")
-    if saved_state and saved_state != state:
+    if saved_state and state != saved_state:
         return redirect(f"{Config.FRONTEND_URL}?error=Invalid+state")
 
     try:
-        token_res = requests.post("https://oauth2.googleapis.com/token", data={
-            "code": code,
-            "client_id": Config.GOOGLE_CLIENT_ID,
-            "client_secret": Config.GOOGLE_CLIENT_SECRET,
-            "redirect_uri": Config.GOOGLE_REDIRECT_URI,
-            "grant_type": "authorization_code",
-        }, timeout=15)
-        token_res.raise_for_status()
-        access_token = token_res.json().get("access_token")
-
-        user_res = requests.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"}, timeout=15,
+        token_response = requests.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": Config.GOOGLE_CLIENT_ID,
+                "client_secret": Config.GOOGLE_CLIENT_SECRET,
+                "redirect_uri": Config.GOOGLE_REDIRECT_URI,
+                "grant_type": "authorization_code",
+            },
+            timeout=15,
         )
-        user_res.raise_for_status()
-        info = user_res.json()
+        token_response.raise_for_status()
+        access_token = safe_json(token_response).get("access_token")
+        if not access_token:
+            raise RuntimeError("OAuth token exchange returned no access token")
+
+        user_response = requests.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=15,
+        )
+        user_response.raise_for_status()
+        info = safe_json(user_response)
 
         user = storage.create_or_update_user(
-            google_id=info.get("id"), email=info.get("email", ""),
-            name=info.get("name", ""), avatar=info.get("picture", ""),
+            google_id=info.get("id"),
+            email=info.get("email", ""),
+            name=info.get("name", ""),
+            avatar=info.get("picture", ""),
         )
         token = JWTService.create(user)
         storage.set_session_token(user.id, token)
@@ -1042,14 +1326,12 @@ def google_callback() -> Any:
         return redirect(f"{Config.FRONTEND_URL}?error=Auth+failed")
 
 
-# FIX: Proper logout - set session_token to None to invalidate
 @app.get("/jarvis/sign-out")
 @app.get("/logout")
 def logout() -> Any:
-    uid = session.get("user_id")
-    if uid:
-        # FIX: Set token to None to invalidate all existing JWTs for this user
-        storage.set_session_token(uid, None)
+    user_id = session.get("user_id")
+    if user_id:
+        storage.set_session_token(user_id, None)
     session.clear()
     return redirect(Config.FRONTEND_URL)
 
@@ -1060,8 +1342,7 @@ def me() -> Any:
     user = current_user_from_token()
     if not user:
         return jsonify({"success": False, "error": "Not authenticated"}), 401
-    return jsonify({"success": True, "user": serialize_user(user),
-                    "token": JWTService.from_request()})
+    return jsonify({"success": True, "user": serialize_user(user), "token": JWTService.from_request()})
 
 
 # ---------------------------------------------------------------------------
@@ -1074,7 +1355,7 @@ def list_conversations() -> Any:
     limited = limit_or_429(f"sessions:{g.user.id}", Config.RATE_LIMIT_SESSIONS, Config.RATE_LIMIT_WINDOW)
     if limited:
         return limited
-    sessions = [serialize_session(s) for s in storage.get_user_sessions(g.user.id)]
+    sessions = [serialize_session(item) for item in storage.get_user_sessions(g.user.id)]
     return jsonify({"success": True, "conversations": sessions, "sessions": sessions})
 
 
@@ -1083,47 +1364,50 @@ def list_conversations() -> Any:
 @login_required
 def create_conversation() -> Any:
     data = json_body()
-    sess = storage.create_session(g.user.id, data.get("title") or "New Conversation")
-    payload = serialize_session(sess)
-    return jsonify({
-        "success": True, "conversation": payload, "session": payload,
-        "conversation_id": sess.id, "session_id": sess.id,
-    })
+    session_obj = storage.create_session(g.user.id, data.get("title") or "New Conversation")
+    payload = serialize_session(session_obj)
+    return jsonify(
+        {
+            "success": True,
+            "conversation": payload,
+            "session": payload,
+            "conversation_id": session_obj.id,
+            "session_id": session_obj.id,
+        }
+    )
 
 
-@app.get("/jarvis/conversations/<sid>")
-@app.get("/ai/session/<sid>")
+@app.get("/jarvis/conversations/<session_id>")
+@app.get("/ai/session/<session_id>")
 @login_required
-def get_conversation(sid: str) -> Any:
-    sess = storage.get_session(sid, g.user.id)
-    if not sess:
+def get_conversation(session_id: str) -> Any:
+    session_obj = storage.get_session(session_id, g.user.id)
+    if not session_obj:
         return jsonify({"success": False, "error": "Conversation not found"}), 404
-    messages = [serialize_message(m) for m in storage.get_messages(sid)]
-    return jsonify({
-        "success": True, "conversation": serialize_session(sess),
-        "session": serialize_session(sess), "messages": messages,
-    })
+    messages = [serialize_message(item) for item in storage.get_messages(session_id)]
+    payload = serialize_session(session_obj)
+    return jsonify({"success": True, "conversation": payload, "session": payload, "messages": messages})
 
 
-@app.delete("/jarvis/conversations/<sid>")
-@app.delete("/ai/session/<sid>")
+@app.delete("/jarvis/conversations/<session_id>")
+@app.delete("/ai/session/<session_id>")
 @login_required
-def delete_conversation(sid: str) -> Any:
-    if storage.delete_session(sid, g.user.id):
+def delete_conversation(session_id: str) -> Any:
+    if storage.delete_session(session_id, g.user.id):
         return jsonify({"success": True})
     return jsonify({"success": False, "error": "Conversation not found"}), 404
 
 
-@app.post("/jarvis/conversations/<sid>/messages")
-@app.post("/ai/session/<sid>/message")
+@app.post("/jarvis/conversations/<session_id>/messages")
+@app.post("/ai/session/<session_id>/message")
 @login_required
-def send_message(sid: str) -> Any:
+def send_message_route(session_id: str) -> Any:
     limited = limit_or_429(f"msg:{g.user.id}", Config.RATE_LIMIT_MESSAGES, Config.RATE_LIMIT_WINDOW)
     if limited:
         return limited
 
-    sess = storage.get_session(sid, g.user.id)
-    if not sess:
+    session_obj = storage.get_session(session_id, g.user.id)
+    if not session_obj:
         return jsonify({"success": False, "error": "Conversation not found"}), 404
 
     data = json_body()
@@ -1132,48 +1416,56 @@ def send_message(sid: str) -> Any:
     if not prompt:
         return jsonify({"success": False, "error": "Empty message"}), 400
 
-    prior = storage.get_messages(sid)
-    storage.add_message(sid, "user", prompt, mode)
-    response, public_mode, elapsed = ai_service.generate(prompt, mode, prior)
-    assistant = storage.add_message(sid, "assistant", response, public_mode)
+    prior_messages = storage.get_messages(session_id)
+    storage.add_message(session_id, "user", prompt, mode)
+    response_text, public_mode, elapsed = ai_service.generate(prompt, mode, prior_messages)
+    assistant = storage.add_message(session_id, "assistant", response_text, public_mode)
 
-    if storage.count_messages(sid) <= 2:
-        storage.update_title(sid, prompt)
+    if storage.count_messages(session_id) <= 2:
+        storage.update_title(session_id, prompt)
 
-    return jsonify({
-        "success": True,
-        "response": response,
-        "message": serialize_message(assistant),
-        "mode": public_mode,
-        "model": public_mode,
-        "response_time": elapsed,
-        "is_first_message": storage.count_messages(sid) <= 2,
-        "remaining_requests": getattr(g, "rate_remaining", None),
-    })
+    return jsonify(
+        {
+            "success": True,
+            "response": response_text,
+            "message": serialize_message(assistant),
+            "mode": public_mode,
+            "model": public_mode,
+            "response_time": elapsed,
+            "is_first_message": storage.count_messages(session_id) <= 2,
+            "remaining_requests": getattr(g, "rate_remaining", None),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
-# Vision & Image generation
+# Vision and image generation
 # ---------------------------------------------------------------------------
 @app.post("/jarvis/vision/analyze")
 @app.post("/ai/analyze-image")
 @login_required
-def analyze_image() -> Any:
+def analyze_image_route() -> Any:
     data = json_body()
-    sid = data.get("conversation_id") or data.get("session_id")
-    if sid and not storage.get_session(sid, g.user.id):
+    session_id = data.get("conversation_id") or data.get("session_id")
+    if session_id and not storage.get_session(session_id, g.user.id):
         return jsonify({"success": False, "error": "Conversation not found"}), 404
 
     try:
-        image_b64, mime = parse_image_payload(data.get("image") or "")
+        image_b64, mime_type = parse_image_payload(data.get("image") or "")
         prompt = data.get("prompt") or "Describe this image in detail."
-        analysis, mode, elapsed = ai_service.analyze_image(image_b64, mime, prompt)
-        if sid:
-            storage.add_message(sid, "assistant", analysis, mode)
-        return jsonify({
-            "success": True, "analysis": analysis, "response": analysis,
-            "mode": mode, "model": mode, "response_time": elapsed,
-        })
+        analysis, mode, elapsed = ai_service.analyze_image(image_b64, mime_type, prompt)
+        if session_id:
+            storage.add_message(session_id, "assistant", analysis, mode)
+        return jsonify(
+            {
+                "success": True,
+                "analysis": analysis,
+                "response": analysis,
+                "mode": mode,
+                "model": mode,
+                "response_time": elapsed,
+            }
+        )
     except ValueError as exc:
         return jsonify({"success": False, "error": str(exc)}), 400
     except Exception as exc:
@@ -1184,10 +1476,10 @@ def analyze_image() -> Any:
 @app.post("/jarvis/forge/create")
 @app.post("/ai/generate-image")
 @login_required
-def generate_image() -> Any:
+def generate_image_route() -> Any:
     data = json_body()
-    sid = data.get("conversation_id") or data.get("session_id")
-    if sid and not storage.get_session(sid, g.user.id):
+    session_id = data.get("conversation_id") or data.get("session_id")
+    if session_id and not storage.get_session(session_id, g.user.id):
         return jsonify({"success": False, "error": "Conversation not found"}), 404
 
     prompt = Security.sanitize(data.get("prompt") or "", 1600)
@@ -1196,25 +1488,35 @@ def generate_image() -> Any:
 
     try:
         image_url, mode, elapsed = ai_service.create_image(
-            prompt, data.get("aspect_ratio") or data.get("aspectRatio") or "1:1",
+            prompt,
+            data.get("aspect_ratio") or data.get("aspectRatio") or "1:1",
         )
-        if sid:
+        if session_id:
             storage.add_message(
-                sid, "assistant", f"Image created: {prompt}", mode,
+                session_id,
+                "assistant",
+                f"Image created: {prompt}",
+                mode,
                 [{"url": image_url, "caption": prompt, "alt": prompt}],
             )
-        return jsonify({
-            "success": True, "image_url": image_url, "url": image_url,
-            "mode": mode, "model": mode, "caption": f"Image created: {prompt}",
-            "response_time": elapsed,
-        })
+        return jsonify(
+            {
+                "success": True,
+                "image_url": image_url,
+                "url": image_url,
+                "mode": mode,
+                "model": mode,
+                "caption": f"Image created: {prompt}",
+                "response_time": elapsed,
+            }
+        )
     except Exception as exc:
         logger.error("Image generation failed: %s", exc)
         return jsonify({"success": False, "error": str(exc)}), 503
 
 
 # ---------------------------------------------------------------------------
-# Error handlers
+# Errors
 # ---------------------------------------------------------------------------
 @app.errorhandler(404)
 def not_found(_: Exception) -> Any:
@@ -1235,13 +1537,42 @@ def server_error(exc: Exception) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Entry point
+# Optional boot probes
+# ---------------------------------------------------------------------------
+def run_boot_probes() -> None:
+    if not Config.ENABLE_MODEL_BOOT_PROBE:
+        return
+
+    logger.info("Running model boot probes")
+    for spec in MODE_SPECS.values():
+        for candidate in spec.chain:
+            if not model_diagnostics.provider_configured(candidate.provider):
+                model_diagnostics.record_boot_probe(candidate.provider, candidate.model, False, "provider key missing")
+                continue
+            if model_diagnostics.deprecated_reason(candidate.provider, candidate.model):
+                model_diagnostics.record_boot_probe(
+                    candidate.provider,
+                    candidate.model,
+                    False,
+                    model_diagnostics.deprecated_reason(candidate.provider, candidate.model) or "deprecated",
+                )
+                continue
+            ok, detail = ai_service.probe_candidate(candidate)
+            model_diagnostics.record_boot_probe(candidate.provider, candidate.model, ok, detail)
+
+
+# ---------------------------------------------------------------------------
+# Startup
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     Config.display()
+    run_boot_probes()
+    logger.info("Mode availability=%s", model_diagnostics.all_modes_report())
+
     if Config.ENVIRONMENT == "production":
         try:
             from waitress import serve
+
             serve(app, host="0.0.0.0", port=Config.PORT, threads=8)
         except ImportError:
             app.run(host="0.0.0.0", port=Config.PORT, debug=False)
