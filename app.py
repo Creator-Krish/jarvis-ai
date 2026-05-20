@@ -39,8 +39,8 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)
 # Configuration
 # ---------------------------------------------------------------------------
 class Config:
-    APP_NAME = "JARVIS Enterprise"
-    VERSION = "5.1"
+    APP_NAME = "JARVIS"
+    VERSION = "1.1"
     ENVIRONMENT = os.environ.get("FLASK_ENV", "production").lower()
     PORT = int(os.environ.get("PORT", "5000"))
 
@@ -700,8 +700,8 @@ class AIService:
     def __init__(self) -> None:
         self.session = requests.Session()
         self.system_prompt = (
-            "You are JARVIS, an advanced enterprise assistant created by Krish Paliwal. "
-            "Be accurate, direct, professional, and useful. Structure answers clearly. "
+            "You are JARVIS, an advanced assistant created by Krish Paliwal. "
+            "Be accurate, direct, professional, cheery, cute, happy and useful. Structure answers clearly. "
             "If something is uncertain, say so. Do not mention private provider routing, "
             "API keys, or internal model names unless the operator explicitly asks for backend diagnostics."
         )
