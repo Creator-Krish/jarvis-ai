@@ -1116,7 +1116,7 @@
                         </div>
 
                         <label class="visually-hidden" for="promptInput">Message EONIX</label>
-                        <textarea id="promptInput" rows="1" maxlength="8000" placeholder="Message JARVIS"></textarea>
+                        <textarea id="promptInput" rows="1" maxlength="8000" placeholder="Message EONIX"></textarea>
 
                         <div class="composer-right">
                             <button class="send-button" id="sendBtn" type="submit">Send</button>
@@ -1334,7 +1334,7 @@
                 accent: "cyan",
                 density: "comfortable",
                 messageScale: 14,
-                mode: "jarvis-prime",
+                mode: "EONIX-prime",
                 voice: "en-US"
             },
             lastSettingsToast: 0
@@ -1444,7 +1444,7 @@
                 url,
                 dataUrl: url.startsWith("data:") ? url : "",
                 caption: String(raw.caption || raw.name || raw.alt || ""),
-                alt: String(raw.alt || raw.caption || raw.name || "JARVIS attachment")
+                alt: String(raw.alt || raw.caption || raw.name || "EONIX attachment")
             };
         }
 
@@ -1675,7 +1675,7 @@
                 closeSidebarOnMobile();
                 return conversation;
             }
-            const data = await bridge(JARVIS_ROUTES.conversations, { method: "POST", body: JSON.stringify({ title }) });
+            const data = await bridge(EONIX_ROUTES.conversations, { method: "POST", body: JSON.stringify({ title }) });
             const conversation = normalizeConversation(data.conversation || data.session || { id: data.conversation_id || uid("conversation"), title });
             state.conversations.unshift(conversation);
             state.currentId = conversation.id;
@@ -1705,7 +1705,7 @@
                 state.conversations = localConversations().map(normalizeConversation);
                 if (!state.conversations.length) {
                     const first = createLocalConversation("Command Session");
-                    first.messages.push(normalizeMessage({ role: "system", content: "JARVIS is online." }));
+                    first.messages.push(normalizeMessage({ role: "system", content: "EONIX is online." }));
                     state.currentId = first.id;
                     saveLocalConversations();
                 } else {
@@ -1852,7 +1852,7 @@
             setProcessing(true);
             showTyping();
             try {
-                const response = state.previewMode ? await localReply(text) : await bridge(JARVIS_ROUTES.messages(state.currentId), {
+                const response = state.previewMode ? await localReply(text) : await bridge(EONIX_ROUTES.messages(state.currentId), {
                     method: "POST",
                     body: JSON.stringify({ prompt: text, mode: state.settings.mode })
                 });
@@ -1911,7 +1911,7 @@
                 addLocalMessage({
                     role: "user",
                     content: `Analyze image: ${file.name}`,
-                    mode: "jarvis-vision",
+                    mode: "EONIX-vision",
                     attachments: [{ dataUrl, caption: file.name, alt: file.name }]
                 });
                 setProcessing(true);
@@ -2019,7 +2019,7 @@
             setProcessing(true);
             showTyping();
             try {
-                const response = state.previewMode ? await localImageCreate(prompt) : await bridge(JARVIS_ROUTES.imageCreate, {
+                const response = state.previewMode ? await localImageCreate(prompt) : await bridge(EONIX_ROUTES.imageCreate, {
                     method: "POST",
                     body: JSON.stringify({ prompt, conversation_id: state.currentId, mode: "EONIX-forge" })
                 });
