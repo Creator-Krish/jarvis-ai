@@ -31,7 +31,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-7s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-logger = logging.getLogger("jarvis")
+logger = logging.getLogger("eonix")
 logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
 
@@ -39,12 +39,12 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)
 # Configuration
 # ---------------------------------------------------------------------------
 class Config:
-    APP_NAME = "JARVIS"
+    APP_NAME = "EONIX"
     VERSION = "1.1"
     ENVIRONMENT = os.environ.get("FLASK_ENV", "production").lower()
     PORT = int(os.environ.get("PORT", "5000"))
 
-    FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://jarvis-e76i.onrender.com").rstrip("/")
+    FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://eonix-7nmk.onrender.com").rstrip("/")
     GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", f"{FRONTEND_URL}/login/callback")
 
     SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_urlsafe(48)
@@ -235,7 +235,7 @@ class MessageDTO:
     session_id: str
     role: str
     content: str
-    mode: str = "jarvis-prime"
+    mode: str = "EONIX-prime"
     created_at: float = 0.0
     attachments: List[Dict[str, Any]] = field(default_factory=list)
 
@@ -289,96 +289,98 @@ def c(
 # Current mode routing
 # ---------------------------------------------------------------------------
 MODE_SPECS: Dict[str, ModeSpec] = {
-    "jarvis-prime": ModeSpec(
-        id="jarvis-prime",
-        label="JARVIS Prime",
+    "EONIX-prime": ModeSpec(
+        id="EONIX-prime",
+        label="EONIX Prime",
         description="Balanced flagship reasoning.",
         chain=(
-            c("deepseek", "deepseek-chat", "jarvis-prime", 8192, 0.65, "high"),
-            c("gemini", "gemini-2.5-pro", "jarvis-prime", 8192, 0.65),
-            c("openrouter", "openai/gpt-4o", "jarvis-prime", 8192, 0.65),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-prime", 8192, 0.65, supports_vision=True),
-            c("groq", "llama-3.3-70b-versatile", "jarvis-prime", 4096, 0.65),
+            c("deepseek", "deepseek-chat", "EONIX-prime", 8192, 0.65, "high"),
+            c("gemini", "gemini-2.5-pro", "EONIX-prime", 8192, 0.65),
+            c("openrouter", "openai/gpt-4o", "EONIX-prime", 8192, 0.65),
+            c("openrouter", "anthropic/claude-3.5-sonnet", "EONIX-prime", 8192, 0.65, supports_vision=True),
+            c("groq", "llama-3.3-70b-versatile", "EONIX-prime", 4096, 0.65),
         ),
     ),
-    "jarvis-swift": ModeSpec(
-        id="jarvis-swift",
-        label="JARVIS Swift",
+    "EONIX-swift": ModeSpec(
+        id="EONIX-swift",
+        label="EONIX Swift",
         description="Low-latency production answers.",
         chain=(
-            c("groq", "llama-3.3-70b-versatile", "jarvis-swift", 4096, 0.55),
-            c("gemini", "gemini-2.5-flash", "jarvis-swift", 4096, 0.55),
-            c("openrouter", "google/gemini-2.5-flash-lite", "jarvis-swift", 4096, 0.55),
-            c("deepseek", "deepseek-chat", "jarvis-swift", 4096, 0.55, "disabled"),
+            c("groq", "llama-3.3-70b-versatile", "EONIX-swift", 4096, 0.55),
+            c("gemini", "gemini-2.5-flash", "EONIX-swift", 4096, 0.55),
+            c("openrouter", "google/gemini-2.5-flash-lite", "EONIX-swift", 4096, 0.55),
+            c("deepseek", "deepseek-chat", "EONIX-swift", 4096, 0.55, "disabled"),
         ),
     ),
-    "jarvis-deepcore": ModeSpec(
-        id="jarvis-deepcore",
-        label="JARVIS DeepCore",
+    "EONIX-deepcore": ModeSpec(
+        id="EONIX-deepcore",
+        label="EONIX DeepCore",
         description="Hard reasoning, coding, and analysis.",
         chain=(
-            c("deepseek", "deepseek-reasoner", "jarvis-deepcore", 12000, 0.45, "max"),
-            c("gemini", "gemini-2.5-pro", "jarvis-deepcore", 12000, 0.45),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-deepcore", 12000, 0.45, supports_vision=True),
-            c("openrouter", "google/gemini-2.5-flash", "jarvis-deepcore", 8192, 0.45),
-            c("openrouter", "x-ai/grok-2-1212", "jarvis-deepcore", 8192, 0.45),
+            c("deepseek", "deepseek-reasoner", "EONIX-deepcore", 12000, 0.45, "max"),
+            c("gemini", "gemini-2.5-pro", "EONIX-deepcore", 12000, 0.45),
+            c("openrouter", "anthropic/claude-3.5-sonnet", "EONIX-deepcore", 12000, 0.45, supports_vision=True),
+            c("openrouter", "google/gemini-2.5-flash", "EONIX-deepcore", 8192, 0.45),
+            c("openrouter", "x-ai/grok-2-1212", "EONIX-deepcore", 8192, 0.45),
         ),
     ),
-    "jarvis-oracle": ModeSpec(
-        id="jarvis-oracle",
-        label="JARVIS Oracle",
+    "EONIX-oracle": ModeSpec(
+        id="EONIX-oracle",
+        label="EONIX Oracle",
         description="Broad multi-provider synthesis.",
         chain=(
-            c("openrouter", "openai/gpt-4o", "jarvis-oracle", 12000, 0.6, supports_vision=True),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-oracle", 12000, 0.6, supports_vision=True),
-            c("gemini", "gemini-2.5-pro", "jarvis-oracle", 12000, 0.6),
-            c("deepseek", "deepseek-chat", "jarvis-oracle", 8192, 0.6, "high"),
-            c("groq", "llama-3.3-70b-versatile", "jarvis-oracle", 4096, 0.6),
+            c("openrouter", "openai/gpt-4o", "EONIX-oracle", 12000, 0.6, supports_vision=True),
+            c("openrouter", "anthropic/claude-3.5-sonnet", "EONIX-oracle", 12000, 0.6, supports_vision=True),
+            c("gemini", "gemini-2.5-pro", "EONIX-oracle", 12000, 0.6),
+            c("deepseek", "deepseek-chat", "EONIX-oracle", 8192, 0.6, "high"),
+            c("groq", "llama-3.3-70b-versatile", "EONIX-oracle", 4096, 0.6),
         ),
     ),
-    "jarvis-vision": ModeSpec(
-        id="jarvis-vision",
-        label="JARVIS Vision",
+    "EONIX-vision": ModeSpec(
+        id="EONIX-vision",
+        label="EONIX Vision",
         description="Image and multimodal understanding.",
         chain=(
-            c("gemini", "gemini-2.5-pro", "jarvis-vision", 8192, 0.4, supports_vision=True),
-            c("gemini", "gemini-2.5-flash", "jarvis-vision", 8192, 0.4, supports_vision=True),
-            c("openrouter", "openai/gpt-4o", "jarvis-vision", 8192, 0.4, supports_vision=True),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "jarvis-vision", 8192, 0.4, supports_vision=True),
+            c("gemini", "gemini-2.5-pro", "EONIX-vision", 8192, 0.4, supports_vision=True),
+            c("gemini", "gemini-2.5-flash", "EONIX-vision", 8192, 0.4, supports_vision=True),
+            c("openrouter", "openai/gpt-4o", "EONIX-vision", 8192, 0.4, supports_vision=True),
+            c("openrouter", "anthropic/claude-3.5-sonnet", "EONIX-vision", 8192, 0.4, supports_vision=True),
         ),
     ),
-    "jarvis-forge": ModeSpec(
-        id="jarvis-forge",
-        label="JARVIS Forge",
+    "EONIX-forge": ModeSpec(
+        id="EONIX-forge",
+        label="EONIX Forge",
         description="Image creation.",
         chain=(
-            c("gemini-image", "imagen-4.0-ultra-generate-001", "jarvis-forge", supports_text=False, supports_image_generation=True),
-            c("gemini-image", "imagen-4.0-generate-001", "jarvis-forge", supports_text=False, supports_image_generation=True),
-            c("gemini-image", "imagen-4.0-fast-generate-001", "jarvis-forge", supports_text=False, supports_image_generation=True),
+            c("gemini-image", "imagen-4.0-ultra-generate-001", "EONIX-forge", supports_text=False, supports_image_generation=True),
+            c("gemini-image", "imagen-4.0-generate-001", "EONIX-forge", supports_text=False, supports_image_generation=True),
+            c("gemini-image", "imagen-4.0-fast-generate-001", "EONIX-forge", supports_text=False, supports_image_generation=True),
+            c("gemini-image", "imagen-3.0-generate-002", "EONIX-forge", supports_text=False, supports_image_generation=True),
+            c("gemini-image", "imagen-3.0-fast-generate-002", "EONIX-forge", supports_text=False, supports_image_generation=True)
         ),
     ),
 }
 
 MODE_ALIASES = {
-    "prime": "jarvis-prime",
-    "swift": "jarvis-swift",
-    "deepcore": "jarvis-deepcore",
-    "oracle": "jarvis-oracle",
-    "vision": "jarvis-vision",
-    "forge": "jarvis-forge",
-    "image-gen": "jarvis-forge",
-    "deepseek": "jarvis-deepcore",
-    "groq": "jarvis-swift",
-    "gemini": "jarvis-prime",
-    "openrouter": "jarvis-oracle",
+    "prime": "EONIX-prime",
+    "swift": "EONIX-swift",
+    "deepcore": "EONIX-deepcore",
+    "oracle": "EONIX-oracle",
+    "vision": "EONIX-vision",
+    "forge": "EONIX-forge",
+    "image-gen": "EONIX-forge",
+    "deepseek": "EONIX-deepcore",
+    "groq": "EONIX-swift",
+    "gemini": "EONIX-prime",
+    "openrouter": "EONIX-oracle",
 }
 
 
 def normalize_mode(value: Optional[str]) -> str:
     if not value:
-        return "jarvis-prime"
+        return "EONIX-prime"
     clean = value.strip().lower()
-    return clean if clean in MODE_SPECS else MODE_ALIASES.get(clean, "jarvis-prime")
+    return clean if clean in MODE_SPECS else MODE_ALIASES.get(clean, "EONIX-prime")
 
 
 # ---------------------------------------------------------------------------
@@ -660,7 +662,7 @@ class Storage:
         session_id: str,
         role: str,
         content: str,
-        mode: str = "jarvis-prime",
+        mode: str = "EONIX-prime",
         attachments: Optional[List[Dict[str, Any]]] = None,
     ) -> MessageDTO:
         with self.lock:
@@ -700,7 +702,7 @@ class AIService:
     def __init__(self) -> None:
         self.session = requests.Session()
         self.system_prompt = (
-            "You are JARVIS, an advanced assistant created by Krish Paliwal. "
+            "You are EONIX, an advanced assistant created by Krish Paliwal. "
             "Be accurate, direct, professional, cheery, cute, happy and useful. Structure answers clearly. "
             "If something is uncertain, say so. Do not mention private provider routing, "
             "API keys, or internal model names unless the operator explicitly asks for backend diagnostics."
@@ -715,7 +717,7 @@ class AIService:
         started = unix_now()
         clean_prompt = Security.sanitize(prompt)
         if Security.is_low_signal(clean_prompt):
-            return "Please send a clearer message so I can help properly.", "jarvis-prime", 0.0
+            return "Please send a clearer message so I can help properly.", "EONIX-prime", 0.0
 
         mode_id = normalize_mode(preferred_mode)
         messages = self._messages(clean_prompt, list(history))
@@ -733,7 +735,7 @@ class AIService:
                     model_diagnostics.record_success(candidate.provider, candidate.model)
                     elapsed = round(unix_now() - started, 2)
                     logger.info(
-                        "JARVIS mode=%s provider=%s model=%s elapsed=%ss",
+                        "EONIX mode=%s provider=%s model=%s elapsed=%ss",
                         mode_id,
                         candidate.provider,
                         candidate.model,
@@ -758,7 +760,7 @@ class AIService:
     def analyze_image(self, image_b64: str, mime_type: str, prompt: str = "") -> Tuple[str, str, float]:
         started = unix_now()
         clean_prompt = Security.sanitize(prompt or "Describe this image in detail.")
-        for candidate in MODE_SPECS["jarvis-vision"].chain:
+        for candidate in MODE_SPECS["EONIX-vision"].chain:
             if not candidate.supports_vision:
                 continue
             try:
@@ -773,7 +775,7 @@ class AIService:
                     continue
                 if text:
                     model_diagnostics.record_success(candidate.provider, candidate.model)
-                    return text, "jarvis-vision", round(unix_now() - started, 2)
+                    return text, "EONIX-vision", round(unix_now() - started, 2)
             except Exception as exc:
                 model_diagnostics.record_failure(candidate.provider, candidate.model, exc)
                 logger.warning(
@@ -783,7 +785,7 @@ class AIService:
                     exc,
                 )
         raise ProviderUnavailable(
-            "JARVIS Vision is unavailable. Check GEMINI_API_KEY, OPENROUTER_API_KEY, and model access."
+            "EONIX Vision is unavailable. Check model access."
         )
 
     def create_image(self, prompt: str, aspect_ratio: str = "1:1") -> Tuple[str, str, float]:
@@ -801,13 +803,13 @@ class AIService:
                 image_url = self._imagen(candidate.model, clean_prompt, aspect_ratio)
                 if image_url:
                     model_diagnostics.record_success(candidate.provider, candidate.model)
-                    return image_url, "jarvis-forge", round(unix_now() - started, 2)
+                    return image_url, "EONIX-forge", round(unix_now() - started, 2)
             except Exception as exc:
                 model_diagnostics.record_failure(candidate.provider, candidate.model, exc)
                 logger.warning("Forge candidate failed model=%s error=%s", candidate.model, exc)
 
         raise ProviderUnavailable(
-            "JARVIS Forge is unavailable. Check GEMINI_API_KEY and Imagen model access."
+            "EONIX Forge is unavailable. Check Imagen model access."
         )
 
     def probe_candidate(self, candidate: ModelCandidate) -> Tuple[bool, str]:
@@ -1065,9 +1067,9 @@ class AIService:
     def _offline_reply(prompt: str) -> str:
         lower = prompt.lower()
         if any(word in lower for word in ("hello", "hi", "hey")):
-            return "Hello. JARVIS is online, but the live model network is temporarily unavailable."
+            return "Hello. EONIX is online, but the live model network is temporarily unavailable."
         return (
-            "JARVIS could not reach the live model network for this request. "
+            "EONIX could not reach the live model network for this request. "
             "Check provider keys, account access, and current model availability, then try again."
         )
 
@@ -1206,7 +1208,7 @@ def index() -> Any:
 
 
 @app.get("/health")
-@app.get("/jarvis/health")
+@app.get("/EONIX/health")
 def health() -> Any:
     return jsonify(
         {
@@ -1222,7 +1224,7 @@ def health() -> Any:
     )
 
 
-@app.get("/jarvis/modes")
+@app.get("/EONIX/modes")
 def modes() -> Any:
     return jsonify(
         {
@@ -1235,7 +1237,7 @@ def modes() -> Any:
     )
 
 
-@app.get("/jarvis/diagnostics/modes")
+@app.get("/EONIX/diagnostics/modes")
 @admin_required
 def mode_diagnostics() -> Any:
     return jsonify({"success": True, **model_diagnostics.all_modes_report()})
@@ -1244,7 +1246,7 @@ def mode_diagnostics() -> Any:
 # ---------------------------------------------------------------------------
 # Auth: Google OAuth
 # ---------------------------------------------------------------------------
-@app.get("/jarvis/sign-in")
+@app.get("/EONIX/sign-in")
 @app.get("/login/google")
 def google_login() -> Any:
     if Config.ENVIRONMENT == "development" and Config.ALLOW_DEV_LOGIN and not Config.GOOGLE_CLIENT_ID:
@@ -1272,7 +1274,7 @@ def google_login() -> Any:
 
 
 @app.get("/login/callback")
-@app.get("/jarvis/auth/callback")
+@app.get("/EONIX/auth/callback")
 def google_callback() -> Any:
     if request.args.get("error"):
         return redirect(f"{Config.FRONTEND_URL}?error={request.args.get('error')}")
@@ -1326,7 +1328,7 @@ def google_callback() -> Any:
         return redirect(f"{Config.FRONTEND_URL}?error=Auth+failed")
 
 
-@app.get("/jarvis/sign-out")
+@app.get("/EONIX/sign-out")
 @app.get("/logout")
 def logout() -> Any:
     user_id = session.get("user_id")
@@ -1336,7 +1338,7 @@ def logout() -> Any:
     return redirect(Config.FRONTEND_URL)
 
 
-@app.get("/jarvis/me")
+@app.get("/EONIX/me")
 @app.get("/api/me")
 def me() -> Any:
     user = current_user_from_token()
@@ -1348,7 +1350,7 @@ def me() -> Any:
 # ---------------------------------------------------------------------------
 # Conversations
 # ---------------------------------------------------------------------------
-@app.get("/jarvis/conversations")
+@app.get("/EONIX/conversations")
 @app.get("/ai/sessions")
 @login_required
 def list_conversations() -> Any:
@@ -1359,7 +1361,7 @@ def list_conversations() -> Any:
     return jsonify({"success": True, "conversations": sessions, "sessions": sessions})
 
 
-@app.post("/jarvis/conversations")
+@app.post("/EONIX/conversations")
 @app.post("/ai/session")
 @login_required
 def create_conversation() -> Any:
@@ -1377,7 +1379,7 @@ def create_conversation() -> Any:
     )
 
 
-@app.get("/jarvis/conversations/<session_id>")
+@app.get("/EONIX/conversations/<session_id>")
 @app.get("/ai/session/<session_id>")
 @login_required
 def get_conversation(session_id: str) -> Any:
@@ -1389,7 +1391,7 @@ def get_conversation(session_id: str) -> Any:
     return jsonify({"success": True, "conversation": payload, "session": payload, "messages": messages})
 
 
-@app.delete("/jarvis/conversations/<session_id>")
+@app.delete("/EONIX/conversations/<session_id>")
 @app.delete("/ai/session/<session_id>")
 @login_required
 def delete_conversation(session_id: str) -> Any:
@@ -1398,7 +1400,7 @@ def delete_conversation(session_id: str) -> Any:
     return jsonify({"success": False, "error": "Conversation not found"}), 404
 
 
-@app.post("/jarvis/conversations/<session_id>/messages")
+@app.post("/EONIX/conversations/<session_id>/messages")
 @app.post("/ai/session/<session_id>/message")
 @login_required
 def send_message_route(session_id: str) -> Any:
@@ -1441,7 +1443,7 @@ def send_message_route(session_id: str) -> Any:
 # ---------------------------------------------------------------------------
 # Vision and image generation
 # ---------------------------------------------------------------------------
-@app.post("/jarvis/vision/analyze")
+@app.post("/EONIX/vision/analyze")
 @app.post("/ai/analyze-image")
 @login_required
 def analyze_image_route() -> Any:
@@ -1473,7 +1475,7 @@ def analyze_image_route() -> Any:
         return jsonify({"success": False, "error": str(exc)}), 503
 
 
-@app.post("/jarvis/forge/create")
+@app.post("/EONIX/forge/create")
 @app.post("/ai/generate-image")
 @login_required
 def generate_image_route() -> Any:
