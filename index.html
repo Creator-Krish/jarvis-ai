@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#08090d">
-    <title>JARVIS: Just an Artificial Real Time Virtually Integrated System</title>
+    <title>EONIX: Executive Operational Network for Intelligence & eXecution</title>
     <style>
         :root {
             color-scheme: dark;
@@ -994,10 +994,10 @@
         <aside class="sidebar" id="sidebar" aria-label="Conversation history">
             <div class="brand-row">
                 <div class="brand">
-                    <div class="brand-mark">J</div>
+                    <div class="brand-mark">EX</div>
                     <div>
-                        <h1 class="brand-title">JARVIS</h1>
-                        <p class="brand-subtitle">Largest Database v5.0</p>
+                        <h1 class="brand-title">EONIX</h1>
+                        <p class="brand-subtitle">Executive Operational Network for Intelligence & eXecution</p>
                     </div>
                 </div>
                 <button class="icon-button" id="collapseSidebarBtn" type="button" aria-label="Close sidebar">
@@ -1022,7 +1022,7 @@
                         <span>Active Mode</span>
                         <span id="modeSignal">Prime</span>
                     </div>
-                    <select class="mode-select" id="modeSelect" aria-label="JARVIS mode"></select>
+                    <select class="mode-select" id="modeSelect" aria-label="EONIX mode"></select>
                 </div>
             </div>
 
@@ -1058,7 +1058,7 @@
                         <span class="tooltip">Menu</span>
                     </button>
                     <div class="conversation-title">
-                        <h2 id="activeTitle">JARVIS Workspace</h2>
+                        <h2 id="activeTitle">EONIX Workspace</h2>
                         <div class="conversation-meta">
                             <span class="status-dot" id="statusDot"></span>
                             <span id="statusText">Ready</span>
@@ -1115,7 +1115,7 @@
                             </div>
                         </div>
 
-                        <label class="visually-hidden" for="promptInput">Message JARVIS</label>
+                        <label class="visually-hidden" for="promptInput">Message EONIX</label>
                         <textarea id="promptInput" rows="1" maxlength="8000" placeholder="Message JARVIS"></textarea>
 
                         <div class="composer-right">
@@ -1130,10 +1130,10 @@
     <div class="auth-gate active" id="authGate" role="dialog" aria-modal="true" aria-labelledby="authTitle">
         <div class="auth-card">
             <div class="auth-brand">
-                <div class="brand-mark">J</div>
+                <div class="brand-mark">EX</div>
                 <div>
-                    <h1 id="authTitle">JARVIS</h1>
-                    <p>Just an Artificial Real-time Virtually Integrated System</p>
+                    <h1 id="authTitle">EONIX</h1>
+                    <p>Executive Operational Network for Intelligence & eXecution</p>
                 </div>
             </div>
 
@@ -1190,7 +1190,7 @@
                     </section>
 
                     <section class="setting-block">
-                        <label for="settingsModeSelect">JARVIS Mode</label>
+                        <label for="settingsModeSelect">EONIX Mode</label>
                         <select class="mode-select" id="settingsModeSelect"></select>
                     </section>
 
@@ -1256,7 +1256,7 @@
                         <div id="profileAvatarLarge" style="width:64px;height:64px;margin:0 auto;border-radius:16px;display:grid;place-items:center;background:rgba(var(--accent-rgb),0.16);border:2px solid rgba(var(--accent-rgb),0.3);color:var(--accent);font-weight:900;font-size:28px;">J</div>
                         <div style="margin-top:12px;">
                             <h2 id="profileName" style="margin:0;font-size:20px;">Operator</h2>
-                            <p id="profileEmail" style="margin:4px 0 0;color:var(--text-3);">operator@jarvis.local</p>
+                            <p id="profileEmail" style="margin:4px 0 0;color:var(--text-3);">operator@EONIX.local</p>
                         </div>
                     </section>
                     <div class="modal-actions">
@@ -1286,24 +1286,24 @@
     <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
     <script>
-        const JARVIS_ROUTES = {
-            identity: "/jarvis/me",
-            signIn: "/jarvis/sign-in",
-            signOut: "/jarvis/sign-out",
-            conversations: "/jarvis/conversations",
-            conversation: id => `/jarvis/conversations/${encodeURIComponent(id)}`,
-            messages: id => `/jarvis/conversations/${encodeURIComponent(id)}/messages`,
-            imageAnalysis: "/jarvis/vision/analyze",
-            imageCreate: "/jarvis/forge/create"
+        const EONIX_ROUTES = {
+            identity: "/EONIX/me",
+            signIn: "/EONIX/sign-in",
+            signOut: "/EONIX/sign-out",
+            conversations: "/EONIX/conversations",
+            conversation: id => `/EONIX/conversations/${encodeURIComponent(id)}`,
+            messages: id => `/EONIX/conversations/${encodeURIComponent(id)}/messages`,
+            imageAnalysis: "/EONIX/vision/analyze",
+            imageCreate: "/EONIX/forge/create"
         };
 
-        const JARVIS_MODES = [
-            { id: "jarvis-prime", short: "Prime", label: "JARVIS Prime", status: "Balanced command reasoning" },
-            { id: "jarvis-swift", short: "Swift", label: "JARVIS Swift", status: "Rapid response mode" },
-            { id: "jarvis-deepcore", short: "DeepCore", label: "JARVIS DeepCore", status: "Research and logic mode" },
-            { id: "jarvis-oracle", short: "Oracle", label: "JARVIS Oracle", status: "Long-form strategy mode" },
-            { id: "jarvis-vision", short: "Vision", label: "JARVIS Vision", status: "Visual analysis mode" },
-            { id: "jarvis-forge", short: "Forge", label: "JARVIS Forge", status: "Image creation mode" }
+        const EONIX_MODES = [
+            { id: "EONIX-prime", short: "Prime", label: "EONIX Prime", status: "Balanced command reasoning" },
+            { id: "EONIX-swift", short: "Swift", label: "EONIX Swift", status: "Rapid response mode" },
+            { id: "EONIX-deepcore", short: "DeepCore", label: "EONIX DeepCore", status: "Research and logic mode" },
+            { id: "EONIX-oracle", short: "Oracle", label: "EONIX Oracle", status: "Long-form strategy mode" },
+            { id: "EONIX-vision", short: "Vision", label: "EONIX Vision", status: "Visual analysis mode" },
+            { id: "EONIX-forge", short: "Forge", label: "EONIX Forge", status: "Image creation mode" }
         ];
 
         const STARTERS = [
@@ -1314,10 +1314,10 @@
         ];
 
         const STORAGE = {
-            settings: "jarvis:v5:settings",
-            conversations: "jarvis:v5:conversations",
-            token: "jarvis:token",
-            pendingActions: "jarvis:v5:pending_actions"
+            settings: "EONIX:v5:settings",
+            conversations: "EONIX:v5:conversations",
+            token: "EONIX:token",
+            pendingActions: "EONIX:v5:pending_actions"
         };
 
         const state = {
@@ -1688,7 +1688,7 @@
             if (!id) return;
             state.currentId = id;
             if (!state.previewMode) {
-                const data = await bridge(JARVIS_ROUTES.conversation(id));
+                const data = await bridge(EONIX_ROUTES.conversation(id));
                 const conversation = state.conversations.find(item => item.id === id);
                 if (conversation) {
                     conversation.messages = (data.messages || data.conversation?.messages || data.session?.messages || []).map(normalizeMessage);
@@ -1713,7 +1713,7 @@
                 }
                 return;
             }
-            const data = await bridge(JARVIS_ROUTES.conversations);
+            const data = await bridge(EONIX_ROUTES.conversations);
             const list = data.conversations || data.sessions || [];
             state.conversations = list.map(normalizeConversation);
             if (state.conversations.length) {
@@ -1747,19 +1747,19 @@
             for (const action of pending) {
                 try {
                     if (action.kind === "text") {
-                        await bridge(JARVIS_ROUTES.messages(action.conversationId), {
+                        await bridge(EONIX_ROUTES.messages(action.conversationId), {
                             method: "POST",
                             body: JSON.stringify({ prompt: action.prompt, mode: action.mode })
                         });
                     } else if (action.kind === "image-create") {
-                        await bridge(JARVIS_ROUTES.imageCreate, {
+                        await bridge(EONIX_ROUTES.imageCreate, {
                             method: "POST",
-                            body: JSON.stringify({ prompt: action.prompt, conversation_id: action.conversationId, mode: action.mode || "jarvis-forge" })
+                            body: JSON.stringify({ prompt: action.prompt, conversation_id: action.conversationId, mode: action.mode || "EONIX-forge" })
                         });
                     } else if (action.kind === "image-analysis") {
-                        await bridge(JARVIS_ROUTES.imageAnalysis, {
+                        await bridge(EONIX_ROUTES.imageAnalysis, {
                             method: "POST",
-                            body: JSON.stringify({ image: action.image, conversation_id: action.conversationId, mode: action.mode || "jarvis-vision" })
+                            body: JSON.stringify({ image: action.image, conversation_id: action.conversationId, mode: action.mode || "EONIX-vision" })
                         });
                     }
                 } catch {
@@ -1772,7 +1772,7 @@
         async function bootIdentity() {
             getTokenFromUrl();
             if (state.previewMode) {
-                setUser({ name: "Krish", email: "krish@jarvis.ai" });
+                setUser({ name: "Krish", email: "krish@EONIX.ai" });
                 await loadConversations();
                 openApp();
                 return;
@@ -1784,10 +1784,10 @@
                 return;
             }
             try {
-                const data = await bridge(JARVIS_ROUTES.identity);
-                setUser(data.user || { name: "JARVIS User", email: "user@jarvis.local" });
+                const data = await bridge(EONIX_ROUTES.identity);
+                setUser(data.user || { name: "EONIX User", email: "user@jarvis.local" });
             } catch {
-                setUser({ name: "JARVIS User", email: "user@jarvis.local" });
+                setUser({ name: "EONIX User", email: "user@jarvis.local" });
             }
             await loadConversations();
             openApp();
@@ -1870,7 +1870,7 @@
                 }
             } catch (error) {
                 hideTyping();
-                addLocalMessage({ role: "system", content: "JARVIS could not complete that request. Please try again.", mode: state.settings.mode });
+                addLocalMessage({ role: "system", content: "EONIX could not complete that request. Please try again.", mode: state.settings.mode });
                 queuePendingAction({ kind: "text", conversationId: state.currentId, prompt: text, mode: state.settings.mode });
                 showToast("Request interrupted", error.message || "Unknown error", "error");
             } finally {
@@ -1890,7 +1890,7 @@
 
         async function localImageAnalysis(file) {
             await wait(650);
-            return { analysis: `JARVIS Vision received ${file.name}.\n\nVisible details can be summarized once connected to your live vision engine.` };
+            return { analysis: `EONIX Vision received ${file.name}.\n\nVisible details can be summarized once connected to your live vision engine.` };
         }
 
         async function attachImage() {
@@ -1917,20 +1917,20 @@
                 setProcessing(true);
                 showTyping();
                 try {
-                    const response = state.previewMode ? await localImageAnalysis(file) : await bridge(JARVIS_ROUTES.imageAnalysis, {
+                    const response = state.previewMode ? await localImageAnalysis(file) : await bridge(EONIX_ROUTES.imageAnalysis, {
                         method: "POST",
-                        body: JSON.stringify({ image: base64, conversation_id: state.currentId, mode: "jarvis-vision" })
+                        body: JSON.stringify({ image: base64, conversation_id: state.currentId, mode: "EONIX-vision" })
                     });
                     hideTyping();
-                    addLocalMessage({ role: "assistant", content: response.analysis || response.response || "Image received.", mode: "jarvis-vision" });
+                    addLocalMessage({ role: "assistant", content: response.analysis || response.response || "Image received.", mode: "EONIX-vision" });
                     if (!state.previewMode) {
                         await loadConversation(state.currentId, false);
                         renderAll();
                     }
                 } catch (error) {
                     hideTyping();
-                    addLocalMessage({ role: "system", content: "JARVIS Vision could not inspect that image.", mode: "jarvis-vision" });
-                    queuePendingAction({ kind: "image-analysis", conversationId: state.currentId, image: base64, mode: "jarvis-vision" });
+                    addLocalMessage({ role: "system", content: "EONIX Vision could not inspect that image.", mode: "EONIX-vision" });
+                    queuePendingAction({ kind: "image-analysis", conversationId: state.currentId, image: base64, mode: "EONIX-vision" });
                     showToast("Vision interrupted", error.message || "Unknown error", "error");
                 } finally {
                     setProcessing(false);
@@ -1983,7 +1983,7 @@
             ctx.globalAlpha = 1;
             ctx.fillStyle = "#f6f8fb";
             ctx.font = "900 72px Inter, system-ui, sans-serif";
-            ctx.fillText("JARVIS FORGE", 86, 126);
+            ctx.fillText("EONIX FORGE", 86, 126);
             ctx.fillStyle = "rgba(246,248,251,0.74)";
             ctx.font = "400 28px Inter, system-ui, sans-serif";
             wrapCanvasText(ctx, prompt, 90, 610, 1080, 36);
@@ -1993,7 +1993,7 @@
         function openImageViewer(src, alt, caption) {
             if (!src) return;
             $("imageViewerImg").src = src;
-            $("imageViewerImg").alt = alt || "JARVIS image";
+            $("imageViewerImg").alt = alt || "EONIX image";
             $("imageViewerCaption").textContent = caption || "";
             $("imageViewer").classList.add("active");
         }
@@ -2007,7 +2007,7 @@
             const promptInput = $("promptInput");
             const prompt = promptInput.value.trim();
             if (!prompt) {
-                showToast("Add a prompt", "Describe what JARVIS Forge should create.", "warning");
+                showToast("Add a prompt", "Describe what EONIX Forge should create.", "warning");
                 promptInput.focus();
                 return;
             }
@@ -2015,20 +2015,20 @@
             if (!currentConversation()) await createConversation();
             promptInput.value = "";
             autoResizeInput();
-            addLocalMessage({ role: "user", content: `Create image: ${prompt}`, mode: "jarvis-forge" });
+            addLocalMessage({ role: "user", content: `Create image: ${prompt}`, mode: "EONIX-forge" });
             setProcessing(true);
             showTyping();
             try {
                 const response = state.previewMode ? await localImageCreate(prompt) : await bridge(JARVIS_ROUTES.imageCreate, {
                     method: "POST",
-                    body: JSON.stringify({ prompt, conversation_id: state.currentId, mode: "jarvis-forge" })
+                    body: JSON.stringify({ prompt, conversation_id: state.currentId, mode: "EONIX-forge" })
                 });
                 const imageUrl = normalizeImageSource(response.image_url || response.url || response.dataUrl || response.image || "");
                 hideTyping();
                 addLocalMessage({
                     role: "assistant",
                     content: response.caption || `Image created: ${prompt}`,
-                    mode: "jarvis-forge",
+                    mode: "EONIX-forge",
                     attachments: imageUrl ? [{ url: imageUrl, caption: prompt, alt: prompt }] : []
                 });
                 if (imageUrl) openImageViewer(imageUrl, prompt, prompt);
@@ -2038,8 +2038,8 @@
                 }
             } catch (error) {
                 hideTyping();
-                addLocalMessage({ role: "system", content: "JARVIS Forge could not create that image.", mode: "jarvis-forge" });
-                queuePendingAction({ kind: "image-create", conversationId: state.currentId, prompt, mode: "jarvis-forge" });
+                addLocalMessage({ role: "system", content: "EONIX Forge could not create that image.", mode: "EONIX-forge" });
+                queuePendingAction({ kind: "image-create", conversationId: state.currentId, prompt, mode: "EONIX-forge" });
                 showToast("Forge interrupted", error.message || "Unknown error", "error");
             } finally {
                 setProcessing(false);
@@ -2144,7 +2144,7 @@
             if (!conversation) return;
             if (!confirm(`Delete "${conversation.title}"?`)) return;
             try {
-                if (!state.previewMode) await bridge(JARVIS_ROUTES.conversation(id), { method: "DELETE" });
+                if (!state.previewMode) await bridge(EONIX_ROUTES.conversation(id), { method: "DELETE" });
                 state.conversations = state.conversations.filter(item => item.id !== id);
                 if (state.currentId === id) state.currentId = state.conversations[0]?.id || null;
                 if (!state.currentId) await createConversation();
@@ -2161,7 +2161,7 @@
             try {
                 if (!state.previewMode) {
                     for (const conversation of state.conversations) {
-                        await bridge(JARVIS_ROUTES.conversation(conversation.id), { method: "DELETE" });
+                        await bridge(EONIX_ROUTES.conversation(conversation.id), { method: "DELETE" });
                     }
                 }
                 state.conversations = [];
@@ -2180,7 +2180,7 @@
                 if (!state.previewMode) {
                     exportData = [];
                     for (const conversation of state.conversations) {
-                        const data = await bridge(JARVIS_ROUTES.conversation(conversation.id));
+                        const data = await bridge(EONIX_ROUTES.conversation(conversation.id));
                         exportData.push(normalizeConversation({
                             ...conversation,
                             messages: data.messages || data.conversation?.messages || []
@@ -2191,7 +2191,7 @@
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = url;
-                link.download = `jarvis-export-${new Date().toISOString().slice(0, 10)}.json`;
+                link.download = `EONIX-export-${new Date().toISOString().slice(0, 10)}.json`;
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
@@ -2209,7 +2209,7 @@
 
         function renderHeader() {
             const conversation = currentConversation();
-            $("activeTitle").textContent = conversation?.title || "JARVIS Workspace";
+            $("activeTitle").textContent = conversation?.title || "EONIX Workspace";
             const count = conversation?.messages?.filter(message => message.role !== "system").length || 0;
             $("messageCount").textContent = `${count} ${count === 1 ? "message" : "messages"}`;
             updateModeLabels();
@@ -2312,7 +2312,7 @@
         function renderWelcome(container) {
             const board = document.createElement("section");
             board.className = "welcome-board";
-            board.innerHTML = `<div class="welcome-head"><div class="welcome-mark"><span class="ico" data-lucide="scan-line">J</span></div><div><h3>JARVIS is ready.</h3><p>${escapeHtml(getMode().status)}</p></div></div>`;
+            board.innerHTML = `<div class="welcome-head"><div class="welcome-mark"><span class="ico" data-lucide="scan-line">EX</span></div><div><h3>EONIX is ready.</h3><p>${escapeHtml(getMode().status)}</p></div></div>`;
             const grid = document.createElement("div");
             grid.className = "starter-grid";
             STARTERS.forEach(starter => {
@@ -2378,7 +2378,7 @@
                     if (!src) return;
                     const figure = document.createElement("figure");
                     figure.className = "attachment";
-                    figure.innerHTML = `<img src="${src}" alt="${escapeHtml(attachment.alt || attachment.caption || "JARVIS attachment")}">`;
+                    figure.innerHTML = `<img src="${src}" alt="${escapeHtml(attachment.alt || attachment.caption || "EONIX attachment")}">`;
                     figure.querySelector("img").addEventListener("click", () => openImageViewer(src, attachment.alt, attachment.caption || message.content));
                     if (attachment.caption) {
                         const caption = document.createElement("figcaption");
@@ -2465,13 +2465,13 @@
                 openApp();
                 return;
             }
-            location.href = JARVIS_ROUTES.signIn;
+            location.href = EONIX_ROUTES.signIn;
         }
 
         async function signOut() {
             if (!state.previewMode) {
-                try { await bridge(JARVIS_ROUTES.signOut, { method: "POST" }); }
-                catch { try { await bridge(JARVIS_ROUTES.signOut, { method: "GET" }); } catch {} }
+                try { await bridge(EONIX_ROUTES.signOut, { method: "POST" }); }
+                catch { try { await bridge(EONIX_ROUTES.signOut, { method: "GET" }); } catch {} }
             }
             removeStorage(STORAGE.token);
             removeStorage(STORAGE.pendingActions);
