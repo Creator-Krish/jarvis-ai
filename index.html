@@ -1468,7 +1468,15 @@
 
   <script>
     const EONIX_ROUTES = {
-      signIn: "/EONIX/sign-in"
+      signIn: "/EONIX/sign-in",
+      identity: "/EONIX/me",
+      signIn: "/EONIX/sign-in",
+      signOut: "/EONIX/sign-out",
+      conversations: "/EONIX/conversations",
+      conversation: id => `/EONIX/conversations/${encodeURIComponent(id)}`,
+      messages: id => `/EONIX/conversations/${encodeURIComponent(id)}/messages`,
+      imageAnalysis: "/EONIX/vision/analyze",
+      imageCreate: "/EONIX/forge/create"
     };
 
     const EONIX_MODES = [
@@ -1606,6 +1614,29 @@
       return token;
     }
 
+    async function bridge(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      const hasBody = options.body !== undefined && options.body !== null;
+      if (hasBody && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+      }
+      const token = localStorage.getItem(STORAGE.token);
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+
+      const response = await fetch(path, { ...options, headers, credentials: "include" });
+      if (response.status === 204) return {};
+      const text = await response.text();
+      const data = text ? safeJsonParse(text, { message: text }) : {};
+
+      if (response.status === 401) {
+        removeStorage(STORAGE.token);
+        showAuth();
+        throw new Error("Session expired. Please sign in again.");
+      }
+      if (!response.ok) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
+      return data;
+    }
+    
     function escapeHtml(value) {
       return String(value).replace(/[&<>"']/g, char => ({
         "&": "&amp;",
@@ -1688,20 +1719,20 @@
 
     function normalizeMessage(raw) {
       return {
-        id: String(raw.id || uid("message")),
+         id: String(raw.id || raw.message_id || uid("message")),
         role: ["assistant", "user", "system"].includes(raw.role) ? raw.role : "assistant",
         content: String(raw.content || raw.text || ""),
-        mode: raw.mode || state.settings.mode,
-        createdAt: raw.createdAt || nowIso()
+        mode: raw.mode || raw.model || raw.model_used || state.settings.mode,
+        createdAt: raw.createdAt || raw.created_at || raw.timestamp || nowIso()
       };
     }
 
     function normalizeConversation(raw) {
       return {
-        id: String(raw.id || uid("conversation")),
+       id: String(raw.id || raw.session_id || uid("conversation")),
         title: raw.title || "New Conversation",
-        createdAt: raw.createdAt || nowIso(),
-        updatedAt: raw.updatedAt || nowIso(),
+         createdAt: raw.createdAt || raw.created_at || nowIso(),
+        updatedAt: raw.updatedAt || raw.updated_at || nowIso(),
         messages: Array.isArray(raw.messages) ? raw.messages.map(normalizeMessage) : []
       };
     }
@@ -1771,6 +1802,35 @@
       return conversation;
     }
 
+     async function createConversation(title = "New Conversation") {
+      if (state.previewMode) return createLocalConversation(title);
+      const data = await bridge(EONIX_ROUTES.conversations, {
+        method: "POST",
+        body: JSON.stringify({ title })
+      });
+      const conversation = normalizeConversation(data.conversation || data.session || { id: data.conversation_id || data.session_id, title });
+      state.conversations.unshift(conversation);
+      state.currentId = conversation.id;
+      renderAll();
+      closeSidebarOnMobile();
+      return conversation;
+    }
+
+    async function loadConversation(id, rerender = true) {
+      if (!id) return;
+      state.currentId = id;
+      if (!state.previewMode) {
+        const data = await bridge(EONIX_ROUTES.conversation(id));
+        const conversation = state.conversations.find(item => item.id === id);
+        if (conversation) {
+          conversation.messages = (data.messages || data.conversation?.messages || data.session?.messages || []).map(normalizeMessage);
+          conversation.title = data.conversation?.title || data.session?.title || conversation.title;
+          conversation.updatedAt = data.conversation?.updated_at || data.session?.updated_at || conversation.updatedAt;
+        }
+      }
+      if (rerender) renderAll();
+      closeSidebarOnMobile();
+    }
     function addLocalMessage(message) {
       let conversation = currentConversation();
       if (!conversation) conversation = createLocalConversation();
@@ -1788,15 +1848,28 @@
       return normalized;
     }
 
-    function loadConversations() {
-      state.conversations = readStorage(STORAGE.conversations, []).map(normalizeConversation);
-      if (!state.conversations.length) {
-        const first = createLocalConversation("Command Session");
-        first.messages.push(normalizeMessage({ role: "system", content: "EONIX is online." }));
-        state.currentId = first.id;
-        saveLocalConversations();
-      } else {
+   async function loadConversations() {
+      if (state.previewMode) {
+        state.conversations = readStorage(STORAGE.conversations, []).map(normalizeConversation);
+        if (!state.conversations.length) {
+          const first = createLocalConversation("Command Session");
+          first.messages.push(normalizeMessage({ role: "system", content: "EONIX is online." }));
+          state.currentId = first.id;
+          saveLocalConversations();
+        } else {
+          state.currentId = state.conversations[0].id;
+        }
+        return;
+      }
+
+      const data = await bridge(EONIX_ROUTES.conversations);
+      const list = data.conversations || data.sessions || [];
+      state.conversations = list.map(normalizeConversation);
+      if (state.conversations.length) {
         state.currentId = state.conversations[0].id;
+         await loadConversation(state.currentId, false);
+      } else {
+        await createConversation();
       }
     }
 
@@ -1864,16 +1937,27 @@
       const input = $("promptInput");
       const text = input.value.trim();
       if (!text || state.processing) return;
-      if (!currentConversation()) createLocalConversation();
+      if (!currentConversation()) await createConversation();
       input.value = "";
       autoResizeInput();
       addLocalMessage({ role: "user", content: text, mode: state.settings.mode });
       setProcessing(true);
       showTyping();
       try {
-        const response = await localReply(text);
+         const response = state.previewMode ? { response: await localReply(text) } : await bridge(EONIX_ROUTES.messages(state.currentId), {
+          method: "POST",
+          body: JSON.stringify({ prompt: text, mode: state.settings.mode })
+        });
         hideTyping();
-        addLocalMessage({ role: "assistant", content: response, mode: state.settings.mode });
+         addLocalMessage({
+          role: "assistant",
+          content: response.response || response.message || response.content || "I am ready.",
+          mode: response.mode || state.settings.mode
+        });
+        if (!state.previewMode) {
+          await loadConversation(state.currentId, false);
+          renderAll();
+        }
       } catch (error) {
         hideTyping();
         addLocalMessage({ role: "system", content: "EONIX could not complete that request. Please try again.", mode: state.settings.mode });
@@ -1982,30 +2066,47 @@
       autoResizeInput();
     }
 
-    function deleteConversation(id) {
+    async function deleteConversation(id) {
       const conversation = state.conversations.find(item => item.id === id);
       if (!conversation) return;
       if (!confirm(`Delete "${conversation.title}"?`)) return;
+      if (!state.previewMode) await bridge(EONIX_ROUTES.conversation(id), { method: "DELETE" });
       state.conversations = state.conversations.filter(item => item.id !== id);
       if (state.currentId === id) state.currentId = state.conversations[0] ? state.conversations[0].id : null;
-      if (!state.currentId) createLocalConversation();
+      if (!state.currentId) await createConversation();
       saveLocalConversations();
       renderAll();
       showToast("Conversation deleted", conversation.title, "success");
     }
 
-    function clearAllHistory() {
+   async function clearAllHistory() {
       if (!confirm("Delete all conversations? This cannot be undone.")) return;
+     if (!state.previewMode) {
+        for (const conversation of state.conversations) {
+          await bridge(EONIX_ROUTES.conversation(conversation.id), { method: "DELETE" });
+        }
+      }
       state.conversations = [];
       state.currentId = null;
       saveLocalConversations();
-      createLocalConversation();
+      await createConversation();
       closeActionsMenu();
       showToast("History cleared", "A fresh workspace is ready.", "success");
     }
 
-    function exportConversations() {
-      const blob = new Blob([JSON.stringify(state.conversations, null, 2)], { type: "application/json" });
+    async function exportConversations() {
+      let exportData = state.conversations;
+      if (!state.previewMode) {
+        exportData = [];
+        for (const conversation of state.conversations) {
+          const data = await bridge(EONIX_ROUTES.conversation(conversation.id));
+          exportData.push(normalizeConversation({
+            ...conversation,
+            messages: data.messages || data.conversation?.messages || data.session?.messages || []
+          }));
+        }
+      }
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -2018,7 +2119,11 @@
       showToast("Export complete", "Conversation archive downloaded.", "success");
     }
 
-    function signOut() {
+   async function signOut() {
+      if (!state.previewMode) {
+        try { await bridge(EONIX_ROUTES.signOut, { method: "POST" }); }
+        catch { try { await bridge(EONIX_ROUTES.signOut, { method: "GET" }); } catch {} }
+      }
       state.user = null;
       state.conversations = [];
       state.currentId = null;
