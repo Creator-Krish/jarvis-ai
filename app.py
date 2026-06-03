@@ -75,7 +75,7 @@ class Config:
 
     ADMIN_EMAILS = {
         email.strip().lower()
-        for email in os.environ.get("ADMIN_EMAILS", "krish@gmail.com,admin@jarvis.ai").split(",")
+        for email in os.environ.get("ADMIN_EMAILS", "krish@gmail.com,admin@EONIX.ai").split(",")
         if email.strip()
     }
 
@@ -794,7 +794,7 @@ class AIService:
         if not clean_prompt:
             raise ValueError("Prompt is required")
 
-        for candidate in MODE_SPECS["jarvis-forge"].chain:
+        for candidate in MODE_SPECS["EONIX-forge"].chain:
             if not candidate.supports_image_generation:
                 continue
             try:
@@ -1250,7 +1250,7 @@ def mode_diagnostics() -> Any:
 @app.get("/login/google")
 def google_login() -> Any:
     if Config.ENVIRONMENT == "development" and Config.ALLOW_DEV_LOGIN and not Config.GOOGLE_CLIENT_ID:
-        user = storage.create_or_update_user(None, "operator@jarvis.local", "Operator")
+        user = storage.create_or_update_user(None, "operator@EONIX.local", "Operator")
         token = JWTService.create(user)
         storage.set_session_token(user.id, token)
         session["user_id"] = user.id
@@ -1522,7 +1522,7 @@ def generate_image_route() -> Any:
 # ---------------------------------------------------------------------------
 @app.errorhandler(404)
 def not_found(_: Exception) -> Any:
-    if request.path.startswith(("/jarvis/", "/api/", "/ai/")):
+    if request.path.startswith(("/EONIX/", "/api/", "/ai/")):
         return jsonify({"success": False, "error": "Not found"}), 404
     return index()
 
