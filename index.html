@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-accent="amber" data-density="comfortable">
+<html lang="en" data-theme="dark" data-accent="cyan" data-density="comfortable">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -8,29 +8,28 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #06070b;
-      --bg-2: #141019;
-      --panel: rgba(15, 17, 24, 0.92);
-      --panel-solid: #11131b;
-      --panel-soft: rgba(255, 255, 255, 0.055);
-      --border: rgba(255, 255, 255, 0.12);
-      --border-strong: rgba(255, 209, 102, 0.28);
-      --text: #fbf6e8;
-      --text-2: #d0c8b8;
-      --text-3: #8f8a82;
-      --success: #36e6a7;
-      --warning: #ffd166;
-      --danger: #ff4d6d;
-      --cyan: #5ee9ff;
-      --mint: #36e6a7;
-      --amber: #ffd166;
-      --rose: #ff4d6d;
-      --violet: #b892ff;
+      --bg: #08090d;
+      --bg-2: #0d1016;
+      --panel: rgba(14, 18, 25, 0.9);
+      --panel-solid: #10141c;
+      --panel-soft: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.18);
+      --text: #f4f7fb;
+      --text-2: #b8c1cf;
+      --text-3: #7d8797;
+      --success: #2fe29b;
+      --warning: #f4b942;
+      --danger: #ff5e7a;
+      --cyan: #34e7ff;
+      --mint: #2fe29b;
+      --amber: #f4b942;
+      --rose: #ff5e7a;
+      --violet: #a78bfa;
       --accent: var(--cyan);
       --accent-rgb: 52, 231, 255;
-      --royal: #2b1b4e;
-      --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
-      --radius: 8px;
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
+      --radius: 10px;
       --message-font: 14px;
       --sidebar-width: 308px;
       --safe-top: env(safe-area-inset-top, 0px);
@@ -40,22 +39,22 @@
 
     [data-theme="light"] {
       color-scheme: light;
-      --bg: #f7f4ee;
+      --bg: #f4f7fb;
       --bg-2: #ffffff;
       --panel: rgba(255, 255, 255, 0.92);
       --panel-solid: #ffffff;
-      --panel-soft: rgba(60, 38, 14, 0.055);
-      --border: rgba(50, 36, 18, 0.12);
-      --border-strong: rgba(128, 88, 22, 0.24);
-      --text: #17140f;
-      --text-2: #514737;
-      --text-3: #80745f;
-      --shadow: 0 22px 64px rgba(67, 49, 24, 0.16);
+      --panel-soft: rgba(17, 24, 39, 0.045);
+      --border: rgba(15, 23, 42, 0.12);
+      --border-strong: rgba(15, 23, 42, 0.18);
+      --text: #121722;
+      --text-2: #445168;
+      --text-3: #748095;
+      --shadow: 0 18px 60px rgba(27, 39, 60, 0.16);
     }
 
     [data-accent="cyan"] { --accent: var(--cyan); --accent-rgb: 52, 231, 255; }
     [data-accent="mint"] { --accent: var(--mint); --accent-rgb: 47, 226, 155; }
-    [data-accent="amber"] { --accent: var(--amber); --accent-rgb: 255, 209, 102; }
+    [data-accent="amber"] { --accent: var(--amber); --accent-rgb: 244, 185, 66; }
     [data-accent="rose"] { --accent: var(--rose); --accent-rgb: 255, 94, 122; }
     [data-accent="violet"] { --accent: var(--violet); --accent-rgb: 167, 139, 250; }
     [data-density="compact"] { --message-font: 13px; }
@@ -67,10 +66,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background:
-        linear-gradient(115deg, rgba(255, 209, 102, 0.08), transparent 34%),
-        linear-gradient(245deg, rgba(94, 233, 255, 0.06), transparent 42%),
-        linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 52%, #1a0d16 100%);
+      background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.05), transparent 36%), linear-gradient(135deg, var(--bg), var(--bg-2));
       color: var(--text);
       -webkit-font-smoothing: antialiased;
       text-rendering: geometricPrecision;
@@ -114,9 +110,9 @@
       flex-direction: column;
       min-width: 0;
       padding: calc(18px + var(--safe-top)) 14px 14px;
-      background: linear-gradient(180deg, rgba(10, 11, 16, 0.92), rgba(14, 11, 20, 0.88));
+      background: rgba(10, 12, 17, 0.82);
       border-right: 1px solid var(--border);
-      backdrop-filter: blur(26px) saturate(145%);
+      backdrop-filter: blur(24px) saturate(130%);
     }
 
     [data-theme="light"] .sidebar { background: rgba(255, 255, 255, 0.78); }
@@ -139,11 +135,10 @@
       display: grid;
       place-items: center;
       color: var(--accent);
-      background: linear-gradient(135deg, rgba(255, 209, 102, 0.18), rgba(var(--accent-rgb), 0.14));
-      border: 1px solid rgba(255, 209, 102, 0.34);
+      background: rgba(var(--accent-rgb), 0.14);
+      border: 1px solid rgba(var(--accent-rgb), 0.3);
       border-radius: var(--radius);
       font-weight: 900;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 12px 34px rgba(0, 0, 0, 0.24);
     }
 
     .brand-mark {
@@ -225,8 +220,8 @@
     .primary-button, .send-button, .signin-button {
       color: #061015;
       font-weight: 800;
-      background: linear-gradient(135deg, rgba(255, 209, 102, 1), rgba(255, 77, 109, 0.9) 58%, rgba(var(--accent-rgb), 0.88));
-      box-shadow: 0 16px 36px rgba(255, 209, 102, 0.16), 0 10px 28px rgba(255, 77, 109, 0.12);
+      background: linear-gradient(135deg, rgba(var(--accent-rgb), 1), rgba(244, 185, 66, 0.86));
+      box-shadow: 0 12px 30px rgba(var(--accent-rgb), 0.18);
     }
 
     .primary-button {
@@ -1178,19 +1173,6 @@
         <div class="messages" id="messages" tabindex="0"></div>
 
         <form class="composer-area" id="composerForm">
-         <form class="composer-area" id="composerForm">
-          <input type="file" id="fileUpload" accept="image/png, image/jpeg, image/webp" style="display: none;">
-          
-          <div id="imagePreviewContainer" style="display: none; padding: 8px 12px; margin-bottom: 8px; background: var(--panel-soft); border: 1px dashed var(--border); border-radius: var(--radius);">
-            <div style="position: relative; display: inline-block;">
-              <img id="imagePreview" style="max-height: 80px; border-radius: 6px; border: 1px solid var(--cyan); box-shadow: 0 0 10px rgba(94, 233, 255, 0.3);" />
-              <button type="button" id="removeImageBtn" class="icon-button" style="position: absolute; top: -8px; right: -8px; background: var(--bg); border: 1px solid var(--danger); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; color: var(--text);">
-                X
-              </button>
-            </div>
-          </div>
-
-          <div class="composer">
           <div class="composer">
             <div class="composer-left">
               <button class="icon-button" id="attachImageBtn" type="button" aria-label="Attach image">
@@ -1248,7 +1230,7 @@
       </button>
 
       <div class="auth-foot">
-        Created by Krish Paliwal<br>
+        Devloped by Krish Paliwal<br>
         v5.0 By Paliwal Group of Industries
       </div>
     </div>
@@ -1362,12 +1344,11 @@
           <ul>
             <li>Algorithm Writer -> Kautilya Paliwal</li>
             <li>Developed By -> Krish Paliwal</li>
-            <li>Assistance By (Error fixed by) -> CHAT GPT, DEEPSEEK</li>
           </ul>
           <h4>Development Detail</h4>
           <ul>
               <li>Version -> V5.0</li>
-              <li>Under Development Since -> 03 September 2026</li>
+              <li>Under Development Since -> 03 September 2025</li>
               <li>First Launched Ever on -> 21-March-2026</li>
               <li>Version V5.0 launched on ->03-June-2026</li>
           </ul>
@@ -1493,16 +1474,9 @@
       conversations: "/EONIX/conversations",
       conversation: id => `/EONIX/conversations/${encodeURIComponent(id)}`,
       messages: id => `/EONIX/conversations/${encodeURIComponent(id)}/messages`,
-      search: "/EONIX/search",
       imageAnalysis: "/EONIX/vision/analyze",
       imageCreate: "/EONIX/forge/create"
     };
-
-     const $ = id => document.getElementById(id);
-      const state = {
-              // ... your existing state properties ...
-              currentImageB64: null
-     };
 
     const EONIX_MODES = [
       { id: "EONIX-prime", short: "Prime", label: "EONIX Prime", status: "Balanced command reasoning" },
@@ -1537,7 +1511,7 @@
       conversations: [],
       settings: {
         theme: "dark",
-        accent: "amber",
+        accent: "cyan",
         density: "comfortable",
         messageScale: 14,
         mode: "EONIX-prime",
@@ -1961,70 +1935,32 @@
     async function sendMessage() {
       const input = $("promptInput");
       const text = input.value.trim();
-      
-      // Allow execution if either text or an image payload exists
-      if ((!text && !state.currentImageB64) || state.processing) return;
+      if (!text || state.processing) return;
       if (!currentConversation()) await createConversation();
-      
-      const promptText = text || "Analyze this visual asset.";
-      const operationalImage = state.currentImageB64;
-      const isVisionQuery = !!operationalImage;
-
-      // Render local user bubble in UI console
-      addLocalMessage({ 
-        role: "user", 
-        content: isVisionQuery ? `[Visual Matrix Attached] ${promptText}` : text, 
-        mode: state.settings.mode 
-      });
-      
-      // Flush inputs and preview components instantly to provide rapid UI response
       input.value = "";
       autoResizeInput();
-      if (isVisionQuery) $("removeImageBtn").click();
-
+      addLocalMessage({ role: "user", content: text, mode: state.settings.mode });
       setProcessing(true);
       showTyping();
-      
       try {
-        let response;
-        
-        if (isVisionQuery) {
-          // Route data directly to your Vision endpoint
-          response = await bridge("/EONIX/vision/analyze", {
-            method: "POST",
-            body: JSON.stringify({
-              prompt: promptText,
-              image: operationalImage,
-              conversation_id: state.currentId
-            })
-          });
-        } else {
-          // Fall back to standard string sequence processing
-          response = await bridge(EONIX_ROUTES.messages(state.currentId), {
-            method: "POST",
-            body: JSON.stringify({ prompt: text, mode: state.settings.mode })
-          });
-        }
-        
+         const response = state.previewMode ? { response: await localReply(text) } : await bridge(EONIX_ROUTES.messages(state.currentId), {
+          method: "POST",
+          body: JSON.stringify({ prompt: text, mode: state.settings.mode })
+        });
         hideTyping();
-        
-        // Extract return content field safely across payload variations
-        const outputContent = response.analysis || response.response || response.message || response.content || "Processing cycle normalized.";
-        
-        addLocalMessage({
+         addLocalMessage({
           role: "assistant",
-          content: outputContent,
+          content: response.response || response.message || response.content || "I am ready.",
           mode: response.mode || state.settings.mode
         });
-        
         if (!state.previewMode) {
           await loadConversation(state.currentId, false);
           renderAll();
         }
       } catch (error) {
         hideTyping();
-        addLocalMessage({ role: "system", content: "Core pipeline interrupted during execution.", mode: state.settings.mode });
-        showToast("Execution Failure", error.message || "Unknown communication error.", "error");
+        addLocalMessage({ role: "system", content: "EONIX could not complete that request. Please try again.", mode: state.settings.mode });
+        showToast("Request interrupted", error.message || "Unknown error", "error");
       } finally {
         setProcessing(false);
         input.focus();
@@ -2116,71 +2052,13 @@
       showToast("Image ready", "Connect your image analysis endpoint to enable live inspection.", "info");
     }
 
-    async function generateImage() {
-  const prompt = $("promptInput").value.trim();
-  if (!prompt) {
-    showToast("Add a prompt", "Describe what the Forge should create.", "warning");
-    $("promptInput").focus();
-    return;
-  }
-  
-  // Document initial attempt in the layout console
-  addLocalMessage({ role: "user", content: `Create image: ${prompt}`, mode: "EONIX-forge" });
-  $("promptInput").value = "";
-  autoResizeInput();
-  
-  setProcessing(true);
-  showTyping();
-  
-  try {
-    // Pipeline Alpha: Puter.js Client-Side Generation
-    console.log("EONIX Forge: Initializing Pipeline Alpha (Puter.js)...");
-    const imageElement = await puter.ai.txt2img(prompt);
-    const imageUrl = imageElement.src;
-    
-    hideTyping();
-    addLocalMessage({ 
-        role: "assistant", 
-        content: `Forge output complete [Source: Puter.js]:\n\n<img src="${imageUrl}" style="max-width: 100%; border-radius: var(--radius); border: 1px solid var(--cyan); box-shadow: 0 0 15px rgba(94, 233, 255, 0.25);" alt="${escapeHtml(prompt)}"/>`, 
-        mode: "EONIX-forge" 
-    });
-    
-  } catch (puterError) {
-    // Pipeline Alpha Failover Trigger
-    console.warn("Pipeline Alpha Exhausted. Diverting to Pipeline Beta (Gemini/Imagen)...", puterError);
-    showToast("Pipeline Alpha Down", "Puter.js unavailable. Engaging Gemini Fallback Core...", "warning");
-    
-    try {
-      // Pipeline Beta: Backend Gemini/Imagen Fallback Core
-      const response = await bridge("/EONIX/forge/gemini", {
-        method: "POST",
-        body: JSON.stringify({ prompt: prompt })
-      });
-      
-      hideTyping();
-      if (response.success && response.image) {
-        addLocalMessage({ 
-            role: "assistant", 
-            content: `Forge output complete [Source: Gemini Fallback Core]:\n\n<img src="data:image/jpeg;base64,${response.image}" style="max-width: 100%; border-radius: var(--radius); border: 1px solid var(--warning); box-shadow: 0 0 15px rgba(255, 209, 102, 0.25);" alt="${escapeHtml(prompt)}"/>`, 
-            mode: "EONIX-forge" 
-        });
-      } else {
-        throw new Error(response.error || "Malformed binary image array returned from core.");
+    function generateImage() {
+      const prompt = $("promptInput").value.trim();
+      if (!prompt) {
+        showToast("Add a prompt", "Describe what EONIX Forge should create.", "warning");
+        $("promptInput").focus();
+        return;
       }
-    } catch (geminiError) {
-      // Total Pipeline Catastrophe Breakdown
-      hideTyping();
-      showToast("Forge Terminal Failure", geminiError.message || "All fallback cores exhausted.", "error");
-      addLocalMessage({ 
-          role: "system", 
-          content: "CRITICAL: Image generation processing pipelines have flatlined across all layers.", 
-          mode: "EONIX-forge" 
-      });
-    }
-  } finally {
-    setProcessing(false);
-  }
-}
       addLocalMessage({ role: "user", content: `Create image: ${prompt}`, mode: "EONIX-forge" });
       addLocalMessage({ role: "assistant", content: `EONIX Forge concept queued: ${prompt}`, mode: "EONIX-forge" });
       $("promptInput").value = "";
@@ -2387,96 +2265,15 @@
       container.appendChild(board);
     }
 
-   function renderMessageContent(container, text) {
-  if (!text) return;
-
-  // Check if the response contains structured search telemetry/results JSON
-  if (typeof text === "string" && text.trim().startsWith("{") && text.trim().endsWith("}")) {
-    try {
-      const searchData = JSON.parse(text);
-      if (searchData.provider && Array.isArray(searchData.results)) {
-        renderSearchCards(container, searchData);
-        return;
-      }
-    } catch (e) {
-      // Not structured search data, proceed to standard text rendering
+    function renderMessageContent(container, text) {
+      String(text || "").split(/\n{2,}/).forEach(paragraph => {
+        if (!paragraph.trim()) return;
+        const p = document.createElement("p");
+        p.textContent = paragraph;
+        container.appendChild(p);
+      });
     }
-  }
 
-  // Standard Text Rendering
-  String(text).split(/\n{2,}/).forEach(paragraph => {
-    if (!paragraph.trim()) return;
-    const p = document.createElement("p");
-    p.textContent = paragraph;
-    container.appendChild(p);
-  });
-}
-
-// Slick UI Component for Fallback Search Results
-function renderSearchCards(container, data) {
-  const isFailed = data.provider === "failed_all";
-  
-  // Header section detailing the active fallback provider
-  const header = document.createElement("div");
-  header.style.display = "flex";
-  header.style.alignItems = "center";
-  header.style.gap = "8px";
-  header.style.marginBottom = "12px";
-  header.style.fontSize = "12px";
-  header.style.fontWeight = "700";
-  header.style.color = isFailed ? "var(--danger)" : "var(--accent)";
-  
-  header.innerHTML = `
-    <span class="ico" data-lucide="${isFailed ? 'circle-alert' : 'globe'}">></span>
-    <span>SEARCH FEEDBACK: ${data.provider.toUpperCase()} (${data.time || 0}s)</span>
-  `;
-  container.appendChild(header);
-
-  if (isFailed && Array.isArray(data.errors)) {
-    const errBox = document.createElement("div");
-    errBox.style.padding = "10px";
-    errBox.style.background = "rgba(255, 77, 109, 0.08)";
-    errBox.style.border = "1px solid rgba(255, 77, 109, 0.2)";
-    errBox.style.borderRadius = "var(--radius)";
-    errBox.style.fontSize = "12px";
-    errBox.style.color = "var(--text-2)";
-    errBox.innerHTML = `<strong>All sources exhausted:</strong><ul style="margin:4px 0 0;padding-left:16px;">${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>`;
-    container.appendChild(errBox);
-    return;
-  }
-
-  // Render individual search result cards matching the premium visual aesthetic
-  data.results.forEach(res => {
-    const card = document.createElement("a");
-    card.href = res.link;
-    card.target = "_blank";
-    card.rel = "noopener noreferrer";
-    card.style.display = "block";
-    card.style.textDecoration = "none";
-    card.style.padding = "10px 12px";
-    card.style.margin = "6px 0";
-    card.style.background = "var(--panel-soft)";
-    card.style.border = "1px solid var(--border)";
-    card.style.borderRadius = "var(--radius)";
-    card.style.transition = "transform 150ms ease, border-color 150ms ease";
-    
-    card.onmouseenter = () => {
-      card.style.transform = "translateY(-1px)";
-      card.style.borderColor = "rgba(var(--accent-rgb), 0.35)";
-    };
-    card.onmouseleave = () => {
-      card.style.transform = "none";
-      card.style.borderColor = "var(--border)";
-    };
-
-    card.innerHTML = `
-      <strong style="display:block;color:var(--text);font-size:13px;margin-bottom:2px;">${res.title}</strong>
-      <span style="display:block;color:var(--text-3);font-size:11px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${res.link}</span>
-      <p style="margin:0;color:var(--text-2);font-size:12px;line-height:1.4;">${res.snippet}</p>
-    `;
-    container.appendChild(card);
-  });
-}
     function miniButton(iconName, label, handler) {
       const button = document.createElement("button");
       button.type = "button";
@@ -2620,40 +2417,7 @@ function renderSearchCards(container, data) {
       openApp();
     }
 
-    function bindEvents() 
-      // Link visual button to hidden native file system input
-      window.attachImage = function() {
-        $("fileUpload").click();
-      };
-
-      // Process chosen file asset
-      $("fileUpload").addEventListener("change", function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        // Prevent oversized buffers (10MB Max Threshold)
-        if (file.size > 10 * 1024 * 1024) {
-          showToast("File Overload", "Payload exceeds 10MB operational limit.", "warning");
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          state.currentImageB64 = event.target.result;
-          $("imagePreview").src = state.currentImageB64;
-          $("imagePreviewContainer").style.display = "block";
-        };
-        reader.readAsDataURL(file);
-      });
-
-      // Clear current asset selection
-      $("removeImageBtn").addEventListener("click", function() {
-        state.currentImageB64 = null;
-        $("imagePreviewContainer").style.display = "none";
-        $("fileUpload").value = "";
-      });
-     
-      {
+    function bindEvents() {
       $("newConversationBtn").addEventListener("click", () => createLocalConversation());
       $("historySearch").addEventListener("input", renderHistory);
       $("composerForm").addEventListener("submit", event => {
