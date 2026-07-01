@@ -40,14 +40,12 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)
 # ---------------------------------------------------------------------------
 class Config:
     APP_NAME = "EONIX"
-    VERSION = "1.2"
+    VERSION = "1.1"
     ENVIRONMENT = os.environ.get("FLASK_ENV", "production").lower()
     PORT = int(os.environ.get("PORT", "5000"))
 
     FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://eonix-7nmk.onrender.com").rstrip("/")
     GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", f"{FRONTEND_URL}/login/callback")
-    # Add under Provider API keys (around line 85)
-    GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY")
 
     SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_urlsafe(48)
     JWT_SECRET = os.environ.get("JWT_SECRET") or secrets.token_urlsafe(48)
@@ -68,7 +66,6 @@ class Config:
 
     RATE_LIMIT_MESSAGES = int(os.environ.get("RATE_LIMIT_MESSAGES", "24"))
     RATE_LIMIT_SESSIONS = int(os.environ.get("RATE_LIMIT_SESSIONS", "80"))
-    RATE_LIMIT_SEARCH = int(os.environ.get("RATE_LIMIT_SEARCH", "18"))
     RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))
     RATE_LIMIT_CLEANUP_INTERVAL = int(os.environ.get("RATE_LIMIT_CLEANUP_INTERVAL", "300"))
 
@@ -87,21 +84,6 @@ class Config:
     GROQ_KEY = os.environ.get("GROQ_API_KEY") or os.environ.get("GROQ_KEY")
     GEMINI_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_KEY")
     OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("OPENROUTER_KEY")
-    SEARCH_PROVIDER = os.environ.get("SEARCH_PROVIDER", "serper").strip().lower()
-    SERPER_KEY = os.environ.get("SERPER_API_KEY")
-    BRAVE_SEARCH_KEY = os.environ.get("BRAVE_SEARCH_API_KEY")
-    TAVILY_KEY = os.environ.get("TAVILY_API_KEY")
-    SEARCH_KEY = (
-        os.environ.get("SEARCH_API_KEY")
-        or (BRAVE_SEARCH_KEY if SEARCH_PROVIDER == "brave" else None)
-        or (TAVILY_KEY if SEARCH_PROVIDER == "tavily" else None)
-        or (SERPER_KEY if SEARCH_PROVIDER == "serper" else None)
-        or SERPER_KEY
-        or BRAVE_SEARCH_KEY
-        or TAVILY_KEY
-    )
-    SEARCH_RESULT_LIMIT = int(os.environ.get("SEARCH_RESULT_LIMIT", "6"))
-    SEARCH_REQUEST_TIMEOUT = int(os.environ.get("SEARCH_REQUEST_TIMEOUT", "18"))
 
     # Google OAuth
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
@@ -114,14 +96,6 @@ class Config:
     GEMINI_BASE = os.environ.get(
         "GEMINI_BASE_URL",
         "https://generativelanguage.googleapis.com/v1beta",
-    ).rstrip("/")
-    SEARCH_BASE = (
-        os.environ.get("SEARCH_API_BASE_URL")
-        or {
-            "serper": "https://google.serper.dev/search",
-            "brave": "https://api.search.brave.com/res/v1/web/search",
-            "tavily": "https://api.tavily.com/search",
-        }.get(SEARCH_PROVIDER, "https://google.serper.dev/search")
     ).rstrip("/")
 
     CORS_ORIGINS = [
@@ -139,7 +113,6 @@ class Config:
             "groq": bool(cls.GROQ_KEY),
             "gemini": bool(cls.GEMINI_KEY),
             "openrouter": bool(cls.OPENROUTER_KEY),
-            "search": bool(cls.SEARCH_KEY),
             "google_oauth": bool(cls.GOOGLE_CLIENT_ID and cls.GOOGLE_CLIENT_SECRET),
         }
 
@@ -1226,107 +1199,6 @@ def parse_image_payload(value: str) -> Tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# Search API
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# Multi-Fallback Search Engine (100% Free Resilience)
-# ---------------------------------------------------------------------------
-class MultiFallbackSearchService:
-    def search(self, query: str) -> Dict[str, Any]:
-        started = time.time()
-        errors = []
-
-        # Fallback 1: Serper.dev (2,500 Free Requests)
-        serper_key = os.environ.get("SERPER_API_KEY")
-        if serper_key:
-            try:
-                url = "https://google.serper.dev/search"
-                headers = {"X-API-KEY": serper_key, "Content-Type": "application/json"}
-                res = requests.post(url, json={"q": query}, headers=headers, timeout=5)
-                if res.status_code == 200:
-                    data = res.json()
-                    results = [
-                        {"title": item.get("title"), "snippet": item.get("snippet"), "link": item.get("link")}
-                        for item in data.get("organic", [])[:5]
-                    ]
-                    if results:
-                        return {"provider": "serper.dev", "results": results, "time": round(time.time() - started, 3)}
-            except Exception as e:
-                errors.append(f"Serper failed: {str(e)}")
-
-        # Fallback 2: Tavily AI (1,000 Free Requests / Month)
-        tavily_key = os.environ.get("TAVILY_API_KEY")
-        if tavily_key:
-            try:
-                url = "https://api.tavily.com/search"
-                res = requests.post(url, json={"api_key": tavily_key, "query": query}, timeout=5)
-                if res.status_code == 200:
-                    data = res.json()
-                    results = [
-                        {"title": item.get("title"), "snippet": item.get("content"), "link": item.get("url")}
-                        for item in data.get("results", [])[:5]
-                    ]
-                    if results:
-                        return {"provider": "tavily", "results": results, "time": round(time.time() - started, 3)}
-            except Exception as e:
-                errors.append(f"Tavily failed: {str(e)}")
-
-        # Fallback 3: Brave Search (2,000 Free Requests / Month)
-        brave_key = os.environ.get("BRAVE_API_KEY")
-        if brave_key:
-            try:
-                url = "https://api.search.brave.com/res/v1/web/search"
-                headers = {"X-Subscription-Token": brave_key, "Accept": "application/json"}
-                res = requests.get(url, params={"q": query}, headers=headers, timeout=5)
-                if res.status_code == 200:
-                    data = res.json()
-                    results = [
-                        {"title": item.get("title"), "snippet": item.get("description"), "link": item.get("url")}
-                        for item in data.get("web", {}).get("results", [])[:5]
-                    ]
-                    if results:
-                        return {"provider": "brave", "results": results, "time": round(time.time() - started, 3)}
-            except Exception as e:
-                errors.append(f"Brave failed: {str(e)}")
-
-        # Fallback 4: DuckDuckGo HTML Engine (100% Free, Infinite Quota, No Key Needed)
-        try:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-            url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}"
-            res = requests.get(url, headers=headers, timeout=5)
-            if res.status_code == 200:
-                html_content = res.text
-                import re
-                
-                titles = re.findall(r'class="result__a"[^>]*>(.*?)</a>', html_content, re.DOTALL)
-                snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', html_content, re.DOTALL)
-                links = re.findall(r'class="result__url"[^>]*>\s*(.*?)\s*</a>', html_content, re.DOTALL)
-                
-                results = []
-                for i in range(min(len(titles), 5)):
-                    t = re.sub(r'<[^>]*>', '', titles[i]).strip()
-                    s = re.sub(r'<[^>]*>', '', snippets[i]).strip() if i < len(snippets) else ""
-                    l = re.sub(r'<[^>]*>', '', links[i]).strip() if i < len(links) else ""
-                    results.append({
-                        "title": t, 
-                        "snippet": s, 
-                        "link": f"https://{l}" if l and not l.startswith("http") else l
-                    })
-                
-                if results:
-                    return {"provider": "duckduckgo_unlimited", "results": results, "time": round(time.time() - started, 3)}
-        except Exception as e:
-            errors.append(f"DuckDuckGo fallback failed: {str(e)}")
-
-        # Operational failure containment
-        return {"provider": "failed_all", "results": [], "errors": errors, "time": round(time.time() - started, 3)}
-
-fallback_search_service = MultiFallbackSearchService()
-
-
-# ---------------------------------------------------------------------------
 # Routes: static and health
 # ---------------------------------------------------------------------------
 @app.get("/")
@@ -1476,37 +1348,6 @@ def me() -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Live search
-# ---------------------------------------------------------------------------
-@app.post("/EONIX/search")
-@app.post("/api/search")
-@login_required@app.post("/EONIX/search")
-@login_required
-def search_route() -> Any:
-    data = json_body()
-    query = Security.sanitize(data.get("query") or "", 256)
-    if not query:
-        return jsonify({"success": False, "error": "Search query parameter is required"}), 400
-        
-    search_data = fallback_search_service.search(query)
-    
-    # Construct continuous operational text context for the model ingestion loop
-    if search_data["results"]:
-        context = f"Real-time Intelligence Source [{search_data['provider']}]:\n"
-        for idx, item in enumerate(search_data["results"], 1):
-            context += f"[{idx}] {item['title']}\nSnippet: {item['snippet']}\nSource: {item['link']}\n\n"
-    else:
-        context = f"Real-time search returned zero actionable artifacts. Errors encountered: {', '.join(search_data.get('errors', ['No results found']))}"
-
-    return jsonify({
-        "success": True,
-        "provider": search_data["provider"],
-        "results": search_data["results"],
-        "context": context,
-        "elapsed": search_data["time"]
-    })
-
-# ---------------------------------------------------------------------------
 # Conversations
 # ---------------------------------------------------------------------------
 @app.get("/EONIX/conversations")
@@ -1603,73 +1444,77 @@ def send_message_route(session_id: str) -> Any:
 # Vision and image generation
 # ---------------------------------------------------------------------------
 @app.post("/EONIX/vision/analyze")
+@app.post("/ai/analyze-image")
 @login_required
-def vision_analyze_route() -> Any:
+def analyze_image_route() -> Any:
     data = json_body()
-    prompt = Security.sanitize(data.get("prompt") or "Analyze this visual matrix.", 512)
-    image_data = data.get("image")
-    conversation_id = data.get("conversation_id")
-
-    if not image_data:
-        return jsonify({"success": False, "error": "No image asset payload detected."}), 400
-
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        return jsonify({"success": False, "error": "Gemini Core API key configuration missing."}), 500
+    session_id = data.get("conversation_id") or data.get("session_id")
+    if session_id and not storage.get_session(session_id, g.user.id):
+        return jsonify({"success": False, "error": "Conversation not found"}), 404
 
     try:
-        # Strip out the data URL prefix (e.g., "data:image/jpeg;base64,") if present
-        mime_type = "image/jpeg"
-        if "," in image_data:
-            header, image_data = image_data.split(",", 1)
-            if "png" in header:
-                mime_type = "image/png"
-            elif "webp" in header:
-                mime_type = "image/webp"
-
-        # Query Google AI Studio direct REST gateway for multimodal content analysis
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        
-        payload = {
-            "contents": [{
-                "parts": [
-                    {"text": prompt},
-                    {
-                        "inlineData": {
-                            "mimeType": mime_type,
-                            "data": image_data
-                        }
-                    }
-                ]
-            }]
-        }
-        
-        headers = {"Content-Type": "application/json"}
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
-        
-        if response.status_code != 200:
-            return jsonify({
-                "success": False, 
-                "error": f"Gemini Core rejected vision sequence: HTTP {response.status_code}"
-            }), 502
-            
-        res_json = response.json()
-        
-        # Safely parse text output stream from the response tree
-        try:
-            analysis_text = res_json['candidates'][0]['content']['parts'][0]['text']
-        except (KeyError, IndexError):
-            return jsonify({"success": False, "error": "Vision interpretation layers failed to parse stream structure."}), 500
-
-        return jsonify({
-            "success": True,
-            "analysis": analysis_text,
-            "mode": "EONIX-vision"
-        })
-
+        image_b64, mime_type = parse_image_payload(data.get("image") or "")
+        prompt = data.get("prompt") or "Describe this image in detail."
+        analysis, mode, elapsed = ai_service.analyze_image(image_b64, mime_type, prompt)
+        if session_id:
+            storage.add_message(session_id, "assistant", analysis, mode)
+        return jsonify(
+            {
+                "success": True,
+                "analysis": analysis,
+                "response": analysis,
+                "mode": mode,
+                "model": mode,
+                "response_time": elapsed,
+            }
+        )
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
     except Exception as exc:
-        logger.error("Vision core pipeline system exception: %s", exc)
-        return jsonify({"success": False, "error": str(exc)}), 500
+        logger.error("Vision failed: %s", exc)
+        return jsonify({"success": False, "error": str(exc)}), 503
+
+
+@app.post("/EONIX/forge/create")
+@app.post("/ai/generate-image")
+@login_required
+def generate_image_route() -> Any:
+    data = json_body()
+    session_id = data.get("conversation_id") or data.get("session_id")
+    if session_id and not storage.get_session(session_id, g.user.id):
+        return jsonify({"success": False, "error": "Conversation not found"}), 404
+
+    prompt = Security.sanitize(data.get("prompt") or "", 1600)
+    if not prompt:
+        return jsonify({"success": False, "error": "No prompt provided"}), 400
+
+    try:
+        image_url, mode, elapsed = ai_service.create_image(
+            prompt,
+            data.get("aspect_ratio") or data.get("aspectRatio") or "1:1",
+        )
+        if session_id:
+            storage.add_message(
+                session_id,
+                "assistant",
+                f"Image created: {prompt}",
+                mode,
+                [{"url": image_url, "caption": prompt, "alt": prompt}],
+            )
+        return jsonify(
+            {
+                "success": True,
+                "image_url": image_url,
+                "url": image_url,
+                "mode": mode,
+                "model": mode,
+                "caption": f"Image created: {prompt}",
+                "response_time": elapsed,
+            }
+        )
+    except Exception as exc:
+        logger.error("Image generation failed: %s", exc)
+        return jsonify({"success": False, "error": str(exc)}), 503
 
 
 # ---------------------------------------------------------------------------
