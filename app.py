@@ -1563,168 +1563,136 @@ def run_boot_probes() -> None:
             model_diagnostics.record_boot_probe(candidate.provider, candidate.model, ok, detail)
 
 
-// Enhanced Search Client with caching, retry, and rate limiting
-class LiveSearchClient {
-    constructor(baseUrl = 'http://localhost:5000/api/search') {
-        this.baseUrl = baseUrl;
-        this.cache = new Map();
-        this.cacheMaxAge = 300000; // 5 minutes
-        this.activeRequests = 0;
-        this.maxConcurrent = 3;
-        this.requestQueue = [];
-    }
-    
-    async search(query, options = {}) {
-        const {
-            raw = false,
-            timeout = 10000,
-            maxRetries = 3,
-            retryDelay = 1000,
-            useCache = true
-        } = options;
-        
-        // Input validation
-        if (!query || typeof query !== 'string' || !query.trim()) {
-            return this._formatError('Invalid query: Must be a non-empty string', raw);
-        }
-        
-        const trimmedQuery = query.trim();
-        
-        // Check cache
-        if (useCache) {
-            const cached = this._getFromCache(trimmedQuery);
-            if (cached) return cached;
-        }
-        
-        // Execute with retry logic
-        return this._executeWithRetry(trimmedQuery, raw, timeout, maxRetries, retryDelay);
-    }
-    
-    async _executeWithRetry(query, raw, timeout, maxRetries, retryDelay) {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                const result = await this._executeRequest(query, raw, timeout);
-                
-                if (this._isSuccessful(result)) {
-                    this._addToCache(query, result);
-                    return result;
-                }
-                
-                if (attempt < maxRetries) {
-                    await this._delay(retryDelay * attempt); // Exponential backoff
-                }
-            } catch (error) {
-                if (attempt === maxRetries) {
-                    return this._formatError(`Search failed after ${maxRetries} attempts: ${error.message}`, raw);
-                }
-                await this._delay(retryDelay * attempt);
-            }
-        }
-        
-        return this._formatError('All search attempts exhausted', raw);
-    }
-    
-    async _executeRequest(query, raw, timeout) {
-        // Queue management
-        while (this.activeRequests >= this.maxConcurrent) {
-            await new Promise(resolve => this.requestQueue.push(resolve));
-        }
-        
-        this.activeRequests++;
-        
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-            
-            const response = await fetch(this.baseUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query }),
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            const responseText = await response.text();
-            
-            if (!response.ok) {
-                return this._formatError(`Server Error [${response.status}]: ${responseText}`, raw);
-            }
-            
-            return raw ? responseText : parsePlainTextResults(responseText);
-            
-        } finally {
-            this.activeRequests--;
-            const next = this.requestQueue.shift();
-            if (next) next();
-        }
-    }
-    
-    _getFromCache(query) {
-        const entry = this.cache.get(query);
-        if (!entry) return null;
-        
-        if (Date.now() - entry.timestamp > this.cacheMaxAge) {
-            this.cache.delete(query);
-            return null;
-        }
-        
-        return entry.data;
-    }
-    
-    _addToCache(query, data) {
-        this.cache.set(query, { data, timestamp: Date.now() });
-        
-        // Cleanup old entries
-        if (this.cache.size > 100) {
-            const now = Date.now();
-            for (const [key, entry] of this.cache.entries()) {
-                if (now - entry.timestamp > this.cacheMaxAge) {
-                    this.cache.delete(key);
-                }
-            }
-        }
-    }
-    
-    _isSuccessful(result) {
-        if (typeof result === 'string') {
-            return !result.startsWith('ERROR:');
-        }
-        return result && result.success;
-    }
-    
-    _formatError(message, raw) {
-        return raw ? `ERROR: ${message}` : {
-            success: false,
-            engine: 'None',
-            error: message,
-            results: []
-        };
-    }
-    
-    _delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-    
-    clearCache() {
-        this.cache.clear();
-    }
-}
+#----------------------------------------------------------------------------
+# Search Api
+#----------------------------------------------------------------------------
 
-// Usage
-const liveSearch = new LiveSearchClient();
 
-// Example
-async function example() {
-    const results = await liveSearch.search("latest tech news", {
-        raw: false,
-        timeout: 5000,
-        maxRetries: 3,
-        useCache: true
-    });
+import time
+import requests
+from flask import Flask, request, Response
+from flask_cors import CORS
+from duckduckgo_search import DDGS
+
+app = Flask(__name__)
+CORS(app)
+
+SEARXNG_INSTANCES = [
+    "https://ononoki.org",
+    "https://searx.be",
+    "https://searxng.site"
+]
+
+def format_results_as_text(results, engine_used):
+    """Convert search results to plain text format."""
+    text_output = f"Search Engine Used: {engine_used}\n"
+    text_output += "=" * 50 + "\n\n"
     
-    displaySearchResults(results);
-}
+    for i, result in enumerate(results, 1):
+        text_output += f"Result #{i}\n"
+        text_output += f"Title: {result.get('title', 'N/A')}\n"
+        text_output += f"URL: {result.get('url', 'N/A')}\n"
+        text_output += f"Snippet: {result.get('snippet', 'N/A')}\n"
+        text_output += "-" * 50 + "\n\n"
+    
+    return text_output
+
+def search_duckduckgo(query, max_results=5):
+    """Primary Free Search: Uses DuckDuckGo backend scraper."""
+    try:
+        time.sleep(2)  # Increased delay
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=max_results))
+            if not results:
+                return None
+            
+            return [{
+                "title": r.get("title", "Untitled"),
+                "url": r.get("href", ""),
+                "snippet": r.get("body", "No description available")
+            } for r in results if r.get("href")]  # Filter out results without URLs
+            
+    except Exception as e:
+        print(f"[Engine Fail] DuckDuckGo failed: {str(e)}")
+        return None
+
+def search_searxng(query, max_results=5):
+    """Fallback Free Search: Cycles through open SearXNG meta-search links."""
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    
+    for base_url in SEARXNG_INSTANCES:
+        try:
+            url = f"{base_url}/search"
+            params = {"q": query, "format": "json"}
+            response = requests.get(url, params=params, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                except ValueError as json_err:
+                    print(f"[Engine Fail] Invalid JSON from {base_url}: {json_err}")
+                    continue
+                
+                results = data.get("results", [])
+                if not results:
+                    continue
+                
+                # Filter and limit results
+                filtered_results = []
+                for r in results[:max_results]:
+                    if r.get("url"):  # Only include results with URLs
+                        filtered_results.append({
+                            "title": r.get("title", "Untitled"),
+                            "url": r.get("url", ""),
+                            "snippet": r.get("content", r.get("snippet", "No description available"))
+                        })
+                
+                if filtered_results:
+                    return filtered_results
+                    
+        except requests.exceptions.Timeout:
+            print(f"[Engine Fail] SearXNG instance {base_url} timed out")
+            continue
+        except requests.exceptions.RequestException as e:
+            print(f"[Engine Fail] SearXNG instance {base_url} failed: {str(e)}")
+            continue
+    return None
+
+@app.route('/api/search', methods=['POST'])
+def search_endpoint():
+    data = request.json or {}
+    query = data.get("query", "").strip()
+    
+    if not query:
+        return Response("ERROR: Empty search query string", mimetype='text/plain', status=400)
+    
+    if len(query) > 500:  # Add reasonable query length limit
+        return Response("ERROR: Query too long (max 500 characters)", mimetype='text/plain', status=400)
+        
+    print(f"Processing query: '{query}'")
+    
+    # Try primary search engine
+    search_data = search_duckduckgo(query)
+    source_used = "DuckDuckGo"
+    
+    # Fallback if primary fails
+    if search_data is None:
+        print("Switching to Secondary Fallback Pipeline...")
+        search_data = search_searxng(query)
+        source_used = "SearXNG Fallback Mesh"
+        
+    if search_data is None:
+        error_text = "ERROR: All free search engines exhausted or rate-limited.\n"
+        error_text += "Please try again later."
+        return Response(error_text, mimetype='text/plain', status=502)
+
+    plain_text_response = format_results_as_text(search_data, source_used)
+    return Response(plain_text_response, mimetype='text/plain')
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
 # ---------------------------------------------------------------------------
 # Startup
 # ---------------------------------------------------------------------------
