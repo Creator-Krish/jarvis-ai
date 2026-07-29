@@ -1563,6 +1563,168 @@ def run_boot_probes() -> None:
             model_diagnostics.record_boot_probe(candidate.provider, candidate.model, ok, detail)
 
 
+// Enhanced Search Client with caching, retry, and rate limiting
+class LiveSearchClient {
+    constructor(baseUrl = 'http://localhost:5000/api/search') {
+        this.baseUrl = baseUrl;
+        this.cache = new Map();
+        this.cacheMaxAge = 300000; // 5 minutes
+        this.activeRequests = 0;
+        this.maxConcurrent = 3;
+        this.requestQueue = [];
+    }
+    
+    async search(query, options = {}) {
+        const {
+            raw = false,
+            timeout = 10000,
+            maxRetries = 3,
+            retryDelay = 1000,
+            useCache = true
+        } = options;
+        
+        // Input validation
+        if (!query || typeof query !== 'string' || !query.trim()) {
+            return this._formatError('Invalid query: Must be a non-empty string', raw);
+        }
+        
+        const trimmedQuery = query.trim();
+        
+        // Check cache
+        if (useCache) {
+            const cached = this._getFromCache(trimmedQuery);
+            if (cached) return cached;
+        }
+        
+        // Execute with retry logic
+        return this._executeWithRetry(trimmedQuery, raw, timeout, maxRetries, retryDelay);
+    }
+    
+    async _executeWithRetry(query, raw, timeout, maxRetries, retryDelay) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const result = await this._executeRequest(query, raw, timeout);
+                
+                if (this._isSuccessful(result)) {
+                    this._addToCache(query, result);
+                    return result;
+                }
+                
+                if (attempt < maxRetries) {
+                    await this._delay(retryDelay * attempt); // Exponential backoff
+                }
+            } catch (error) {
+                if (attempt === maxRetries) {
+                    return this._formatError(`Search failed after ${maxRetries} attempts: ${error.message}`, raw);
+                }
+                await this._delay(retryDelay * attempt);
+            }
+        }
+        
+        return this._formatError('All search attempts exhausted', raw);
+    }
+    
+    async _executeRequest(query, raw, timeout) {
+        // Queue management
+        while (this.activeRequests >= this.maxConcurrent) {
+            await new Promise(resolve => this.requestQueue.push(resolve));
+        }
+        
+        this.activeRequests++;
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            const response = await fetch(this.baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query }),
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            const responseText = await response.text();
+            
+            if (!response.ok) {
+                return this._formatError(`Server Error [${response.status}]: ${responseText}`, raw);
+            }
+            
+            return raw ? responseText : parsePlainTextResults(responseText);
+            
+        } finally {
+            this.activeRequests--;
+            const next = this.requestQueue.shift();
+            if (next) next();
+        }
+    }
+    
+    _getFromCache(query) {
+        const entry = this.cache.get(query);
+        if (!entry) return null;
+        
+        if (Date.now() - entry.timestamp > this.cacheMaxAge) {
+            this.cache.delete(query);
+            return null;
+        }
+        
+        return entry.data;
+    }
+    
+    _addToCache(query, data) {
+        this.cache.set(query, { data, timestamp: Date.now() });
+        
+        // Cleanup old entries
+        if (this.cache.size > 100) {
+            const now = Date.now();
+            for (const [key, entry] of this.cache.entries()) {
+                if (now - entry.timestamp > this.cacheMaxAge) {
+                    this.cache.delete(key);
+                }
+            }
+        }
+    }
+    
+    _isSuccessful(result) {
+        if (typeof result === 'string') {
+            return !result.startsWith('ERROR:');
+        }
+        return result && result.success;
+    }
+    
+    _formatError(message, raw) {
+        return raw ? `ERROR: ${message}` : {
+            success: false,
+            engine: 'None',
+            error: message,
+            results: []
+        };
+    }
+    
+    _delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    clearCache() {
+        this.cache.clear();
+    }
+}
+
+// Usage
+const liveSearch = new LiveSearchClient();
+
+// Example
+async function example() {
+    const results = await liveSearch.search("latest tech news", {
+        raw: false,
+        timeout: 5000,
+        maxRetries: 3,
+        useCache: true
+    });
+    
+    displaySearchResults(results);
+}
 # ---------------------------------------------------------------------------
 # Startup
 # ---------------------------------------------------------------------------
