@@ -1466,1133 +1466,2657 @@
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
   <script>
-    const EONIX_ROUTES = {
-      signIn: "/EONIX/sign-in",
-      identity: "/EONIX/me",
-      signIn: "/EONIX/sign-in",
-      signOut: "/EONIX/sign-out",
-      conversations: "/EONIX/conversations",
-      conversation: id => `/EONIX/conversations/${encodeURIComponent(id)}`,
-      messages: id => `/EONIX/conversations/${encodeURIComponent(id)}/messages`,
-      imageAnalysis: "/EONIX/vision/analyze",
-      imageCreate: "/EONIX/forge/create"
-    };
+   // ============================================
+// EONIX - Production Ready Client Application
+// Version: 2.1.0
+// ============================================
 
-    const EONIX_MODES = [
-      { id: "EONIX-prime", short: "Prime", label: "EONIX Prime", status: "Balanced command reasoning" },
-      { id: "EONIX-swift", short: "Swift", label: "EONIX Swift", status: "Rapid response mode" },
-      { id: "EONIX-deepcore", short: "DeepCore", label: "EONIX DeepCore", status: "Research and logic mode" },
-      { id: "EONIX-oracle", short: "Oracle", label: "EONIX Oracle", status: "Long-form strategy mode" },
-      { id: "EONIX-vision", short: "Vision", label: "EONIX Vision", status: "Visual analysis mode" },
-      { id: "EONIX-forge", short: "Forge", label: "EONIX Forge", status: "Image creation mode" }
-    ];
+(function() {
+  'use strict';
 
-    const STARTERS = [
-      { title: "Plan the build", text: "Turn my rough idea into a practical build plan with phases and risks." },
-      { title: "Analyze this", text: "Break down this problem and show the best path forward." },
-      { title: "Write sharper", text: "Rewrite this for clarity, authority, and impact." },
-      { title: "Create visuals", text: "Generate a premium visual direction for a futuristic product." }
-    ];
+  // ============================================
+  // CONFIGURATION
+  // ============================================
+  
+  const CONFIG = {
+    API_BASE: window.EONIX_API_URL || process?.env?.EONIX_API_URL || '/EONIX',
+    STORAGE_PREFIX: 'EONIX:v2:',
+    MAX_IMAGE_SIZE: 10 * 1024 * 1024,
+    MAX_MESSAGE_LENGTH: 10000,
+    DEBOUNCE_DELAY: 300,
+    TOAST_DURATION: 3500,
+    ANIMATION_FRAME_INTERVAL: 4,
+    RETRY_ATTEMPTS: 3,
+    RETRY_DELAY: 1000,
+    MAX_VISIBLE_MESSAGES: 100,
+    STREAMING_ENABLED: true,
+    OFFLINE_QUEUE_KEY: 'EONIX:offline-queue',
+  };
 
-    const STORAGE = {
-      settings: "EONIX:v5:settings",
-      conversations: "EONIX:v5:conversations",
-      token: "EONIX:token"
-    };
+  // ============================================
+  // ROUTES
+  // ============================================
+  
+  const ROUTES = {
+    signIn: '/sign-in',
+    identity: '/me',
+    signOut: '/sign-out',
+    refresh: '/refresh',
+    conversations: '/conversations',
+    conversation: (id) => `/conversations/${encodeURIComponent(id)}`,
+    messages: (id) => `/conversations/${encodeURIComponent(id)}/messages`,
+    stream: (id) => `/conversations/${encodeURIComponent(id)}/stream`,
+    imageAnalysis: '/vision/analyze',
+    imageCreate: '/forge/create',
+    analytics: '/analytics',
+  };
 
-    const state = {
-      previewMode: location.protocol === "file:" || new URLSearchParams(location.search).has("preview"),
-      ready: false,
-      processing: false,
-      listening: false,
-      recognition: null,
-      user: null,
-      currentId: null,
-      conversations: [],
-      settings: {
-        theme: "dark",
-        accent: "cyan",
-        density: "comfortable",
-        messageScale: 14,
-        mode: "EONIX-prime",
-        voice: "en-US"
-      },
-      lastSettingsToast: 0
-    };
+  // ============================================
+  // MODES
+  // ============================================
+  
+  const MODES = [
+    { id: 'EONIX-prime', short: 'Prime', label: 'EONIX Prime', status: 'Balanced command reasoning' },
+    { id: 'EONIX-swift', short: 'Swift', label: 'EONIX Swift', status: 'Rapid response mode' },
+    { id: 'EONIX-deepcore', short: 'DeepCore', label: 'EONIX DeepCore', status: 'Research and logic mode' },
+    { id: 'EONIX-oracle', short: 'Oracle', label: 'EONIX Oracle', status: 'Long-form strategy mode' },
+    { id: 'EONIX-vision', short: 'Vision', label: 'EONIX Vision', status: 'Visual analysis mode' },
+    { id: 'EONIX-forge', short: 'Forge', label: 'EONIX Forge', status: 'Image creation mode' }
+  ];
 
-    const ICON_PATHS = {
-      "panel-left-close": '<rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 3v18"></path><path d="m16 9-3 3 3 3"></path>',
-      "square-pen": '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"></path>',
-      search: '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>',
-      download: '<path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path>',
-      "trash-2": '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 15H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path>',
-      "log-out": '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path>',
-      menu: '<path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path>',
-      mic: '<path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"></path><path d="M19 11a7 7 0 0 1-14 0"></path><path d="M12 18v3"></path>',
-      "image-plus": '<rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10.5" r="1.5"></circle><path d="m21 15-5-5L5 19"></path><path d="M16 5v6"></path><path d="M13 8h6"></path>',
-      "wand-sparkles": '<path d="m21 3-6.5 6.5"></path><path d="m14 4 6 6"></path><path d="M4 20 14.5 9.5"></path><path d="M5 3v4"></path><path d="M3 5h4"></path><path d="M19 17v4"></path><path d="M17 19h4"></path>',
-      "sliders-horizontal": '<path d="M21 4h-7"></path><path d="M10 4H3"></path><path d="M14 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path><path d="M21 12h-9"></path><path d="M8 12H3"></path><path d="M12 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path><path d="M21 20h-5"></path><path d="M12 20H3"></path><path d="M16 20a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path>',
-      paperclip: '<path d="m21.4 11.6-8.5 8.5a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 1 1 5.7 5.7l-9.2 9.2a2 2 0 1 1-2.8-2.8l8.5-8.5"></path>',
-      sparkles: '<path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"></path><path d="M5 3v4"></path><path d="M3 5h4"></path><path d="M19 17v4"></path><path d="M17 19h4"></path>',
-      "shield-check": '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><path d="m9 12 2 2 4-5"></path>',
-      x: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>',
-      "check-circle-2": '<circle cx="12" cy="12" r="9"></circle><path d="m9 12 2 2 4-5"></path>',
-      "circle-alert": '<circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path>',
-      "triangle-alert": '<path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
-      info: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v6"></path><path d="M12 7h.01"></path>',
-      "message-square": '<path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path>',
-      "corner-down-right": '<path d="M15 10l5 5-5 5"></path><path d="M4 4v7a4 4 0 0 0 4 4h12"></path>',
-      "scan-line": '<path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 12h10"></path>',
-      copy: '<rect x="9" y="9" width="12" height="12" rx="2"></rect><rect x="3" y="3" width="12" height="12" rx="2"></rect>',
-      "volume-2": '<path d="M11 5 6 9H3v6h3l5 4Z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19 6a9 9 0 0 1 0 12"></path>',
-      "more-vertical": '<circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle>',
-      "chevron-right": '<path d="m9 18 6-6-6-6"></path>'
-    };
+  // ============================================
+  // STARTER PROMPTS
+  // ============================================
+  
+  const STARTERS = [
+    { title: 'Plan the build', text: 'Turn my rough idea into a practical build plan with phases and risks.' },
+    { title: 'Analyze this', text: 'Break down this problem and show the best path forward.' },
+    { title: 'Write sharper', text: 'Rewrite this for clarity, authority, and impact.' },
+    { title: 'Create visuals', text: 'Generate a premium visual direction for a futuristic product.' }
+  ];
 
-    const $ = id => document.getElementById(id);
-    const nowIso = () => new Date().toISOString();
-    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+  // ============================================
+  // KEYBOARD SHORTCUTS
+  // ============================================
+  
+  const SHORTCUTS = {
+    'Ctrl+K': 'New conversation',
+    'Ctrl+Shift+Enter': 'Send message',
+    'Ctrl+/': 'Show shortcuts',
+    'Escape': 'Close modals',
+  };
 
-    function safeJsonParse(value, fallback) {
-      if (!value) return fallback;
-      try { return JSON.parse(value); } catch { return fallback; }
-    }
+  // ============================================
+  // ICON PATHS
+  // ============================================
+  
+  const ICONS = {
+    'panel-left-close': '<rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 3v18"></path><path d="m16 9-3 3 3 3"></path>',
+    'square-pen': '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"></path>',
+    search: '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>',
+    download: '<path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path>',
+    'trash-2': '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 15H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path>',
+    'log-out': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path>',
+    menu: '<path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path>',
+    mic: '<path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"></path><path d="M19 11a7 7 0 0 1-14 0"></path><path d="M12 18v3"></path>',
+    'image-plus': '<rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10.5" r="1.5"></circle><path d="m21 15-5-5L5 19"></path><path d="M16 5v6"></path><path d="M13 8h6"></path>',
+    'wand-sparkles': '<path d="m21 3-6.5 6.5"></path><path d="m14 4 6 6"></path><path d="M4 20 14.5 9.5"></path><path d="M5 3v4"></path><path d="M3 5h4"></path><path d="M19 17v4"></path><path d="M17 19h4"></path>',
+    'sliders-horizontal': '<path d="M21 4h-7"></path><path d="M10 4H3"></path><path d="M14 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path><path d="M21 12h-9"></path><path d="M8 12H3"></path><path d="M12 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path><path d="M21 20h-5"></path><path d="M12 20H3"></path><path d="M16 20a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path>',
+    paperclip: '<path d="m21.4 11.6-8.5 8.5a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 1 1 5.7 5.7l-9.2 9.2a2 2 0 1 1-2.8-2.8l8.5-8.5"></path>',
+    sparkles: '<path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"></path><path d="M5 3v4"></path><path d="M3 5h4"></path><path d="M19 17v4"></path><path d="M17 19h4"></path>',
+    'shield-check': '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><path d="m9 12 2 2 4-5"></path>',
+    x: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>',
+    'check-circle-2': '<circle cx="12" cy="12" r="9"></circle><path d="m9 12 2 2 4-5"></path>',
+    'circle-alert': '<circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path>',
+    'triangle-alert': '<path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
+    info: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v6"></path><path d="M12 7h.01"></path>',
+    'message-square': '<path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path>',
+    'corner-down-right': '<path d="M15 10l5 5-5 5"></path><path d="M4 4v7a4 4 0 0 0 4 4h12"></path>',
+    'scan-line': '<path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 12h10"></path>',
+    copy: '<rect x="9" y="9" width="12" height="12" rx="2"></rect><rect x="3" y="3" width="12" height="12" rx="2"></rect>',
+    'volume-2': '<path d="M11 5 6 9H3v6h3l5 4Z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19 6a9 9 0 0 1 0 12"></path>',
+    'more-vertical': '<circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle>',
+    'chevron-right': '<path d="m9 18 6-6-6-6"></path>',
+    'keyboard': '<path d="M6 10h.01"></path><path d="M10 10h.01"></path><path d="M14 10h.01"></path><path d="M18 10h.01"></path><path d="M6 14h12"></path><rect x="2" y="4" width="20" height="16" rx="2"></rect>'
+  };
 
-    function readStorage(key, fallback) {
-      try { return safeJsonParse(localStorage.getItem(key), fallback); } catch { return fallback; }
-    }
+  // ============================================
+  // STORAGE KEYS
+  // ============================================
+  
+  const STORAGE = {
+    settings: `${CONFIG.STORAGE_PREFIX}settings`,
+    conversations: `${CONFIG.STORAGE_PREFIX}conversations`,
+    token: `${CONFIG.STORAGE_PREFIX}token`,
+    offlineQueue: CONFIG.OFFLINE_QUEUE_KEY,
+  };
 
-    function writeStorage(key, value) {
-      try {
-        localStorage.setItem(key, JSON.stringify(value));
-        return true;
-      } catch {
-        return false;
-      }
-    }
-
-    function uid(prefix = "id") {
-      if (window.crypto && window.crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
-      return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-    }
-
-    function removeStorage(key) {
-      try { localStorage.removeItem(key); } catch {}
-    }
-
-    function decodeJwtPayload(token) {
-      const [, payload] = String(token || "").split(".");
-      if (!payload) return null;
-      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-      const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
-      return JSON.parse(atob(padded));
-    }
-
-    function isTokenValid(token) {
-      try {
-        const payload = decodeJwtPayload(token);
-        return Boolean(payload && (!payload.exp || payload.exp * 1000 > Date.now()));
-      } catch {
-        return false;
-      }
-    }
-
-    function getTokenFromUrl() {
-      const params = new URLSearchParams(location.search);
-      const token = params.get("token");
-      const error = params.get("error");
-      if (error) {
-        showToast("Sign-in failed", error, "error");
-        history.replaceState({}, document.title, location.pathname);
-        return null;
-      }
-      if (token) {
-        localStorage.setItem(STORAGE.token, token);
-        history.replaceState({}, document.title, location.pathname);
-      }
-      return token;
-    }
-
-    async function bridge(path, options = {}) {
-      const headers = new Headers(options.headers || {});
-      const hasBody = options.body !== undefined && options.body !== null;
-      if (hasBody && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-      }
-      const token = localStorage.getItem(STORAGE.token);
-      if (token) headers.set("Authorization", `Bearer ${token}`);
-
-      const response = await fetch(path, { ...options, headers, credentials: "include" });
-      if (response.status === 204) return {};
-      const text = await response.text();
-      const data = text ? safeJsonParse(text, { message: text }) : {};
-
-      if (response.status === 401) {
-        removeStorage(STORAGE.token);
-        showAuth();
-        throw new Error("Session expired. Please sign in again.");
-      }
-      if (!response.ok) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
-      return data;
-    }
-    
-    function escapeHtml(value) {
+  // ============================================
+  // UTILITY FUNCTIONS
+  // ============================================
+  
+  const Utils = {
+    escapeHtml(value) {
       return String(value).replace(/[&<>"']/g, char => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "\"": "&quot;",
-        "'": "&#39;"
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
       }[char]));
-    }
+    },
 
-    function syncIcons() {
-      document.querySelectorAll(".ico[data-lucide]").forEach(icon => {
-        const name = icon.dataset.lucide;
-        if (icon.dataset.rendered === name) return;
-        const body = ICON_PATHS[name];
-        if (!body) return;
-        icon.dataset.rendered = name;
-        icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
-      });
-    }
+    formatRelative(dateLike) {
+      const date = new Date(dateLike);
+      if (isNaN(date.getTime())) return '';
+      
+      const diff = Date.now() - date.getTime();
+      const mins = Math.floor(diff / 60000);
+      
+      if (mins < 1) return 'Just now';
+      if (mins < 60) return `${mins}m ago`;
+      
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      
+      const days = Math.floor(hours / 24);
+      if (days < 7) return `${days}d ago`;
+      
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    },
 
-    function resolveTheme(choice) {
-      if (choice !== "system") return choice;
-      return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-
-    function getMode(id = state.settings.mode) {
-      return EONIX_MODES.find(mode => mode.id === id) || EONIX_MODES[0];
-    }
-
-    function buildModeOptions() {
-      ["modeSelect", "settingsModeSelect"].forEach(id => {
-        const select = $(id);
-        select.innerHTML = "";
-        EONIX_MODES.forEach(mode => {
-          const option = document.createElement("option");
-          option.value = mode.id;
-          option.textContent = mode.label;
-          select.appendChild(option);
-        });
-      });
-    }
-
-    function updateModeLabels() {
-      const mode = getMode();
-      $("modeSignal").textContent = mode.short;
-      $("statusText").textContent = state.processing ? "Thinking" : mode.status;
-      $("statMode").textContent = mode.short;
-    }
-
-    function saveSettings() {
-      writeStorage(STORAGE.settings, state.settings);
-    }
-
-    function applySettings(announce = true) {
-      document.documentElement.dataset.theme = resolveTheme(state.settings.theme);
-      document.documentElement.dataset.accent = state.settings.accent;
-      document.documentElement.dataset.density = state.settings.density;
-      document.documentElement.style.setProperty("--message-font", `${state.settings.messageScale}px`);
-      $("messageScaleValue").textContent = `${state.settings.messageScale}px`;
-      $("messageScale").value = String(state.settings.messageScale);
-      $("voiceSelect").value = state.settings.voice;
-      $("modeSelect").value = state.settings.mode;
-      $("settingsModeSelect").value = state.settings.mode;
-      document.querySelectorAll("[data-theme-choice]").forEach(btn => btn.classList.toggle("active", btn.dataset.themeChoice === state.settings.theme));
-      document.querySelectorAll("#accentControls [data-accent]").forEach(btn => btn.classList.toggle("active", btn.dataset.accent === state.settings.accent));
-      document.querySelectorAll("[data-density-choice]").forEach(btn => btn.classList.toggle("active", btn.dataset.densityChoice === state.settings.density));
-      updateModeLabels();
-      saveSettings();
-      if (announce && Date.now() - state.lastSettingsToast > 2500) {
-        state.lastSettingsToast = Date.now();
-        showToast("Settings updated", "Settings updated successfully.", "success");
+    generateId(prefix = 'id') {
+      if (window.crypto?.randomUUID) {
+        return `${prefix}-${crypto.randomUUID()}`;
       }
-    }
+      return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+    },
 
-    function loadSettings() {
-      state.settings = { ...state.settings, ...readStorage(STORAGE.settings, {}) };
-      applySettings(false);
-    }
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    },
 
-    function normalizeMessage(raw) {
-      return {
-         id: String(raw.id || raw.message_id || uid("message")),
-        role: ["assistant", "user", "system"].includes(raw.role) ? raw.role : "assistant",
-        content: String(raw.content || raw.text || ""),
-        mode: raw.mode || raw.model || raw.model_used || state.settings.mode,
-        createdAt: raw.createdAt || raw.created_at || raw.timestamp || nowIso()
-      };
-    }
+    isSafeUrl(url) {
+      if (!url) return false;
+      const allowed = ['data:image/', 'https://', 'http://localhost', 'blob:'];
+      return allowed.some(p => url.startsWith(p));
+    },
 
-    function normalizeConversation(raw) {
-      return {
-       id: String(raw.id || raw.session_id || uid("conversation")),
-        title: raw.title || "New Conversation",
-         createdAt: raw.createdAt || raw.created_at || nowIso(),
-        updatedAt: raw.updatedAt || raw.updated_at || nowIso(),
-        messages: Array.isArray(raw.messages) ? raw.messages.map(normalizeMessage) : []
-      };
-    }
+    truncate(text, maxLength = 48) {
+      const cleaned = String(text || '').replace(/\s+/g, ' ').trim();
+      return cleaned.length > maxLength ? `${cleaned.slice(0, maxLength)}...` : cleaned || 'New Conversation';
+    },
 
-    function currentConversation() {
-      return state.conversations.find(item => item.id === state.currentId) || null;
-    }
-
-    function saveLocalConversations() {
-      writeStorage(STORAGE.conversations, state.conversations);
-    }
-
-    function setUser(user) {
-      const name = user && (user.name || user.email) ? (user.name || user.email) : "Operator";
-      state.user = { name, email: user && user.email ? user.email : "" };
-      const initial = name.trim().charAt(0).toUpperCase() || "K";
-      $("userName").textContent = name;
-      $("userAvatar").textContent = initial;
-      $("profileName").textContent = name;
-      $("profileEmail").textContent = state.user.email || "operator@EONIX.local";
-      $("profileAvatarLarge").textContent = initial;
-    }
-
-    function userFromToken(token) {
-      try {
-        const payload = decodeJwtPayload(token) || {};
-        return {
-          name: payload.name || payload.given_name || payload.email || "EONIX User",
-          email: payload.email || ""
-        };
-      } catch {
-        return { name: "EONIX User", email: "" };
-      }
-    }
-
-    function showAuth() {
-      closeSidebar();
-      closeSettings();
-      closeProfile();
-      closeActionsMenu();
-      $("authGate").classList.add("active");
-      $("appShell").setAttribute("aria-hidden", "true");
-      state.ready = false;
-    }
-
-    function openApp() {
-      $("authGate").classList.remove("active");
-      $("appShell").setAttribute("aria-hidden", "false");
-      state.ready = true;
-      renderAll();
-      scrollToBottom();
-      setTimeout(() => $("promptInput").focus(), 120);
-    }
-
-    function makeTitle(text) {
-      const cleaned = String(text || "").replace(/\s+/g, " ").trim();
-      return cleaned.length > 48 ? `${cleaned.slice(0, 48)}...` : cleaned || "New Conversation";
-    }
-
-    function createLocalConversation(title = "New Conversation") {
-      const conversation = { id: uid("conversation"), title, createdAt: nowIso(), updatedAt: nowIso(), messages: [] };
-      state.conversations.unshift(conversation);
-      state.currentId = conversation.id;
-      saveLocalConversations();
-      renderAll();
-      closeSidebarOnMobile();
-      return conversation;
-    }
-
-     async function createConversation(title = "New Conversation") {
-      if (state.previewMode) return createLocalConversation(title);
-      const data = await bridge(EONIX_ROUTES.conversations, {
-        method: "POST",
-        body: JSON.stringify({ title })
-      });
-      const conversation = normalizeConversation(data.conversation || data.session || { id: data.conversation_id || data.session_id, title });
-      state.conversations.unshift(conversation);
-      state.currentId = conversation.id;
-      renderAll();
-      closeSidebarOnMobile();
-      return conversation;
-    }
-
-    async function loadConversation(id, rerender = true) {
-      if (!id) return;
-      state.currentId = id;
-      if (!state.previewMode) {
-        const data = await bridge(EONIX_ROUTES.conversation(id));
-        const conversation = state.conversations.find(item => item.id === id);
-        if (conversation) {
-          conversation.messages = (data.messages || data.conversation?.messages || data.session?.messages || []).map(normalizeMessage);
-          conversation.title = data.conversation?.title || data.session?.title || conversation.title;
-          conversation.updatedAt = data.conversation?.updated_at || data.session?.updated_at || conversation.updatedAt;
-        }
-      }
-      if (rerender) renderAll();
-      closeSidebarOnMobile();
-    }
-    function addLocalMessage(message) {
-      let conversation = currentConversation();
-      if (!conversation) conversation = createLocalConversation();
-      const normalized = normalizeMessage(message);
-      conversation.messages.push(normalized);
-      if (conversation.title === "New Conversation" || conversation.title === "Command Session") {
-        const firstUser = conversation.messages.find(item => item.role === "user" && item.content.trim());
-        if (firstUser) conversation.title = makeTitle(firstUser.content.replace(/^Create image:\s*/i, "").replace(/^Analyze image:\s*/i, ""));
-      }
-      conversation.updatedAt = nowIso();
-      state.conversations = [conversation, ...state.conversations.filter(item => item.id !== conversation.id)];
-      saveLocalConversations();
-      renderAll();
-      scrollToBottom();
-      return normalized;
-    }
-
-   async function loadConversations() {
-      if (state.previewMode) {
-        state.conversations = readStorage(STORAGE.conversations, []).map(normalizeConversation);
-        if (!state.conversations.length) {
-          const first = createLocalConversation("Command Session");
-          first.messages.push(normalizeMessage({ role: "system", content: "EONIX is online." }));
-          state.currentId = first.id;
-          saveLocalConversations();
-        } else {
-          state.currentId = state.conversations[0].id;
-        }
-        return;
-      }
-
-      const data = await bridge(EONIX_ROUTES.conversations);
-      const list = data.conversations || data.sessions || [];
-      state.conversations = list.map(normalizeConversation);
-      if (state.conversations.length) {
-        state.currentId = state.conversations[0].id;
-         await loadConversation(state.currentId, false);
-      } else {
-        await createConversation();
-      }
-    }
-
-    function showToast(title, message = "", type = "info") {
-      const iconMap = { success: "check-circle-2", error: "circle-alert", warning: "triangle-alert", info: "info" };
-      const toast = document.createElement("div");
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `<span class="ico" data-lucide="${iconMap[type] || "info"}">!</span><span><strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span></span>`;
-      $("toastRegion").appendChild(toast);
-      syncIcons();
-      setTimeout(() => {
-        toast.style.opacity = "0";
-        toast.style.transform = "translateX(16px)";
-        setTimeout(() => toast.remove(), 180);
-      }, 3600);
-    }
-
-    function setProcessing(value) {
-      state.processing = value;
-      $("sendBtn").disabled = value;
-      $("promptInput").disabled = value;
-      $("statusDot").style.background = value ? "var(--warning)" : "var(--success)";
-      updateModeLabels();
-    }
-
-    function showTyping() {
-      if ($("typingMessage")) return;
-      const article = document.createElement("article");
-      article.className = "message assistant-message";
-      article.id = "typingMessage";
-      article.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
-      $("messages").appendChild(article);
-      scrollToBottom();
-    }
-
-    function hideTyping() {
-      const node = $("typingMessage");
-      if (node) node.remove();
-    }
-
-    async function localReply(prompt) {
-      await wait(650);
-      const mode = getMode();
-      const lower = prompt.toLowerCase();
-      if (lower.includes("plan") || lower.includes("build")) {
-        return [
-          `${mode.label} has structured the work:`,
-          "1. Define the outcome and success criteria.",
-          "2. Identify the smallest useful version.",
-          "3. Build the core path first.",
-          "4. Polish after stable behavior.",
-          "5. Verify desktop and mobile."
-        ].join("\n");
-      }
-      if (lower.includes("rewrite") || lower.includes("write")) {
-        return "Sharper direction:\n\nLead with the result, remove filler, and keep every sentence useful.";
-      }
-      if (lower.includes("image") || lower.includes("visual")) {
-        return "I would steer toward a high-contrast command surface with restrained motion, clear control density, and premium visual hierarchy.";
-      }
-      return `${mode.label} is online.\n\nSend the next detail and I will tighten it.`;
-    }
-
-    async function sendMessage() {
-      const input = $("promptInput");
-      const text = input.value.trim();
-      if (!text || state.processing) return;
-      if (!currentConversation()) await createConversation();
-      input.value = "";
-      autoResizeInput();
-      addLocalMessage({ role: "user", content: text, mode: state.settings.mode });
-      setProcessing(true);
-      showTyping();
-      try {
-         const response = state.previewMode ? { response: await localReply(text) } : await bridge(EONIX_ROUTES.messages(state.currentId), {
-          method: "POST",
-          body: JSON.stringify({ prompt: text, mode: state.settings.mode })
-        });
-        hideTyping();
-         addLocalMessage({
-          role: "assistant",
-          content: response.response || response.message || response.content || "I am ready.",
-          mode: response.mode || state.settings.mode
-        });
-        if (!state.previewMode) {
-          await loadConversation(state.currentId, false);
-          renderAll();
-        }
-      } catch (error) {
-        hideTyping();
-        addLocalMessage({ role: "system", content: "EONIX could not complete that request. Please try again.", mode: state.settings.mode });
-        showToast("Request interrupted", error.message || "Unknown error", "error");
-      } finally {
-        setProcessing(false);
-        input.focus();
-      }
-    }
-
-    function autoResizeInput() {
-      const input = $("promptInput");
-      input.style.height = "auto";
-      input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
-    }
-
-    function scrollToBottom() {
-      requestAnimationFrame(() => {
-        const messages = $("messages");
-        messages.scrollTop = messages.scrollHeight;
-      });
-    }
-
-    function copyText(text) {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(
-          () => showToast("Copied", "Message copied to clipboard.", "success"),
-          () => showToast("Copy failed", "Clipboard access was not available.", "warning")
-        );
-      } else {
-        showToast("Copy unavailable", "Clipboard access was not available.", "warning");
-      }
-    }
-
-    function speak(text) {
-      if (!window.speechSynthesis) {
-        showToast("Voice unavailable", "Speech playback is not supported here.", "warning");
-        return;
-      }
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = state.settings.voice;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    }
-
-    function updateVoiceState() {
-      $("voiceWave").classList.toggle("active", state.listening);
-      ["voiceBtn", "voiceBtnTop"].forEach(id => {
-        const button = $(id);
-        if (button) button.style.color = state.listening ? "var(--danger)" : "";
-      });
-    }
-
-    function toggleVoice() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        showToast("Voice unavailable", "Speech input is not supported in this browser.", "warning");
-        return;
-      }
-      if (!state.recognition) {
-        state.recognition = new SpeechRecognition();
-        state.recognition.continuous = false;
-        state.recognition.interimResults = true;
-        state.recognition.onresult = event => {
-          let transcript = "";
-          for (let i = event.resultIndex; i < event.results.length; i += 1) transcript += event.results[i][0].transcript;
-          $("promptInput").value = transcript;
-          autoResizeInput();
-          if (event.results[event.results.length - 1].isFinal) sendMessage();
-        };
-        state.recognition.onerror = event => {
-          state.listening = false;
-          updateVoiceState();
-          if (event.error !== "aborted") showToast("Voice stopped", event.error || "Recognition ended.", "warning");
-        };
-        state.recognition.onend = () => {
-          state.listening = false;
-          updateVoiceState();
-        };
-      }
-      if (state.listening) {
-        state.recognition.stop();
-        state.listening = false;
-      } else {
-        state.recognition.lang = state.settings.voice;
-        state.recognition.start();
-        state.listening = true;
-      }
-      updateVoiceState();
-    }
-
-    function attachImage() {
-      showToast("Image ready", "Connect your image analysis endpoint to enable live inspection.", "info");
-    }
-
-    function generateImage() {
-      const prompt = $("promptInput").value.trim();
-      if (!prompt) {
-        showToast("Add a prompt", "Describe what EONIX Forge should create.", "warning");
-        $("promptInput").focus();
-        return;
-      }
-      addLocalMessage({ role: "user", content: `Create image: ${prompt}`, mode: "EONIX-forge" });
-      addLocalMessage({ role: "assistant", content: `EONIX Forge concept queued: ${prompt}`, mode: "EONIX-forge" });
-      $("promptInput").value = "";
-      autoResizeInput();
-    }
-
-    async function deleteConversation(id) {
-      const conversation = state.conversations.find(item => item.id === id);
-      if (!conversation) return;
-      if (!confirm(`Delete "${conversation.title}"?`)) return;
-      if (!state.previewMode) await bridge(EONIX_ROUTES.conversation(id), { method: "DELETE" });
-      state.conversations = state.conversations.filter(item => item.id !== id);
-      if (state.currentId === id) state.currentId = state.conversations[0] ? state.conversations[0].id : null;
-      if (!state.currentId) await createConversation();
-      saveLocalConversations();
-      renderAll();
-      showToast("Conversation deleted", conversation.title, "success");
-    }
-
-   async function clearAllHistory() {
-      if (!confirm("Delete all conversations? This cannot be undone.")) return;
-     if (!state.previewMode) {
-        for (const conversation of state.conversations) {
-          await bridge(EONIX_ROUTES.conversation(conversation.id), { method: "DELETE" });
-        }
-      }
-      state.conversations = [];
-      state.currentId = null;
-      saveLocalConversations();
-      await createConversation();
-      closeActionsMenu();
-      showToast("History cleared", "A fresh workspace is ready.", "success");
-    }
-
-    async function exportConversations() {
-      let exportData = state.conversations;
-      if (!state.previewMode) {
-        exportData = [];
-        for (const conversation of state.conversations) {
-          const data = await bridge(EONIX_ROUTES.conversation(conversation.id));
-          exportData.push(normalizeConversation({
-            ...conversation,
-            messages: data.messages || data.conversation?.messages || data.session?.messages || []
-          }));
-        }
-      }
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `EONIX-export-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      closeActionsMenu();
-      showToast("Export complete", "Conversation archive downloaded.", "success");
-    }
-
-   async function signOut() {
-      if (!state.previewMode) {
-        try { await bridge(EONIX_ROUTES.signOut, { method: "POST" }); }
-        catch { try { await bridge(EONIX_ROUTES.signOut, { method: "GET" }); } catch {} }
-      }
-      state.user = null;
-      state.conversations = [];
-      state.currentId = null;
-      removeStorage(STORAGE.token);
-      closeActionsMenu();
-      closeProfile();
-      showAuth();
-    }
-
-    function renderStats() {
-      $("statConversations").textContent = state.conversations.length;
-      $("statMessages").textContent = state.conversations.reduce((sum, conversation) => sum + (conversation.messages ? conversation.messages.length : 0), 0);
-    }
-
-    function renderHeader() {
-      const conversation = currentConversation();
-      $("activeTitle").textContent = conversation ? conversation.title : "EONIX Workspace";
-      const count = conversation && conversation.messages ? conversation.messages.filter(message => message.role !== "system").length : 0;
-      $("messageCount").textContent = `${count} ${count === 1 ? "message" : "messages"}`;
-      updateModeLabels();
-    }
-
-    function groupConversations(items) {
+    groupConversations(items) {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const yesterday = new Date(today);
       yesterday.setDate(today.getDate() - 1);
       const week = new Date(today);
       week.setDate(today.getDate() - 6);
-      const groups = { Today: [], Yesterday: [], "Last 7 Days": [], Earlier: [] };
+      
+      const groups = { Today: [], Yesterday: [], 'Last 7 Days': [], Earlier: [] };
+      
       items.forEach(item => {
         const date = new Date(item.updatedAt);
         if (date >= today) groups.Today.push(item);
         else if (date >= yesterday) groups.Yesterday.push(item);
-        else if (date >= week) groups["Last 7 Days"].push(item);
+        else if (date >= week) groups['Last 7 Days'].push(item);
         else groups.Earlier.push(item);
       });
+      
       return groups;
+    },
+
+    readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    },
+
+    decodeJwt(token) {
+      try {
+        const [, payload] = String(token || '').split('.');
+        if (!payload) return null;
+        
+        const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), '=');
+        const decoded = atob(padded);
+        
+        return JSON.parse(decoded);
+      } catch {
+        return null;
+      }
+    },
+
+    isOnline() {
+      return navigator.onLine !== false;
+    },
+
+    getPlatformInfo() {
+      const ua = navigator.userAgent;
+      return {
+        browser: /Chrome/.test(ua) ? 'Chrome' : /Firefox/.test(ua) ? 'Firefox' : /Safari/.test(ua) ? 'Safari' : 'Unknown',
+        mobile: /Mobi|Android|iPhone/.test(ua),
+        os: /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : 'Unknown'
+      };
+    }
+  };
+
+  // ============================================
+  // STATE MANAGEMENT
+  // ============================================
+  
+  class StateManager {
+    constructor() {
+      this.state = {
+        ready: false,
+        processing: false,
+        listening: false,
+        recognition: null,
+        user: null,
+        currentId: null,
+        conversations: [],
+        settings: {
+          theme: 'dark',
+          accent: 'cyan',
+          density: 'comfortable',
+          messageScale: 14,
+          mode: 'EONIX-prime',
+          voice: 'en-US',
+          streaming: true,
+        },
+        _listeners: new Map(),
+        _lastToast: 0,
+        _renderBuffer: null,
+        _pendingMessages: [],
+        _online: Utils.isOnline(),
+        _animationId: null,
+      };
+      
+      this.loadSettings();
+      this.setupOnlineListener();
     }
 
-    function formatRelative(dateLike) {
-      const date = new Date(dateLike);
-      if (Number.isNaN(date.getTime())) return "";
-      const diff = Date.now() - date.getTime();
-      const mins = Math.floor(diff / 60000);
-      if (mins < 1) return "Just now";
-      if (mins < 60) return `${mins}m ago`;
-      const hours = Math.floor(mins / 60);
-      if (hours < 24) return `${hours}h ago`;
-      const days = Math.floor(hours / 24);
-      if (days < 7) return `${days}d ago`;
-      return date.toLocaleDateString([], { month: "short", day: "numeric" });
+    get() {
+      return this.state;
     }
 
-    function renderHistory() {
-      const container = $("historyList");
-      const term = $("historySearch").value.trim().toLowerCase();
-      const filtered = state.conversations.filter(item => item.title.toLowerCase().includes(term));
-      container.innerHTML = "";
+    getConversation(id) {
+      return this.state.conversations.find(c => c.id === id) || null;
+    }
+
+    getCurrentConversation() {
+      return this.getConversation(this.state.currentId);
+    }
+
+    setCurrentId(id) {
+      this.state.currentId = id;
+      this.notify('conversationChanged', id);
+    }
+
+    addConversation(conversation) {
+      this.state.conversations.unshift(conversation);
+      this.state.currentId = conversation.id;
+      this.saveConversations();
+      this.notify('conversationsUpdated', this.state.conversations);
+    }
+
+    updateConversation(id, updates) {
+      const index = this.state.conversations.findIndex(c => c.id === id);
+      if (index === -1) return;
+      
+      this.state.conversations[index] = {
+        ...this.state.conversations[index],
+        ...updates
+      };
+      
+      this.saveConversations();
+      this.notify('conversationsUpdated', this.state.conversations);
+    }
+
+    deleteConversation(id) {
+      this.state.conversations = this.state.conversations.filter(c => c.id !== id);
+      if (this.state.currentId === id) {
+        this.state.currentId = this.state.conversations[0]?.id || null;
+      }
+      this.saveConversations();
+      this.notify('conversationsUpdated', this.state.conversations);
+    }
+
+    addMessage(conversationId, message) {
+      const conversation = this.getConversation(conversationId);
+      if (!conversation) return null;
+
+      const normalized = this.normalizeMessage(message);
+      conversation.messages.push(normalized);
+      conversation.updatedAt = new Date().toISOString();
+      
+      if (conversation.title === 'New Conversation' && normalized.role === 'user') {
+        conversation.title = Utils.truncate(normalized.content);
+      }
+
+      // Keep only recent messages for performance
+      if (conversation.messages.length > CONFIG.MAX_VISIBLE_MESSAGES * 2) {
+        conversation.messages = conversation.messages.slice(-CONFIG.MAX_VISIBLE_MESSAGES);
+      }
+
+      this.saveConversations();
+      this.notify('messageAdded', { conversationId, message: normalized });
+      this.notify('conversationsUpdated', this.state.conversations);
+      
+      return normalized;
+    }
+
+    normalizeMessage(raw) {
+      return {
+        id: String(raw.id || raw.message_id || Utils.generateId('msg')),
+        role: ['assistant', 'user', 'system'].includes(raw.role) ? raw.role : 'assistant',
+        content: String(raw.content || raw.text || ''),
+        mode: raw.mode || raw.model || raw.model_used || this.state.settings.mode,
+        createdAt: raw.createdAt || raw.created_at || raw.timestamp || new Date().toISOString(),
+        attachments: (raw.attachments || []).filter(att => Utils.isSafeUrl(att.url || att))
+      };
+    }
+
+    loadSettings() {
+      try {
+        const saved = localStorage.getItem(STORAGE.settings);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          this.state.settings = { ...this.state.settings, ...parsed };
+        }
+      } catch (error) {
+        console.warn('Failed to load settings:', error);
+      }
+    }
+
+    saveSettings() {
+      try {
+        localStorage.setItem(STORAGE.settings, JSON.stringify(this.state.settings));
+        this.notify('settingsUpdated', this.state.settings);
+      } catch (error) {
+        console.warn('Failed to save settings:', error);
+      }
+    }
+
+    saveConversations() {
+      try {
+        localStorage.setItem(STORAGE.conversations, JSON.stringify(this.state.conversations));
+      } catch (error) {
+        console.warn('Failed to save conversations:', error);
+      }
+    }
+
+    loadConversations() {
+      try {
+        const saved = localStorage.getItem(STORAGE.conversations);
+        if (saved) {
+          this.state.conversations = JSON.parse(saved);
+        }
+      } catch (error) {
+        console.warn('Failed to load conversations:', error);
+        this.state.conversations = [];
+      }
+    }
+
+    setUser(user) {
+      this.state.user = user;
+      this.notify('userUpdated', user);
+    }
+
+    setProcessing(processing) {
+      this.state.processing = processing;
+      this.notify('processingChanged', processing);
+    }
+
+    setupOnlineListener() {
+      window.addEventListener('online', () => {
+        this.state._online = true;
+        this.notify('online', true);
+        this.processOfflineQueue();
+      });
+      
+      window.addEventListener('offline', () => {
+        this.state._online = false;
+        this.notify('online', false);
+      });
+    }
+
+    async processOfflineQueue() {
+      const queue = this.getOfflineQueue();
+      if (!queue.length) return;
+      
+      this.notify('offlineQueueProcessing', queue.length);
+      for (const item of queue) {
+        this.notify('offlineMessage', item);
+      }
+      this.clearOfflineQueue();
+    }
+
+    getOfflineQueue() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE.offlineQueue) || '[]');
+      } catch {
+        return [];
+      }
+    }
+
+    addToOfflineQueue(item) {
+      const queue = this.getOfflineQueue();
+      queue.push({ ...item, queuedAt: new Date().toISOString() });
+      localStorage.setItem(STORAGE.offlineQueue, JSON.stringify(queue));
+    }
+
+    clearOfflineQueue() {
+      localStorage.removeItem(STORAGE.offlineQueue);
+    }
+
+    // Event system
+    on(event, callback) {
+      if (!this.state._listeners.has(event)) {
+        this.state._listeners.set(event, []);
+      }
+      this.state._listeners.get(event).push(callback);
+    }
+
+    off(event, callback) {
+      if (!this.state._listeners.has(event)) return;
+      const listeners = this.state._listeners.get(event);
+      const index = listeners.indexOf(callback);
+      if (index > -1) listeners.splice(index, 1);
+    }
+
+    notify(event, data) {
+      if (!this.state._listeners.has(event)) return;
+      this.state._listeners.get(event).forEach(callback => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`Error in ${event} listener:`, error);
+        }
+      });
+    }
+
+    resolveTheme(choice) {
+      if (choice !== 'system') return choice;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    getMode(id = this.state.settings.mode) {
+      return MODES.find(mode => mode.id === id) || MODES[0];
+    }
+
+    cleanup() {
+      if (this.state._animationId) {
+        cancelAnimationFrame(this.state._animationId);
+      }
+      if (this.state.recognition && this.state.listening) {
+        this.state.recognition.abort();
+      }
+    }
+  }
+
+  // ============================================
+  // API CLIENT
+  // ============================================
+  
+  class ApiClient {
+    constructor(stateManager) {
+      this.state = stateManager;
+      this.baseUrl = CONFIG.API_BASE;
+      this._refreshPromise = null;
+    }
+
+    async request(path, options = {}) {
+      const url = `${this.baseUrl}${path}`;
+      const headers = new Headers(options.headers || {});
+      
+      const hasBody = options.body !== undefined && options.body !== null;
+      if (hasBody && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+      }
+      
+      const token = localStorage.getItem(STORAGE.token);
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+
+      let lastError;
+      for (let attempt = 1; attempt <= CONFIG.RETRY_ATTEMPTS; attempt++) {
+        try {
+          const response = await fetch(url, {
+            ...options,
+            headers,
+            credentials: 'include'
+          });
+
+          if (response.status === 204) {
+            return { success: true, data: null };
+          }
+
+          const text = await response.text();
+          let data;
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch {
+            data = { message: text || 'Invalid response' };
+          }
+
+          if (response.status === 401) {
+            if (await this.refreshToken()) {
+              // Retry with new token
+              const newToken = localStorage.getItem(STORAGE.token);
+              headers.set('Authorization', `Bearer ${newToken}`);
+              continue;
+            }
+            localStorage.removeItem(STORAGE.token);
+            this.state.notify('authRequired', null);
+            throw new Error('Session expired. Please sign in again.');
+          }
+
+          if (!response.ok) {
+            throw new Error(data.error || data.detail || data.message || `Request failed: ${response.status}`);
+          }
+
+          return { success: true, data };
+
+        } catch (error) {
+          lastError = error;
+          if (attempt < CONFIG.RETRY_ATTEMPTS) {
+            await Utils.delay(CONFIG.RETRY_DELAY * attempt);
+          }
+        }
+      }
+
+      throw lastError || new Error('Request failed after multiple attempts');
+    }
+
+    async refreshToken() {
+      if (this._refreshPromise) return this._refreshPromise;
+      
+      this._refreshPromise = (async () => {
+        try {
+          const response = await this.request(ROUTES.refresh, { method: 'POST' });
+          if (response.data?.token) {
+            localStorage.setItem(STORAGE.token, response.data.token);
+            return response.data.token;
+          }
+          return null;
+        } catch {
+          return null;
+        } finally {
+          this._refreshPromise = null;
+        }
+      })();
+      
+      return this._refreshPromise;
+    }
+
+    async get(path) {
+      return this.request(path, { method: 'GET' });
+    }
+
+    async post(path, body) {
+      return this.request(path, {
+        method: 'POST',
+        body: JSON.stringify(body)
+      });
+    }
+
+    async put(path, body) {
+      return this.request(path, {
+        method: 'PUT',
+        body: JSON.stringify(body)
+      });
+    }
+
+    async delete(path) {
+      return this.request(path, { method: 'DELETE' });
+    }
+
+    async upload(path, formData, onProgress) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${this.baseUrl}${path}`);
+        
+        const token = localStorage.getItem(STORAGE.token);
+        if (token) {
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        }
+        
+        xhr.upload.onprogress = (e) => {
+          if (onProgress && e.lengthComputable) {
+            onProgress(e.loaded / e.total);
+          }
+        };
+        
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve({ success: true, data });
+            } else {
+              reject(new Error(data.error || data.message || `Upload failed: ${xhr.status}`));
+            }
+          } catch {
+            reject(new Error('Invalid response from server'));
+          }
+        };
+        
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.send(formData);
+      });
+    }
+
+    async streamMessages(conversationId, onMessage, onComplete, onError) {
+      if (!CONFIG.STREAMING_ENABLED || !this.state.state.settings.streaming) {
+        return null;
+      }
+
+      try {
+        const eventSource = new EventSource(
+          `${this.baseUrl}${ROUTES.stream(conversationId)}`,
+          { withCredentials: true }
+        );
+        
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            onMessage(data);
+          } catch (error) {
+            console.warn('Stream parse error:', error);
+          }
+        };
+        
+        eventSource.onerror = () => {
+          eventSource.close();
+          if (onComplete) onComplete();
+        };
+        
+        return eventSource;
+      } catch (error) {
+        if (onError) onError(error);
+        return null;
+      }
+    }
+
+    async getConversations() {
+      return this.get(ROUTES.conversations);
+    }
+
+    async getConversation(id) {
+      return this.get(ROUTES.conversation(id));
+    }
+
+    async createConversation(title) {
+      return this.post(ROUTES.conversations, { title });
+    }
+
+    async deleteConversation(id) {
+      return this.delete(ROUTES.conversation(id));
+    }
+
+    async sendMessage(conversationId, prompt, mode) {
+      return this.post(ROUTES.messages(conversationId), { prompt, mode });
+    }
+
+    async analyzeImage(imageData, prompt, sessionId) {
+      return this.post(ROUTES.imageAnalysis, {
+        image: imageData,
+        prompt,
+        session_id: sessionId
+      });
+    }
+
+    async generateImage(prompt, sessionId) {
+      return this.post(ROUTES.imageCreate, {
+        prompt,
+        aspect_ratio: '1:1',
+        session_id: sessionId
+      });
+    }
+
+    async getUserProfile() {
+      return this.get(ROUTES.identity);
+    }
+
+    async signOut() {
+      try {
+        await this.post(ROUTES.signOut, {});
+      } catch (error) {
+        console.debug('Sign out error:', error);
+      }
+    }
+
+    isAuthenticated() {
+      const token = localStorage.getItem(STORAGE.token);
+      if (!token) return false;
+      
+      try {
+        const payload = Utils.decodeJwt(token);
+        if (!payload) return false;
+        if (payload.exp && payload.exp * 1000 < Date.now()) return false;
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    getUserFromToken(token) {
+      const payload = Utils.decodeJwt(token);
+      if (!payload) return null;
+      
+      return {
+        name: payload.name || payload.given_name || payload.email || 'EONIX User',
+        email: payload.email || '',
+        picture: payload.picture || null,
+      };
+    }
+
+    async sendAnalytics(event, data) {
+      try {
+        await this.post(ROUTES.analytics, {
+          event,
+          data,
+          platform: Utils.getPlatformInfo(),
+          timestamp: Date.now()
+        });
+      } catch {
+        // Silently fail analytics
+      }
+    }
+  }
+
+  // ============================================
+  // UI CONTROLLER
+  // ============================================
+  
+  class UIController {
+    constructor(stateManager, apiClient) {
+      this.state = stateManager;
+      this.api = apiClient;
+      this.elements = {};
+      this.imageFileInput = null;
+      this._resizeObserver = null;
+      this._scrollTimeout = null;
+      this._renderTimeout = null;
+      this._eventSource = null;
+      this._isRendering = false;
+      
+      this.initElements();
+      this.bindEvents();
+      this.initSignalCanvas();
+      this.loadShortcuts();
+    }
+
+    // ============================================
+    // DOM ELEMENT REFERENCES
+    // ============================================
+    
+    initElements() {
+      const ids = [
+        'authGate', 'appShell', 'messages', 'sidebar', 'sidebarOverlay',
+        'historyList', 'historySearch', 'promptInput', 'composerForm',
+        'sendBtn', 'statusDot', 'statusText', 'modeSignal',
+        'activeTitle', 'messageCount', 'voiceWave',
+        'userName', 'userAvatar', 'profileName', 'profileEmail', 'profileAvatarLarge',
+        'statConversations', 'statMessages', 'statMode',
+        'messageScale', 'messageScaleValue', 'voiceSelect',
+        'modeSelect', 'settingsModeSelect',
+        'settingsModal', 'profileModal', 'actionsMenu', 'shortcutsModal',
+        'toastRegion', 'signalCanvas',
+        'mobileMenuBtn', 'collapseSidebarBtn',
+        'actionsMenuBtn', 'settingsMenuBtn', 'exportMenuBtn',
+        'clearMenuBtn', 'logoutMenuBtn', 'userProfileEntry',
+        'closeSettingsBtn', 'closeProfileBtn', 'openSettingsFromProfile',
+        'signOutFromProfile', 'signInBtn', 'googleSignInBtn',
+        'attachImageBtn', 'imageBtnTop', 'generateImageBtn', 'createImageBtnTop',
+        'voiceBtn', 'voiceBtnTop', 'newConversationBtn',
+        'shortcutsBtn', 'closeShortcutsBtn', 'uploadProgress'
+      ];
+
+      ids.forEach(id => {
+        this.elements[id] = document.getElementById(id);
+      });
+    }
+
+    $(id) {
+      return this.elements[id] || document.getElementById(id);
+    }
+
+    // ============================================
+    // SHORTCUTS
+    // ============================================
+    
+    loadShortcuts() {
+      const container = this.$('shortcutsList');
+      if (!container) return;
+      
+      container.innerHTML = Object.entries(SHORTCUTS).map(([key, desc]) => `
+        <div class="shortcut-row">
+          <kbd>${key}</kbd>
+          <span>${desc}</span>
+        </div>
+      `).join('');
+    }
+
+    // ============================================
+    // EVENT BINDING
+    // ============================================
+    
+    bindEvents() {
+      // Sidebar
+      this.elements.newConversationBtn?.addEventListener('click', () => this.createNewConversation());
+      this.elements.historySearch?.addEventListener('input', () => this.debounceRenderHistory());
+      this.elements.mobileMenuBtn?.addEventListener('click', () => this.openSidebar());
+      this.elements.collapseSidebarBtn?.addEventListener('click', () => this.closeSidebar());
+      this.elements.sidebarOverlay?.addEventListener('click', () => this.closeSidebar());
+
+      // Composer
+      this.elements.composerForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.sendMessage();
+      });
+      
+      this.elements.promptInput?.addEventListener('input', () => {
+        this.autoResizeInput();
+        this.updateSendButton();
+      });
+      
+      this.elements.promptInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.sendMessage();
+        }
+      });
+
+      // Actions
+      this.elements.attachImageBtn?.addEventListener('click', () => this.attachImage());
+      this.elements.imageBtnTop?.addEventListener('click', () => this.attachImage());
+      this.elements.generateImageBtn?.addEventListener('click', () => this.generateImage());
+      this.elements.createImageBtnTop?.addEventListener('click', () => this.generateImage());
+      
+      this.elements.voiceBtn?.addEventListener('click', () => this.toggleVoice());
+      this.elements.voiceBtnTop?.addEventListener('click', () => this.toggleVoice());
+
+      // Menu
+      this.elements.actionsMenuBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleActionsMenu();
+      });
+      
+      this.elements.settingsMenuBtn?.addEventListener('click', () => this.openSettings());
+      this.elements.exportMenuBtn?.addEventListener('click', () => this.exportConversations());
+      this.elements.clearMenuBtn?.addEventListener('click', () => this.clearAllHistory());
+      this.elements.logoutMenuBtn?.addEventListener('click', () => this.signOut());
+      this.elements.userProfileEntry?.addEventListener('click', () => this.openProfile('overview'));
+
+      // Shortcuts
+      this.elements.shortcutsBtn?.addEventListener('click', () => this.toggleShortcutsModal());
+      this.elements.closeShortcutsBtn?.addEventListener('click', () => this.toggleShortcutsModal());
+
+      // Modals
+      this.elements.closeSettingsBtn?.addEventListener('click', () => this.closeSettings());
+      this.elements.closeProfileBtn?.addEventListener('click', () => this.closeProfile());
+      this.elements.openSettingsFromProfile?.addEventListener('click', () => {
+        this.closeProfile();
+        this.openSettings();
+      });
+      this.elements.signOutFromProfile?.addEventListener('click', () => this.signOut());
+
+      // Auth
+      this.elements.signInBtn?.addEventListener('click', () => this.startSignIn());
+      this.elements.googleSignInBtn?.addEventListener('click', () => this.startSignIn());
+
+      // Settings
+      this.elements.modeSelect?.addEventListener('change', (e) => {
+        this.state.state.settings.mode = e.target.value;
+        this.applySettings();
+      });
+      
+      this.elements.settingsModeSelect?.addEventListener('change', (e) => {
+        this.state.state.settings.mode = e.target.value;
+        this.applySettings();
+      });
+      
+      this.elements.voiceSelect?.addEventListener('change', (e) => {
+        this.state.state.settings.voice = e.target.value;
+        this.state.saveSettings();
+      });
+      
+      this.elements.messageScale?.addEventListener('input', (e) => {
+        this.state.state.settings.messageScale = Number(e.target.value);
+        this.applySettings(false);
+      });
+
+      // Theme buttons
+      document.querySelectorAll('[data-theme-choice]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.state.state.settings.theme = btn.dataset.themeChoice;
+          this.applySettings();
+        });
+      });
+
+      // Accent buttons
+      document.querySelectorAll('#accentControls [data-accent]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.state.state.settings.accent = btn.dataset.accent;
+          this.applySettings();
+        });
+      });
+
+      // Density buttons
+      document.querySelectorAll('[data-density-choice]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.state.state.settings.density = btn.dataset.densityChoice;
+          this.applySettings();
+        });
+      });
+
+      // Profile tabs
+      document.querySelectorAll('[data-profile-tab]').forEach(button => {
+        button.addEventListener('click', () => {
+          this.activateProfileTab(button.dataset.profileTab);
+        });
+      });
+
+      // Modal background clicks
+      this.elements.settingsModal?.addEventListener('click', (e) => {
+        if (e.target === this.elements.settingsModal) this.closeSettings();
+      });
+      
+      this.elements.profileModal?.addEventListener('click', (e) => {
+        if (e.target === this.elements.profileModal) this.closeProfile();
+      });
+
+      this.elements.shortcutsModal?.addEventListener('click', (e) => {
+        if (e.target === this.elements.shortcutsModal) this.toggleShortcutsModal();
+      });
+
+      // Global events
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.actions-menu-wrap')) {
+          this.closeActionsMenu();
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          this.closeSettings();
+          this.closeProfile();
+          this.closeSidebar();
+          this.closeActionsMenu();
+          if (this.elements.shortcutsModal?.classList.contains('active')) {
+            this.toggleShortcutsModal();
+          }
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          this.createNewConversation();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') {
+          e.preventDefault();
+          this.sendMessage();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+          e.preventDefault();
+          this.toggleShortcutsModal();
+        }
+      });
+
+      // Theme change
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (this.state.state.settings.theme === 'system') {
+          this.applySettings(false);
+        }
+      });
+
+      // State events
+      this.state.on('conversationsUpdated', () => this.renderAll());
+      this.state.on('messageAdded', () => {
+        this.renderMessages();
+        this.scrollToBottom();
+      });
+      this.state.on('processingChanged', (processing) => this.updateProcessingState(processing));
+      this.state.on('settingsUpdated', () => this.renderAll());
+      this.state.on('online', (online) => {
+        if (online) {
+          this.showToast('Back online', 'Your messages will sync.', 'success');
+        } else {
+          this.showToast('Offline', 'Messages will be queued.', 'warning');
+        }
+        this.updateSendButton();
+      });
+      this.state.on('offlineQueueProcessing', (count) => {
+        this.showToast('Syncing', `Sending ${count} queued messages...`, 'info');
+      });
+    }
+
+    // ============================================
+    // RENDER FUNCTIONS
+    // ============================================
+    
+    renderAll() {
+      if (this._isRendering) return;
+      this._isRendering = true;
+      
+      clearTimeout(this._renderTimeout);
+      this._renderTimeout = setTimeout(() => {
+        try {
+          this.renderHistory();
+          this.renderMessages();
+          this.renderStats();
+          this.renderHeader();
+          this.syncIcons();
+          this.updateSendButton();
+        } catch (error) {
+          console.error('Render error:', error);
+          this.showToast('Display error', 'Reloading view...', 'warning');
+        } finally {
+          this._isRendering = false;
+        }
+      }, 100);
+    }
+
+    debounceRenderHistory() {
+      clearTimeout(this._renderTimeout);
+      this._renderTimeout = setTimeout(() => this.renderHistory(), CONFIG.DEBOUNCE_DELAY);
+    }
+
+    renderHistory() {
+      const container = this.elements.historyList;
+      if (!container) return;
+
+      const term = this.elements.historySearch?.value.trim().toLowerCase() || '';
+      const conversations = this.state.state.conversations;
+      const filtered = conversations.filter(c => 
+        c.title.toLowerCase().includes(term)
+      );
+
+      container.innerHTML = '';
+
       if (!filtered.length) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = term ? "No matching conversations." : "No conversations yet.";
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = term ? 'No matching conversations.' : 'No conversations yet.';
         container.appendChild(empty);
         return;
       }
-      const grouped = groupConversations(filtered);
+
+      const grouped = Utils.groupConversations(filtered);
+      
       Object.entries(grouped).forEach(([label, items]) => {
         if (!items.length) return;
-        const heading = document.createElement("h2");
-        heading.className = "history-heading";
+        
+        const heading = document.createElement('h2');
+        heading.className = 'history-heading';
         heading.textContent = label;
         container.appendChild(heading);
+
         items.forEach(conversation => {
-          const row = document.createElement("div");
-          row.className = `history-row ${conversation.id === state.currentId ? "active" : ""}`;
-          row.setAttribute("role", "button");
-          row.setAttribute("tabindex", "0");
-          row.setAttribute("aria-label", `Open ${conversation.title || "conversation"}`);
-          row.addEventListener("click", event => {
-            if (event.target.closest(".history-delete")) return;
-            state.currentId = conversation.id;
-            renderAll();
-            closeSidebarOnMobile();
+          const row = document.createElement('div');
+          row.className = `history-row ${conversation.id === this.state.state.currentId ? 'active' : ''}`;
+          row.setAttribute('role', 'button');
+          row.setAttribute('tabindex', '0');
+          row.setAttribute('aria-label', `Open ${conversation.title || 'conversation'}`);
+
+          row.addEventListener('click', (e) => {
+            if (e.target.closest('.history-delete')) return;
+            this.state.setCurrentId(conversation.id);
+            this.renderAll();
+            this.closeSidebarOnMobile();
           });
-          row.addEventListener("keydown", event => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              state.currentId = conversation.id;
-              renderAll();
-              closeSidebarOnMobile();
+
+          row.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this.state.setCurrentId(conversation.id);
+              this.renderAll();
+              this.closeSidebarOnMobile();
             }
           });
 
-          const icon = document.createElement("span");
-          icon.className = "ico";
-          icon.dataset.lucide = "message-square";
-          icon.textContent = "C";
+          const icon = document.createElement('span');
+          icon.className = 'ico';
+          icon.dataset.lucide = 'message-square';
+          icon.textContent = 'C';
 
-          const copy = document.createElement("span");
-          copy.className = "history-copy";
-          copy.innerHTML = `<span class="history-title">${escapeHtml(conversation.title || "New Conversation")}</span><span class="history-time">${escapeHtml(formatRelative(conversation.updatedAt))}</span>`;
+          const copy = document.createElement('span');
+          copy.className = 'history-copy';
+          copy.innerHTML = `
+            <span class="history-title">${Utils.escapeHtml(conversation.title || 'New Conversation')}</span>
+            <span class="history-time">${Utils.escapeHtml(Utils.formatRelative(conversation.updatedAt))}</span>
+          `;
 
-          const del = document.createElement("button");
-          del.type = "button";
-          del.className = "history-delete";
-          del.setAttribute("aria-label", `Delete ${conversation.title || "conversation"}`);
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.className = 'history-delete';
+          del.setAttribute('aria-label', `Delete ${conversation.title || 'conversation'}`);
           del.innerHTML = '<span class="ico" data-lucide="x">X</span>';
-          del.addEventListener("click", event => {
-            event.stopPropagation();
-            deleteConversation(conversation.id);
+          del.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteConversation(conversation.id);
           });
 
           row.append(icon, copy, del);
           container.appendChild(row);
         });
       });
-      syncIcons();
+
+      this.syncIcons();
     }
 
-    function renderWelcome(container) {
-      const board = document.createElement("section");
-      board.className = "welcome-board";
-      board.innerHTML = `<div class="welcome-head"><div class="welcome-mark"><span class="ico" data-lucide="scan-line">EX</span></div><div><h3>EONIX is ready.</h3><p>${escapeHtml(getMode().status)}</p></div></div>`;
-      const grid = document.createElement("div");
-      grid.className = "starter-grid";
+    renderMessages() {
+      const container = this.elements.messages;
+      if (!container) return;
+
+      const conversation = this.state.getCurrentConversation();
+      
+      // Preserve scroll position
+      const scrollPos = container.scrollTop;
+      const height = container.scrollHeight;
+
+      container.innerHTML = '';
+
+      if (!conversation || !conversation.messages?.length) {
+        this.renderWelcome(container);
+        this.syncIcons();
+        return;
+      }
+
+      // Get visible messages (last N)
+      const messages = conversation.messages;
+      const start = Math.max(0, messages.length - CONFIG.MAX_VISIBLE_MESSAGES);
+      const visible = messages.slice(start);
+
+      if (start > 0) {
+        const indicator = document.createElement('div');
+        indicator.className = 'older-messages-indicator';
+        indicator.textContent = `${start} older messages`;
+        container.appendChild(indicator);
+      }
+
+      visible.forEach(message => {
+        container.appendChild(this.createMessageNode(message));
+      });
+
+      // Restore scroll if not at bottom
+      if (scrollPos > 0 && scrollPos < height - 100) {
+        container.scrollTop = scrollPos;
+      }
+
+      this.syncIcons();
+    }
+
+    renderWelcome(container) {
+      const board = document.createElement('section');
+      board.className = 'welcome-board';
+      
+      const mode = this.state.getMode();
+      board.innerHTML = `
+        <div class="welcome-head">
+          <div class="welcome-mark">
+            <span class="ico" data-lucide="scan-line">EX</span>
+          </div>
+          <div>
+            <h3>EONIX is ready.</h3>
+            <p>${Utils.escapeHtml(mode.status)}</p>
+          </div>
+        </div>
+      `;
+
+      const grid = document.createElement('div');
+      grid.className = 'starter-grid';
+      
       STARTERS.forEach(starter => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "starter";
-        button.innerHTML = `<span class="ico" data-lucide="corner-down-right">></span><strong>${escapeHtml(starter.title)}</strong><span>${escapeHtml(starter.text)}</span>`;
-        button.addEventListener("click", () => {
-          $("promptInput").value = starter.text;
-          autoResizeInput();
-          $("promptInput").focus();
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'starter';
+        button.innerHTML = `
+          <span class="ico" data-lucide="corner-down-right">></span>
+          <strong>${Utils.escapeHtml(starter.title)}</strong>
+          <span>${Utils.escapeHtml(starter.text)}</span>
+        `;
+        button.addEventListener('click', () => {
+          if (this.elements.promptInput) {
+            this.elements.promptInput.value = starter.text;
+            this.autoResizeInput();
+            this.elements.promptInput.focus();
+            this.updateSendButton();
+          }
         });
         grid.appendChild(button);
       });
+
       board.appendChild(grid);
       container.appendChild(board);
     }
 
-    function renderMessageContent(container, text) {
-      String(text || "").split(/\n{2,}/).forEach(paragraph => {
-        if (!paragraph.trim()) return;
-        const p = document.createElement("p");
-        p.textContent = paragraph;
-        container.appendChild(p);
-      });
-    }
-
-    function miniButton(iconName, label, handler) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "mini-action";
-      button.setAttribute("aria-label", label);
-      button.innerHTML = `<span class="ico" data-lucide="${iconName}">${label.charAt(0)}</span>`;
-      button.addEventListener("click", handler);
-      return button;
-    }
-
-    function createMessageNode(message) {
-      const outer = document.createElement("article");
-      outer.className = `message ${message.role}-message`;
-      const content = document.createElement("div");
-      content.className = "message-content";
-      renderMessageContent(content, message.content);
-      const meta = document.createElement("div");
-      meta.className = "message-meta";
-      meta.appendChild(Object.assign(document.createElement("span"), {
-        textContent: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      }));
-      if (message.role === "assistant") {
-        meta.appendChild(Object.assign(document.createElement("span"), { textContent: getMode(message.mode).label }));
+    renderHeader() {
+      const conversation = this.state.getCurrentConversation();
+      if (this.elements.activeTitle) {
+        this.elements.activeTitle.textContent = conversation ? conversation.title : 'EONIX Workspace';
       }
-      const actions = document.createElement("span");
-      actions.className = "message-actions";
-      actions.append(miniButton("copy", "Copy", () => copyText(message.content)), miniButton("volume-2", "Speak", () => speak(message.content)));
+      
+      if (this.elements.messageCount) {
+        const count = conversation?.messages?.filter(m => m.role !== 'system').length || 0;
+        this.elements.messageCount.textContent = `${count} ${count === 1 ? 'message' : 'messages'}`;
+      }
+
+      this.updateModeLabels();
+    }
+
+    renderStats() {
+      if (this.elements.statConversations) {
+        this.elements.statConversations.textContent = this.state.state.conversations.length;
+      }
+      
+      if (this.elements.statMessages) {
+        const count = this.state.state.conversations.reduce(
+          (sum, c) => sum + (c.messages?.length || 0), 0
+        );
+        this.elements.statMessages.textContent = count;
+      }
+    }
+
+    // ============================================
+    // MESSAGE NODE CREATION
+    // ============================================
+    
+    createMessageNode(message) {
+      const outer = document.createElement('article');
+      outer.className = `message ${message.role}-message`;
+
+      const content = document.createElement('div');
+      content.className = 'message-content';
+
+      // Render attachments safely
+      if (message.attachments?.length) {
+        message.attachments.forEach(attachment => {
+          const url = attachment.url || attachment;
+          if (!Utils.isSafeUrl(url)) return;
+          
+          if (typeof url === 'string' && (url.startsWith('data:image/') || url.startsWith('https://'))) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = attachment.alt || attachment.caption || 'Image';
+            img.style.cssText = 'max-width:100%;border-radius:8px;margin:8px 0;display:block;';
+            img.onerror = function() { this.style.display = 'none'; };
+            content.appendChild(img);
+
+            if (attachment.caption) {
+              const caption = document.createElement('figcaption');
+              caption.style.cssText = 'font-size:12px;color:var(--text-3);margin-bottom:8px;';
+              caption.textContent = attachment.caption;
+              content.appendChild(caption);
+            }
+          }
+        });
+      }
+
+      // Render content safely
+      if (message.content) {
+        if (message.content.includes('<img') && message.role === 'assistant') {
+          // Sanitize HTML - only allow img tags with safe src
+          const div = document.createElement('div');
+          div.innerHTML = message.content;
+          const imgs = div.querySelectorAll('img');
+          imgs.forEach(img => {
+            if (!Utils.isSafeUrl(img.src)) {
+              img.remove();
+            }
+          });
+          content.appendChild(div);
+        } else {
+          this.renderMessageContent(content, message.content);
+        }
+      }
+
+      // Metadata
+      const meta = document.createElement('div');
+      meta.className = 'message-meta';
+      
+      const time = document.createElement('span');
+      time.textContent = new Date(message.createdAt).toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      meta.appendChild(time);
+
+      if (message.role === 'assistant') {
+        const mode = document.createElement('span');
+        mode.textContent = this.state.getMode(message.mode).label;
+        meta.appendChild(mode);
+      }
+
+      const actions = document.createElement('span');
+      actions.className = 'message-actions';
+      
+      actions.appendChild(this.createMiniButton('copy', 'Copy', () => {
+        const text = this.getPlainText(message.content);
+        this.copyText(text);
+      }));
+
+      actions.appendChild(this.createMiniButton('volume-2', 'Speak', () => {
+        const text = this.getPlainText(message.content);
+        this.speak(text);
+      }));
+
       meta.appendChild(actions);
       outer.append(content, meta);
       return outer;
     }
 
-    function renderMessages() {
-      const container = $("messages");
-      const conversation = currentConversation();
-      container.innerHTML = "";
-      if (!conversation || !conversation.messages || !conversation.messages.length) {
-        renderWelcome(container);
-        syncIcons();
+    getPlainText(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      return div.textContent || html.replace(/<[^>]*>/g, '');
+    }
+
+    renderMessageContent(container, text) {
+      String(text || '').split(/\n{2,}/).forEach(paragraph => {
+        if (!paragraph.trim()) return;
+        const p = document.createElement('p');
+        p.textContent = paragraph;
+        container.appendChild(p);
+      });
+    }
+
+    createMiniButton(iconName, label, handler) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'mini-action';
+      button.setAttribute('aria-label', label);
+      button.innerHTML = `<span class="ico" data-lucide="${iconName}">${label.charAt(0)}</span>`;
+      button.addEventListener('click', handler);
+      return button;
+    }
+
+    // ============================================
+    // MESSAGE OPERATIONS
+    // ============================================
+    
+    async sendMessage() {
+      const input = this.elements.promptInput;
+      if (!input) return;
+
+      const text = input.value.trim();
+      if (!text || this.state.state.processing) return;
+      
+      if (text.length > CONFIG.MAX_MESSAGE_LENGTH) {
+        this.showToast('Message too long', `Maximum ${CONFIG.MAX_MESSAGE_LENGTH} characters`, 'warning');
         return;
       }
-      if (!conversation.messages.some(message => message.role !== "system")) renderWelcome(container);
-      conversation.messages.forEach(message => container.appendChild(createMessageNode(message)));
-      syncIcons();
+
+      // Check offline status
+      if (!Utils.isOnline()) {
+        this.state.addToOfflineQueue({
+          type: 'message',
+          conversationId: this.state.state.currentId,
+          prompt: text,
+          mode: this.state.state.settings.mode
+        });
+        this.showToast('Offline', 'Message queued for later.', 'warning');
+        input.value = '';
+        this.autoResizeInput();
+        this.updateSendButton();
+        return;
+      }
+
+      let conversation = this.state.getCurrentConversation();
+      if (!conversation) {
+        conversation = await this.createNewConversation();
+        if (!conversation) return;
+      }
+
+      input.value = '';
+      this.autoResizeInput();
+      this.updateSendButton();
+
+      // Add user message
+      const userMessage = this.state.addMessage(conversation.id, {
+        role: 'user',
+        content: text,
+        mode: this.state.state.settings.mode
+      });
+
+      this.setProcessing(true);
+      this.showTyping();
+
+      try {
+        let response;
+        
+        if (this.isPreviewMode()) {
+          await Utils.delay(600);
+          response = { data: { response: await this.generateLocalReply(text) } };
+        } else {
+          // Try streaming first
+          if (CONFIG.STREAMING_ENABLED && this.state.state.settings.streaming) {
+            await this.streamMessage(conversation.id, text);
+            this.hideTyping();
+            this.setProcessing(false);
+            return;
+          }
+
+          response = await this.api.sendMessage(
+            conversation.id,
+            text,
+            this.state.state.settings.mode
+          );
+        }
+
+        this.hideTyping();
+
+        this.state.addMessage(conversation.id, {
+          role: 'assistant',
+          content: response.data.response || response.data.message || 'I am ready.',
+          mode: response.data.mode || this.state.state.settings.mode
+        });
+
+        if (!this.isPreviewMode()) {
+          await this.refreshConversation(conversation.id);
+        }
+
+        this.api.sendAnalytics('message_sent', {
+          conversationId: conversation.id,
+          mode: this.state.state.settings.mode,
+          length: text.length
+        });
+
+      } catch (error) {
+        this.hideTyping();
+        this.state.addMessage(conversation.id, {
+          role: 'system',
+          content: 'EONIX could not complete that request. Please try again.',
+          mode: this.state.state.settings.mode
+        });
+        this.showToast('Request interrupted', error.message || 'Unknown error', 'error');
+      } finally {
+        this.setProcessing(false);
+        input.focus();
+        this.updateSendButton();
+      }
     }
 
-    function renderAll() {
-      renderHistory();
-      renderMessages();
-      renderStats();
-      renderHeader();
-      syncIcons();
+    async streamMessage(conversationId, prompt) {
+      return new Promise((resolve, reject) => {
+        let fullResponse = '';
+        let messageId = null;
+
+        this.api.streamMessages(
+          conversationId,
+          (data) => {
+            if (data.delta) {
+              fullResponse += data.delta;
+              this.updateTypingMessage(fullResponse);
+            }
+            if (data.message_id) {
+              messageId = data.message_id;
+            }
+            if (data.done) {
+              this.hideTyping();
+              this.state.addMessage(conversationId, {
+                id: messageId,
+                role: 'assistant',
+                content: fullResponse,
+                mode: this.state.state.settings.mode
+              });
+              this.refreshConversation(conversationId);
+              resolve();
+            }
+          },
+          () => {
+            // Stream completed without explicit done
+            if (fullResponse) {
+              this.hideTyping();
+              this.state.addMessage(conversationId, {
+                id: messageId || Utils.generateId('msg'),
+                role: 'assistant',
+                content: fullResponse,
+                mode: this.state.state.settings.mode
+              });
+              this.refreshConversation(conversationId);
+            }
+            resolve();
+          },
+          (error) => {
+            reject(error);
+          }
+        );
+      });
     }
 
-    function openSidebar() {
-      $("sidebar").classList.add("open");
-      $("sidebarOverlay").classList.add("active");
+    updateTypingMessage(content) {
+      const typing = document.getElementById('typingMessage');
+      if (typing) {
+        const contentDiv = typing.querySelector('.message-content');
+        if (contentDiv) {
+          contentDiv.innerHTML = '';
+          this.renderMessageContent(contentDiv, content);
+        }
+        this.scrollToBottom();
+      }
     }
 
-    function closeSidebar() {
-      $("sidebar").classList.remove("open");
-      $("sidebarOverlay").classList.remove("active");
+    async generateLocalReply(prompt) {
+      const mode = this.state.getMode();
+      const lower = prompt.toLowerCase();
+      
+      if (lower.includes('plan') || lower.includes('build')) {
+        return [
+          `${mode.label} has structured the work:`,
+          '1. Define the outcome and success criteria.',
+          '2. Identify the smallest useful version.',
+          '3. Build the core path first.',
+          '4. Polish after stable behavior.',
+          '5. Verify desktop and mobile.'
+        ].join('\n');
+      }
+      
+      if (lower.includes('rewrite') || lower.includes('write')) {
+        return 'Sharper direction:\n\nLead with the result, remove filler, and keep every sentence useful.';
+      }
+      
+      if (lower.includes('image') || lower.includes('visual')) {
+        return 'I would steer toward a high-contrast command surface with restrained motion, clear control density, and premium visual hierarchy.';
+      }
+      
+      return `${mode.label} is online.\n\nSend the next detail and I will tighten it.`;
     }
 
-    function closeSidebarOnMobile() {
-      if (matchMedia("(max-width: 820px)").matches) closeSidebar();
+    async refreshConversation(id) {
+      try {
+        const response = await this.api.getConversation(id);
+        const data = response.data;
+        const conversation = this.state.getConversation(id);
+        
+        if (conversation) {
+          const messages = data.messages || data.conversation?.messages || data.session?.messages || [];
+          conversation.messages = messages.map(m => this.state.normalizeMessage(m));
+          conversation.title = data.conversation?.title || data.session?.title || conversation.title;
+          conversation.updatedAt = data.conversation?.updated_at || data.session?.updated_at || conversation.updatedAt;
+          
+          this.state.saveConversations();
+          this.renderAll();
+        }
+      } catch (error) {
+        console.warn('Failed to refresh conversation:', error);
+      }
     }
 
-    function openSettings() {
-      closeActionsMenu();
-      renderStats();
-      $("settingsModal").classList.add("active");
+    updateSendButton() {
+      const input = this.elements.promptInput;
+      const btn = this.elements.sendBtn;
+      if (!input || !btn) return;
+      
+      const hasText = input.value.trim().length > 0;
+      const isOnline = Utils.isOnline();
+      btn.disabled = !hasText || this.state.state.processing || !isOnline;
+      
+      if (!isOnline && hasText) {
+        btn.title = 'You are offline. Messages will be queued.';
+      } else {
+        btn.title = '';
+      }
     }
 
-    function closeSettings() {
-      $("settingsModal").classList.remove("active");
+    // ============================================
+    // CONVERSATION MANAGEMENT
+    // ============================================
+    
+    async createNewConversation(title = 'New Conversation') {
+      this.closeSidebarOnMobile();
+
+      if (this.isPreviewMode()) {
+        const conversation = {
+          id: Utils.generateId('conv'),
+          title,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          messages: []
+        };
+        this.state.addConversation(conversation);
+        this.renderAll();
+        return conversation;
+      }
+
+      try {
+        const response = await this.api.createConversation(title);
+        const data = response.data;
+        const conversation = {
+          id: data.conversation_id || data.session_id || Utils.generateId('conv'),
+          title: data.title || title,
+          createdAt: data.created_at || new Date().toISOString(),
+          updatedAt: data.updated_at || new Date().toISOString(),
+          messages: []
+        };
+        this.state.addConversation(conversation);
+        this.renderAll();
+        
+        this.api.sendAnalytics('conversation_created', {
+          conversationId: conversation.id
+        });
+        
+        return conversation;
+      } catch (error) {
+        this.showToast('Failed to create conversation', error.message, 'error');
+        return null;
+      }
     }
 
-    function openProfile(tabName = "overview") {
-      if (state.user) setUser(state.user);
-      activateProfileTab(tabName);
-      $("profileModal").classList.add("active");
-      closeSidebarOnMobile();
+    async deleteConversation(id) {
+      const conversation = this.state.getConversation(id);
+      if (!conversation) return;
+      
+      if (!confirm(`Delete "${conversation.title}"?`)) return;
+
+      if (!this.isPreviewMode()) {
+        try {
+          await this.api.deleteConversation(id);
+        } catch (error) {
+          console.warn('Failed to delete conversation on server:', error);
+        }
+      }
+
+      this.state.deleteConversation(id);
+      
+      if (!this.state.state.currentId) {
+        await this.createNewConversation();
+      }
+
+      this.renderAll();
+      this.showToast('Conversation deleted', conversation.title, 'success');
     }
 
-    function closeProfile() {
-      $("profileModal").classList.remove("active");
+    async clearAllHistory() {
+      if (!confirm('Delete all conversations? This cannot be undone.')) return;
+
+      if (!this.isPreviewMode()) {
+        for (const conversation of this.state.state.conversations) {
+          try {
+            await this.api.deleteConversation(conversation.id);
+          } catch (error) {
+            console.warn('Failed to delete conversation:', error);
+          }
+        }
+      }
+
+      this.state.state.conversations = [];
+      this.state.state.currentId = null;
+      this.state.saveConversations();
+      
+      await this.createNewConversation();
+      this.closeActionsMenu();
+      this.showToast('History cleared', 'A fresh workspace is ready.', 'success');
+      
+      this.api.sendAnalytics('history_cleared', {
+        count: this.state.state.conversations.length
+      });
     }
 
-    function activateProfileTab(tabName) {
-      document.querySelectorAll("[data-profile-tab]").forEach(button => {
+    // ============================================
+    // IMAGE HANDLING
+    // ============================================
+    
+    attachImage() {
+      if (!this.imageFileInput) {
+        this.imageFileInput = document.createElement('input');
+        this.imageFileInput.type = 'file';
+        this.imageFileInput.accept = 'image/*';
+        this.imageFileInput.style.display = 'none';
+        this.imageFileInput.addEventListener('change', (e) => this.handleImageUpload(e));
+        document.body.appendChild(this.imageFileInput);
+      }
+      this.imageFileInput.click();
+    }
+
+    async handleImageUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        this.showToast('Invalid file', 'Please select an image file.', 'error');
+        event.target.value = '';
+        return;
+      }
+
+      if (file.size > CONFIG.MAX_IMAGE_SIZE) {
+        this.showToast('File too large', `Maximum image size is ${CONFIG.MAX_IMAGE_SIZE / (1024 * 1024)}MB.`, 'error');
+        event.target.value = '';
+        return;
+      }
+
+      // Check offline
+      if (!Utils.isOnline()) {
+        this.showToast('Offline', 'Image uploads require an internet connection.', 'warning');
+        event.target.value = '';
+        return;
+      }
+
+      try {
+        this.showToast('Processing image', 'Uploading and analyzing...', 'info');
+
+        const imageData = await Utils.readFileAsBase64(file);
+        const promptText = prompt('Describe what you want to analyze in this image:', 'Describe this image in detail.');
+        if (promptText === null) {
+          event.target.value = '';
+          return;
+        }
+
+        let conversation = this.state.getCurrentConversation();
+        if (!conversation) {
+          conversation = await this.createNewConversation();
+          if (!conversation) {
+            event.target.value = '';
+            return;
+          }
+        }
+
+        // Show progress
+        this.showUploadProgress(0);
+        
+        let response;
+        if (this.isPreviewMode()) {
+          await Utils.delay(800);
+          response = { data: { analysis: 'Image analyzed successfully in preview mode.' } };
+        } else {
+          const formData = new FormData();
+          formData.append('image', file);
+          formData.append('prompt', promptText);
+          formData.append('session_id', conversation.id);
+          
+          const result = await this.api.upload(ROUTES.imageAnalysis, formData, (progress) => {
+            this.showUploadProgress(progress);
+          });
+          response = result;
+        }
+
+        this.hideUploadProgress();
+
+        this.state.addMessage(conversation.id, {
+          role: 'user',
+          content: `📷 ${promptText}`,
+          mode: 'EONIX-vision',
+          attachments: [{ url: imageData, caption: promptText, alt: 'Uploaded image' }]
+        });
+
+        this.state.addMessage(conversation.id, {
+          role: 'assistant',
+          content: response.data.analysis || response.data.response || 'Image analyzed successfully.',
+          mode: 'EONIX-vision'
+        });
+
+        this.showToast('Analysis complete', 'Image analyzed successfully!', 'success');
+
+      } catch (error) {
+        console.error('Image upload error:', error);
+        this.hideUploadProgress();
+        this.showToast('Analysis failed', error.message || 'Could not process image.', 'error');
+      }
+
+      event.target.value = '';
+    }
+
+    showUploadProgress(progress) {
+      const container = this.elements.uploadProgress;
+      if (!container) return;
+      
+      container.style.display = 'block';
+      const percent = Math.round(progress * 100);
+      const bar = container.querySelector('.progress-bar');
+      const label = container.querySelector('.progress-label');
+      
+      if (bar) bar.style.width = `${percent}%`;
+      if (label) label.textContent = `Uploading... ${percent}%`;
+    }
+
+    hideUploadProgress() {
+      const container = this.elements.uploadProgress;
+      if (!container) return;
+      container.style.display = 'none';
+    }
+
+    async generateImage() {
+      const input = this.elements.promptInput;
+      if (!input) return;
+
+      const prompt = input.value.trim();
+      if (!prompt) {
+        this.showToast('Add a prompt', 'Describe what EONIX Forge should create.', 'warning');
+        input.focus();
+        return;
+      }
+
+      if (!Utils.isOnline()) {
+        this.showToast('Offline', 'Image generation requires an internet connection.', 'warning');
+        return;
+      }
+
+      try {
+        let conversation = this.state.getCurrentConversation();
+        if (!conversation) {
+          conversation = await this.createNewConversation();
+          if (!conversation) return;
+        }
+
+        let response;
+        if (this.isPreviewMode()) {
+          await Utils.delay(1200);
+          response = { data: { image_url: 'https://via.placeholder.com/512x512/333/cyan?text=EONIX+Forge' } };
+        } else {
+          response = await this.api.generateImage(prompt, conversation.id);
+        }
+
+        this.state.addMessage(conversation.id, {
+          role: 'user',
+          content: `🎨 Create image: ${prompt}`,
+          mode: 'EONIX-forge'
+        });
+
+        const imageUrl = response.data.image_url || response.data.url;
+        this.state.addMessage(conversation.id, {
+          role: 'assistant',
+          content: `Generated image for: ${prompt}`,
+          mode: 'EONIX-forge',
+          attachments: [{ url: imageUrl, caption: prompt, alt: prompt }]
+        });
+
+        input.value = '';
+        this.autoResizeInput();
+        this.updateSendButton();
+        this.showToast('Image created', 'EONIX Forge generated your image!', 'success');
+
+      } catch (error) {
+        console.error('Image generation error:', error);
+        this.showToast('Generation failed', error.message || 'Could not generate image.', 'error');
+      }
+    }
+
+    // ============================================
+    // VOICE RECOGNITION
+    // ============================================
+    
+    toggleVoice() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        this.showToast('Voice unavailable', 'Speech input is not supported in this browser.', 'warning');
+        return;
+      }
+
+      if (!this.state.state.recognition) {
+        this.state.state.recognition = new SpeechRecognition();
+        this.state.state.recognition.continuous = false;
+        this.state.state.recognition.interimResults = true;
+        this.state.state.recognition.lang = this.state.state.settings.voice;
+
+        this.state.state.recognition.onresult = (event) => {
+          let transcript = '';
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            transcript += event.results[i][0].transcript;
+          }
+          
+          if (this.elements.promptInput) {
+            this.elements.promptInput.value = transcript;
+            this.autoResizeInput();
+            this.updateSendButton();
+          }
+
+          if (event.results[event.results.length - 1].isFinal) {
+            this.sendMessage();
+          }
+        };
+
+        this.state.state.recognition.onerror = (event) => {
+          this.state.state.listening = false;
+          this.updateVoiceState();
+          if (event.error !== 'aborted') {
+            this.showToast('Voice stopped', event.error || 'Recognition ended.', 'warning');
+          }
+        };
+
+        this.state.state.recognition.onend = () => {
+          this.state.state.listening = false;
+          this.updateVoiceState();
+        };
+      }
+
+      if (this.state.state.listening) {
+        this.state.state.recognition.stop();
+        this.state.state.listening = false;
+      } else {
+        this.state.state.recognition.lang = this.state.state.settings.voice;
+        this.state.state.recognition.start();
+        this.state.state.listening = true;
+      }
+
+      this.updateVoiceState();
+    }
+
+    updateVoiceState() {
+      if (this.elements.voiceWave) {
+        this.elements.voiceWave.classList.toggle('active', this.state.state.listening);
+      }
+      
+      ['voiceBtn', 'voiceBtnTop'].forEach(id => {
+        const button = this.elements[id];
+        if (button) {
+          button.style.color = this.state.state.listening ? 'var(--danger)' : '';
+        }
+      });
+    }
+
+    speak(text) {
+      if (!window.speechSynthesis) {
+        this.showToast('Voice unavailable', 'Speech playback is not supported here.', 'warning');
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = this.state.state.settings.voice;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+
+    copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => this.showToast('Copied', 'Message copied to clipboard.', 'success'))
+          .catch(() => this.showToast('Copy failed', 'Clipboard access was not available.', 'warning'));
+      } else {
+        this.showToast('Copy unavailable', 'Clipboard access was not available.', 'warning');
+      }
+    }
+
+    // ============================================
+    // UI HELPERS
+    // ============================================
+    
+    showToast(title, message = '', type = 'info') {
+      const iconMap = { 
+        success: 'check-circle-2', 
+        error: 'circle-alert', 
+        warning: 'triangle-alert', 
+        info: 'info' 
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span class="ico" data-lucide="${iconMap[type] || 'info'}">!</span>
+        <span>
+          <strong>${Utils.escapeHtml(title)}</strong>
+          <span>${Utils.escapeHtml(message)}</span>
+        </span>
+      `;
+
+      const container = this.elements.toastRegion;
+      if (container) {
+        container.appendChild(toast);
+        this.syncIcons();
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateX(16px)';
+          setTimeout(() => toast.remove(), 180);
+        }, CONFIG.TOAST_DURATION);
+      }
+    }
+
+    setProcessing(processing) {
+      this.state.setProcessing(processing);
+      this.updateProcessingState(processing);
+    }
+
+    updateProcessingState(processing) {
+      if (this.elements.sendBtn) {
+        this.elements.sendBtn.disabled = processing;
+      }
+      if (this.elements.promptInput) {
+        this.elements.promptInput.disabled = processing;
+      }
+      if (this.elements.statusDot) {
+        this.elements.statusDot.style.background = processing ? 'var(--warning)' : 'var(--success)';
+      }
+      this.updateModeLabels();
+      this.updateSendButton();
+    }
+
+    showTyping() {
+      if (document.getElementById('typingMessage')) return;
+      
+      const article = document.createElement('article');
+      article.className = 'message assistant-message';
+      article.id = 'typingMessage';
+      
+      const content = document.createElement('div');
+      content.className = 'message-content typing-content';
+      content.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+      article.appendChild(content);
+      
+      const container = this.elements.messages;
+      if (container) {
+        container.appendChild(article);
+        this.scrollToBottom();
+      }
+    }
+
+    hideTyping() {
+      const node = document.getElementById('typingMessage');
+      if (node) node.remove();
+    }
+
+    autoResizeInput() {
+      const input = this.elements.promptInput;
+      if (!input) return;
+      
+      input.style.height = 'auto';
+      input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
+    }
+
+    scrollToBottom() {
+      clearTimeout(this._scrollTimeout);
+      this._scrollTimeout = setTimeout(() => {
+        const container = this.elements.messages;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }, 50);
+    }
+
+    updateModeLabels() {
+      const mode = this.state.getMode();
+      if (this.elements.modeSignal) {
+        this.elements.modeSignal.textContent = mode.short;
+      }
+      if (this.elements.statusText) {
+        this.elements.statusText.textContent = this.state.state.processing ? 'Thinking' : mode.status;
+      }
+      if (this.elements.statMode) {
+        this.elements.statMode.textContent = mode.short;
+      }
+    }
+
+    applySettings(announce = true) {
+      const settings = this.state.state.settings;
+      
+      const theme = this.state.resolveTheme(settings.theme);
+      document.documentElement.dataset.theme = theme;
+      
+      document.documentElement.dataset.accent = settings.accent;
+      document.documentElement.dataset.density = settings.density;
+      document.documentElement.style.setProperty('--message-font', `${settings.messageScale}px`);
+      
+      if (this.elements.messageScaleValue) {
+        this.elements.messageScaleValue.textContent = `${settings.messageScale}px`;
+      }
+      if (this.elements.messageScale) {
+        this.elements.messageScale.value = String(settings.messageScale);
+      }
+      if (this.elements.voiceSelect) {
+        this.elements.voiceSelect.value = settings.voice;
+      }
+      if (this.elements.modeSelect) {
+        this.elements.modeSelect.value = settings.mode;
+      }
+      if (this.elements.settingsModeSelect) {
+        this.elements.settingsModeSelect.value = settings.mode;
+      }
+
+      document.querySelectorAll('[data-theme-choice]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.themeChoice === settings.theme);
+      });
+      
+      document.querySelectorAll('#accentControls [data-accent]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.accent === settings.accent);
+      });
+      
+      document.querySelectorAll('[data-density-choice]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.densityChoice === settings.density);
+      });
+
+      this.updateModeLabels();
+      this.state.saveSettings();
+      
+      if (announce && Date.now() - this.state.state._lastToast > 2500) {
+        this.state.state._lastToast = Date.now();
+        this.showToast('Settings updated', 'Settings updated successfully.', 'success');
+      }
+    }
+
+    // ============================================
+    // SIDEBAR & MODALS
+    // ============================================
+    
+    openSidebar() {
+      if (this.elements.sidebar) {
+        this.elements.sidebar.classList.add('open');
+      }
+      if (this.elements.sidebarOverlay) {
+        this.elements.sidebarOverlay.classList.add('active');
+      }
+    }
+
+    closeSidebar() {
+      if (this.elements.sidebar) {
+        this.elements.sidebar.classList.remove('open');
+      }
+      if (this.elements.sidebarOverlay) {
+        this.elements.sidebarOverlay.classList.remove('active');
+      }
+    }
+
+    closeSidebarOnMobile() {
+      if (window.matchMedia('(max-width: 820px)').matches) {
+        this.closeSidebar();
+      }
+    }
+
+    openSettings() {
+      this.closeActionsMenu();
+      this.renderStats();
+      if (this.elements.settingsModal) {
+        this.elements.settingsModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    closeSettings() {
+      if (this.elements.settingsModal) {
+        this.elements.settingsModal.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+
+    openProfile(tabName = 'overview') {
+      if (this.state.state.user) {
+        this.updateProfileUI(this.state.state.user);
+      }
+      this.activateProfileTab(tabName);
+      if (this.elements.profileModal) {
+        this.elements.profileModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+      this.closeSidebarOnMobile();
+    }
+
+    closeProfile() {
+      if (this.elements.profileModal) {
+        this.elements.profileModal.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+
+    toggleShortcutsModal() {
+      const modal = this.elements.shortcutsModal;
+      if (!modal) return;
+      
+      const active = modal.classList.toggle('active');
+      document.body.style.overflow = active ? 'hidden' : '';
+      if (active) this.closeActionsMenu();
+    }
+
+    activateProfileTab(tabName) {
+      document.querySelectorAll('[data-profile-tab]').forEach(button => {
         const active = button.dataset.profileTab === tabName;
-        button.classList.toggle("active", active);
-        button.setAttribute("aria-selected", String(active));
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', String(active));
       });
-      document.querySelectorAll("[data-profile-panel]").forEach(panel => {
-        panel.classList.toggle("active", panel.dataset.profilePanel === tabName);
+      
+      document.querySelectorAll('[data-profile-panel]').forEach(panel => {
+        panel.classList.toggle('active', panel.dataset.profilePanel === tabName);
       });
     }
 
-    function toggleActionsMenu() {
-      const menu = $("actionsMenu");
-      const active = !menu.classList.contains("active");
-      menu.classList.toggle("active", active);
-      $("actionsMenuBtn").setAttribute("aria-expanded", String(active));
+    toggleActionsMenu() {
+      const menu = this.elements.actionsMenu;
+      if (!menu) return;
+      
+      const active = !menu.classList.contains('active');
+      menu.classList.toggle('active', active);
+      
+      if (this.elements.actionsMenuBtn) {
+        this.elements.actionsMenuBtn.setAttribute('aria-expanded', String(active));
+      }
     }
 
-    function closeActionsMenu() {
-      $("actionsMenu").classList.remove("active");
-      $("actionsMenuBtn").setAttribute("aria-expanded", "false");
+    closeActionsMenu() {
+      const menu = this.elements.actionsMenu;
+      if (menu) {
+        menu.classList.remove('active');
+      }
+      if (this.elements.actionsMenuBtn) {
+        this.elements.actionsMenuBtn.setAttribute('aria-expanded', 'false');
+      }
     }
 
-    function startSignIn() {
-      if (!state.previewMode) {
-        location.href = EONIX_ROUTES.signIn;
+    // ============================================
+    // USER & AUTH
+    // ============================================
+    
+    updateProfileUI(user) {
+      const name = user?.name || user?.email || 'Operator';
+      const email = user?.email || '';
+      const initial = name.trim().charAt(0).toUpperCase() || 'K';
+
+      if (this.elements.userName) {
+        this.elements.userName.textContent = name;
+      }
+      if (this.elements.userAvatar) {
+        this.elements.userAvatar.textContent = initial;
+      }
+      if (this.elements.profileName) {
+        this.elements.profileName.textContent = name;
+      }
+      if (this.elements.profileEmail) {
+        this.elements.profileEmail.textContent = email || 'operator@EONIX.local';
+      }
+      if (this.elements.profileAvatarLarge) {
+        this.elements.profileAvatarLarge.textContent = initial;
+      }
+    }
+
+    setUser(user) {
+      this.state.setUser(user);
+      this.updateProfileUI(user);
+    }
+
+    startSignIn() {
+      if (!this.isPreviewMode()) {
+        window.location.href = `${CONFIG.API_BASE}${ROUTES.signIn}`;
         return;
       }
-      setUser({ name: "Krish", email: "krish@EONIX.ai" });
-      loadConversations();
-      openApp();
+      
+      const guestName = prompt('Enter your name (or use Guest):', 'Guest User');
+      this.setUser({ 
+        name: guestName || 'Guest User', 
+        email: 'guest@EONIX.local' 
+      });
+      this.loadInitialData();
+      this.openApp();
     }
 
-    function bootIdentity() {
-      const tokenFromUrl = getTokenFromUrl();
-      if (state.previewMode) {
-        setUser({ name: "Krish", email: "krish@EONIX.ai" });
-        loadConversations();
-        openApp();
+    async signOut() {
+      if (!this.isPreviewMode()) {
+        try {
+          await this.api.signOut();
+        } catch (error) {
+          // Silently fail
+        }
+      }
+
+      this.state.setUser(null);
+      this.state.state.conversations = [];
+      this.state.state.currentId = null;
+      this.state.saveConversations();
+      
+      localStorage.removeItem(STORAGE.token);
+      
+      this.closeActionsMenu();
+      this.closeProfile();
+      this.showAuth();
+      
+      this.api.sendAnalytics('sign_out', {});
+    }
+
+    showAuth() {
+      if (this.elements.authGate) {
+        this.elements.authGate.classList.add('active');
+      }
+      if (this.elements.appShell) {
+        this.elements.appShell.setAttribute('aria-hidden', 'true');
+      }
+      this.state.state.ready = false;
+    }
+
+    openApp() {
+      if (this.elements.authGate) {
+        this.elements.authGate.classList.remove('active');
+      }
+      if (this.elements.appShell) {
+        this.elements.appShell.setAttribute('aria-hidden', 'false');
+      }
+      this.state.state.ready = true;
+      this.renderAll();
+      this.scrollToBottom();
+      
+      setTimeout(() => {
+        if (this.elements.promptInput) {
+          this.elements.promptInput.focus();
+        }
+      }, 200);
+    }
+
+    isPreviewMode() {
+      return window.location.protocol === 'file:' || 
+             new URLSearchParams(window.location.search).has('preview');
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    
+    async initialize() {
+      // Check for token in URL
+      const tokenFromUrl = this.getTokenFromUrl();
+      
+      if (this.isPreviewMode()) {
+        this.setUser({ name: 'Guest User', email: 'guest@EONIX.local' });
+        await this.loadInitialData();
+        this.openApp();
         return;
       }
 
       const token = tokenFromUrl || localStorage.getItem(STORAGE.token);
-      if (!token || !isTokenValid(token)) {
-        removeStorage(STORAGE.token);
-        showAuth();
+      if (!token || !this.api.isAuthenticated()) {
+        localStorage.removeItem(STORAGE.token);
+        this.showAuth();
         return;
       }
 
-      setUser(userFromToken(token));
-      loadConversations();
-      openApp();
-    }
-
-    function bindEvents() {
-      $("newConversationBtn").addEventListener("click", () => createLocalConversation());
-      $("historySearch").addEventListener("input", renderHistory);
-      $("composerForm").addEventListener("submit", event => {
-        event.preventDefault();
-        sendMessage();
-      });
-      $("promptInput").addEventListener("input", autoResizeInput);
-      $("promptInput").addEventListener("keydown", event => {
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          sendMessage();
+      try {
+        // Fetch user profile
+        const response = await this.api.getUserProfile();
+        const user = response.data;
+        
+        if (user) {
+          this.setUser({
+            name: user.name || user.full_name || user.email || 'EONIX User',
+            email: user.email || '',
+            picture: user.picture || null,
+          });
+          await this.loadInitialData();
+          this.openApp();
+        } else {
+          this.showAuth();
         }
-      });
-
-      ["attachImageBtn", "imageBtnTop"].forEach(id => $(id).addEventListener("click", attachImage));
-      ["generateImageBtn", "createImageBtnTop"].forEach(id => $(id).addEventListener("click", generateImage));
-      ["voiceBtn", "voiceBtnTop"].forEach(id => $(id).addEventListener("click", toggleVoice));
-      $("mobileMenuBtn").addEventListener("click", openSidebar);
-      $("collapseSidebarBtn").addEventListener("click", closeSidebar);
-      $("sidebarOverlay").addEventListener("click", closeSidebar);
-      $("actionsMenuBtn").addEventListener("click", event => {
-        event.stopPropagation();
-        toggleActionsMenu();
-      });
-      $("settingsMenuBtn").addEventListener("click", openSettings);
-      $("exportMenuBtn").addEventListener("click", exportConversations);
-      $("clearMenuBtn").addEventListener("click", clearAllHistory);
-      $("logoutMenuBtn").addEventListener("click", signOut);
-      $("userProfileEntry").addEventListener("click", () => openProfile("overview"));
-      $("closeSettingsBtn").addEventListener("click", closeSettings);
-      $("closeProfileBtn").addEventListener("click", closeProfile);
-      $("openSettingsFromProfile").addEventListener("click", () => {
-        closeProfile();
-        openSettings();
-      });
-      $("signOutFromProfile").addEventListener("click", signOut);
-      $("signInBtn").addEventListener("click", startSignIn);
-      $("googleSignInBtn").addEventListener("click", startSignIn);
-
-      document.querySelectorAll("[data-profile-tab]").forEach(button => {
-        button.addEventListener("click", () => activateProfileTab(button.dataset.profileTab));
-      });
-
-      $("settingsModal").addEventListener("click", event => { if (event.target === $("settingsModal")) closeSettings(); });
-      $("profileModal").addEventListener("click", event => { if (event.target === $("profileModal")) closeProfile(); });
-
-      $("modeSelect").addEventListener("change", event => {
-        state.settings.mode = event.target.value;
-        applySettings(false);
-        renderAll();
-      });
-      $("settingsModeSelect").addEventListener("change", event => {
-        state.settings.mode = event.target.value;
-        applySettings();
-        renderAll();
-      });
-      $("voiceSelect").addEventListener("change", event => {
-        state.settings.voice = event.target.value;
-        saveSettings();
-      });
-      $("messageScale").addEventListener("input", event => {
-        state.settings.messageScale = Number(event.target.value);
-        applySettings(false);
-      });
-
-      document.querySelectorAll("[data-theme-choice]").forEach(btn => btn.addEventListener("click", () => {
-        state.settings.theme = btn.dataset.themeChoice;
-        applySettings();
-      }));
-      document.querySelectorAll("#accentControls [data-accent]").forEach(btn => btn.addEventListener("click", () => {
-        state.settings.accent = btn.dataset.accent;
-        applySettings();
-        drawSignalBackground();
-      }));
-      document.querySelectorAll("[data-density-choice]").forEach(btn => btn.addEventListener("click", () => {
-        state.settings.density = btn.dataset.densityChoice;
-        applySettings();
-      }));
-
-      const media = matchMedia("(prefers-color-scheme: dark)");
-      const onThemeChange = () => {
-        if (state.settings.theme === "system") applySettings(false);
-      };
-      if (typeof media.addEventListener === "function") media.addEventListener("change", onThemeChange);
-      else if (typeof media.addListener === "function") media.addListener(onThemeChange);
-
-      document.addEventListener("click", event => {
-        if (!event.target.closest(".actions-menu-wrap")) closeActionsMenu();
-      });
-      document.addEventListener("keydown", event => {
-        if (event.key === "Escape") {
-          closeSettings();
-          closeProfile();
-          closeSidebar();
-          closeActionsMenu();
+      } catch (error) {
+        console.warn('Failed to fetch user profile:', error);
+        // Try to use token data as fallback
+        const userFromToken = this.api.getUserFromToken(token);
+        if (userFromToken) {
+          this.setUser(userFromToken);
+          await this.loadInitialData();
+          this.openApp();
+        } else {
+          this.showAuth();
         }
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-          event.preventDefault();
-          createLocalConversation();
-        }
-      });
-    }
-
-    function initSignalCanvas() {
-      drawSignalBackground();
-      addEventListener("resize", drawSignalBackground);
-      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        let tick = 0;
-        const animate = () => {
-          tick += 1;
-          if (tick % 4 === 0) drawSignalBackground(tick);
-          requestAnimationFrame(animate);
-        };
-        requestAnimationFrame(animate);
       }
     }
 
-    function drawSignalBackground(tick = 0) {
-      const canvas = $("signalCanvas");
-      const ctx = canvas.getContext("2d");
-      const dpr = Math.min(devicePixelRatio || 1, 2);
-      const width = innerWidth;
-      const height = innerHeight;
+    getTokenFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      const error = params.get('error');
+      
+      if (error) {
+        this.showToast('Sign-in failed', error, 'error');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return null;
+      }
+      
+      if (token) {
+        localStorage.setItem(STORAGE.token, token);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      
+      return token;
+    }
+
+    async loadInitialData() {
+      this.state.loadConversations();
+      
+      if (!this.state.state.conversations.length) {
+        if (this.isPreviewMode()) {
+          const conversation = {
+            id: Utils.generateId('conv'),
+            title: 'Command Session',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            messages: [
+              { 
+                id: Utils.generateId('msg'),
+                role: 'system',
+                content: 'EONIX is online.',
+                mode: 'EONIX-prime',
+                createdAt: new Date().toISOString(),
+                attachments: []
+              }
+            ]
+          };
+          this.state.addConversation(conversation);
+        } else {
+          try {
+            const response = await this.api.getConversations();
+            const list = response.data.conversations || response.data.sessions || [];
+            
+            if (list.length) {
+              list.forEach(conv => {
+                this.state.addConversation({
+                  id: conv.id || conv.session_id,
+                  title: conv.title || 'New Conversation',
+                  createdAt: conv.created_at || conv.createdAt || new Date().toISOString(),
+                  updatedAt: conv.updated_at || conv.updatedAt || new Date().toISOString(),
+                  messages: []
+                });
+              });
+            } else {
+              await this.createNewConversation();
+            }
+          } catch (error) {
+            console.warn('Failed to load conversations:', error);
+            await this.createNewConversation();
+          }
+        }
+      }
+      
+      // Process any queued offline messages
+      if (Utils.isOnline()) {
+        this.state.processOfflineQueue();
+      }
+      
+      this.renderAll();
+    }
+
+    // ============================================
+    // EXPORT
+    // ============================================
+    
+    async exportConversations() {
+      this.closeActionsMenu();
+      
+      try {
+        let exportData = this.state.state.conversations;
+        
+        if (!this.isPreviewMode()) {
+          exportData = [];
+          for (const conversation of this.state.state.conversations) {
+            try {
+              const response = await this.api.getConversation(conversation.id);
+              const data = response.data;
+              exportData.push({
+                ...conversation,
+                messages: data.messages || data.conversation?.messages || data.session?.messages || []
+              });
+            } catch (error) {
+              console.warn('Failed to fetch conversation for export:', error);
+              exportData.push(conversation);
+            }
+          }
+        }
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
+          type: 'application/json' 
+        });
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `EONIX-export-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        
+        this.showToast('Export complete', 'Conversation archive downloaded.', 'success');
+        
+        this.api.sendAnalytics('export', {
+          count: exportData.length
+        });
+      } catch (error) {
+        this.showToast('Export failed', error.message, 'error');
+      }
+    }
+
+    // ============================================
+    // CANVAS BACKGROUND
+    // ============================================
+    
+    initSignalCanvas() {
+      this.drawSignalBackground();
+      
+      const resizeObserver = new ResizeObserver(() => this.drawSignalBackground());
+      resizeObserver.observe(document.body);
+      this._resizeObserver = resizeObserver;
+      
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        let tick = 0;
+        const animate = () => {
+          tick += 1;
+          if (tick % CONFIG.ANIMATION_FRAME_INTERVAL === 0) {
+            this.drawSignalBackground(tick);
+          }
+          this.state.state._animationId = requestAnimationFrame(animate);
+        };
+        this.state.state._animationId = requestAnimationFrame(animate);
+      }
+    }
+
+    drawSignalBackground(tick = 0) {
+      const canvas = this.elements.signalCanvas;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
-      const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#34e7ff";
-      ctx.strokeStyle = "rgba(255,255,255,0.04)";
+
+      const accent = getComputedStyle(document.documentElement)
+        .getPropertyValue('--accent').trim() || '#34e7ff';
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
       ctx.lineWidth = 1;
       const step = 44;
+
       for (let x = (tick % step) - step; x < width; x += step) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
         ctx.stroke();
       }
+
       for (let y = 0; y < height; y += step) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
         ctx.stroke();
       }
+
       ctx.strokeStyle = accent;
       ctx.globalAlpha = 0.12;
       ctx.lineWidth = 1.5;
+
       for (let i = 0; i < 7; i += 1) {
         const y = height * 0.18 + i * (height * 0.11);
         ctx.beginPath();
         ctx.moveTo(0, y);
+        
         for (let x = 0; x <= width; x += 90) {
           const offset = Math.sin((x + tick * 3 + i * 35) / 160) * 26;
           ctx.lineTo(x, y + offset);
         }
         ctx.stroke();
       }
+
       ctx.globalAlpha = 1;
     }
 
-    function init() {
-      buildModeOptions();
-      loadSettings();
-      bindEvents();
-      initSignalCanvas();
-      syncIcons();
-      bootIdentity();
+    // ============================================
+    // ICON SYNC
+    // ============================================
+    
+    syncIcons() {
+      document.querySelectorAll('.ico[data-lucide]').forEach(icon => {
+        const name = icon.dataset.lucide;
+        if (icon.dataset.rendered === name) return;
+        const body = ICONS[name];
+        if (!body) return;
+        icon.dataset.rendered = name;
+        icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+      });
     }
 
-    addEventListener("beforeunload", () => {
-      if (state.recognition && state.listening) state.recognition.abort();
+    // ============================================
+    // CLEANUP
+    // ============================================
+    
+    cleanup() {
+      if (this._eventSource) {
+        this._eventSource.close();
+        this._eventSource = null;
+      }
+      
+      if (this._resizeObserver) {
+        this._resizeObserver.disconnect();
+        this._resizeObserver = null;
+      }
+      
+      clearTimeout(this._scrollTimeout);
+      clearTimeout(this._renderTimeout);
+      
+      this.state.cleanup();
+    }
+  }
+
+  // ============================================
+  // BOOT APPLICATION
+  // ============================================
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    const stateManager = new StateManager();
+    const apiClient = new ApiClient(stateManager);
+    const uiController = new UIController(stateManager, apiClient);
+
+    // Store for debugging
+    window.__EONIX = { stateManager, apiClient, uiController };
+
+    // Initialize
+    uiController.initialize();
+
+    // Clean up on unload
+    window.addEventListener('beforeunload', () => {
+      uiController.cleanup();
     });
 
-    addEventListener("DOMContentLoaded", init);
+    // Handle uncaught errors
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled rejection:', event.reason);
+      uiController.showToast('Error', event.reason?.message || 'An unexpected error occurred.', 'error');
+    });
+  });
+
+})();
   </script>
 </body>
 </html>
