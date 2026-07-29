@@ -1692,7 +1692,7 @@ def search_endpoint():
     return Response(plain_text_response, mimetype='text/plain')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
 # ---------------------------------------------------------------------------
 # Startup
 # ---------------------------------------------------------------------------
