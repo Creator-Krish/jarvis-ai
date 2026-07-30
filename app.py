@@ -40,7 +40,7 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)
 # ---------------------------------------------------------------------------
 class Config:
     APP_NAME = "EONIX"
-    VERSION = "1.1"
+    VERSION = "2.0"
     ENVIRONMENT = os.environ.get("FLASK_ENV", "production").lower()
     PORT = int(os.environ.get("PORT", "5000"))
 
