@@ -2113,21 +2113,223 @@ function toggleVoice() {
 // ----------------------------------------------------------------------------
 // Image Actions
 // ----------------------------------------------------------------------------
-function attachImage() {
-  showToast("Image ready", "Connect your image analysis endpoint to enable live inspection.", "info");
+// ----------------------------------------------------------------------------
+// Image Upload & Analysis
+// ----------------------------------------------------------------------------
+async function attachImage() {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) {
+        document.body.removeChild(input);
+        resolve();
+        return;
+      }
+
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        showToast("Image too large", "Maximum size is 10MB.", "error");
+        document.body.removeChild(input);
+        resolve();
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showToast("Invalid file", "Please select an image file.", "error");
+        document.body.removeChild(input);
+        resolve();
+        return;
+      }
+
+      setProcessing(true);
+      showToast("Processing", `Analyzing ${file.name}...`, "info");
+
+      try {
+        const reader = new FileReader();
+        
+        reader.onload = async (e) => {
+          try {
+            const base64Data = e.target.result;
+            
+            // Add user message with image context
+            const promptText = "Analyze this image in detail. Describe what you see, identify objects, scenes, and provide insights.";
+            addLocalMessage({ 
+              role: "user", 
+              content: `📷 **Image Analysis Request**\n\n${promptText}`, 
+              mode: "EONIX-vision" 
+            });
+
+            showTyping();
+
+            // Send to Flask backend
+            const response = await bridge(EONIX_ROUTES.imageAnalysis, {
+              method: "POST",
+              body: JSON.stringify({
+                image: base64Data,
+                prompt: promptText,
+                conversation_id: state.currentId,
+                session_id: state.currentId
+              })
+            });
+
+            hideTyping();
+            
+            // Add assistant response
+            const analysis = response.analysis || response.response || "I analyzed the image. What would you like to know more about?";
+            addLocalMessage({ 
+              role: "assistant", 
+              content: analysis,
+              mode: "EONIX-vision" 
+            });
+
+            showToast("Analysis complete", `${file.name} analyzed successfully.`, "success");
+
+          } catch (error) {
+            hideTyping();
+            console.error("Image analysis error:", error);
+            showToast("Analysis failed", error.message || "Failed to analyze image.", "error");
+          } finally {
+            setProcessing(false);
+            document.body.removeChild(input);
+            resolve();
+          }
+        };
+
+        reader.onerror = () => {
+          showToast("Error", "Failed to read the image file.", "error");
+          setProcessing(false);
+          document.body.removeChild(input);
+          resolve();
+        };
+
+        reader.readAsDataURL(file);
+
+      } catch (error) {
+        console.error("Image upload error:", error);
+        showToast("Error", error.message || "Failed to process image.", "error");
+        setProcessing(false);
+        document.body.removeChild(input);
+        resolve();
+      }
+    };
+
+    input.click();
+  });
 }
 
-function generateImage() {
+// ============================================================================
+// Image Generation with Puter.js
+// ============================================================================
+
+async function generateImage() {
   const prompt = $("promptInput").value.trim();
   if (!prompt) {
     showToast("Add a prompt", "Describe what EONIX Forge should create.", "warning");
     $("promptInput").focus();
     return;
   }
-  addLocalMessage({ role: "user", content: `Create image: ${prompt}`, mode: "EONIX-forge" });
-  addLocalMessage({ role: "assistant", content: `EONIX Forge concept queued: ${prompt}`, mode: "EONIX-forge" });
-  $("promptInput").value = "";
-  autoResizeInput();
+
+  // Check if Puter.js is available
+  if (typeof puter === 'undefined') {
+    showToast("Puter.js unavailable", "Please check your internet connection and reload.", "error");
+    return;
+  }
+
+  // Show loading state
+  setProcessing(true);
+  
+  // Add user message
+  addLocalMessage({ 
+    role: "user", 
+    content: `🎨 **Image Generation Request**\n\n"${prompt}"`, 
+    mode: "EONIX-forge" 
+  });
+
+  showTyping();
+
+  try {
+    // Configure generation options
+    const options = {
+      // Provider selection (uncomment one):
+      // provider: "openai-image-generation",  // Default - GPT Image
+      // provider: "gemini",                   // Gemini Image
+      // provider: "xai",                      // Grok Image
+      // provider: "together",                 // Together AI
+      // provider: "replicate-image-generation", // Replicate (FLUX, etc.)
+      
+      // Model selection (provider-specific):
+      // OpenAI: "gpt-image-2", "gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini"
+      // Gemini: "gemini-3.1-flash-image-preview"
+      // xAI: "grok-imagine-image", "grok-imagine-image-quality"
+      // Together: "black-forest-labs/FLUX.1-dev", "stabilityai/stable-diffusion-xl-base-1.0"
+      // Replicate: "black-forest-labs/flux-schnell", "black-forest-labs/flux-pro"
+      
+      model: "gpt-image-2",  // High quality OpenAI model
+      quality: "high",       // high, medium, low (OpenAI)
+      // ratio: { w: 16, h: 9 },  // 16:9 aspect ratio
+      
+      // Save to Puter filesystem (optional)
+      // puter_output_path: `images/${Date.now()}.png`,
+      
+      // Test mode (no credits used)
+      // test_mode: false
+    };
+
+    // Generate the image using Puter.js
+    const imageElement = await puter.ai.txt2img(prompt, options);
+    
+    // Hide typing indicator
+    hideTyping();
+    
+    // Create image markdown for display
+    const imageSrc = imageElement.src;
+    const imageMarkdown = `![Generated: ${prompt}](${imageSrc})`;
+    
+    // Add assistant response with the image
+    addLocalMessage({ 
+      role: "assistant", 
+      content: `🖼️ **Image Generated**\n\n${imageMarkdown}\n\n*Prompt: ${prompt}*`,
+      mode: "EONIX-forge",
+      attachments: [{ 
+        url: imageSrc, 
+        caption: prompt,
+        alt: `Generated image: ${prompt}`
+      }]
+    });
+
+    showToast("Image Generated", `"${prompt}" created successfully.`, "success");
+
+  } catch (error) {
+    hideTyping();
+    console.error("Image generation error:", error);
+    
+    // Handle specific errors
+    let errorMessage = error.message || "Failed to generate image.";
+    if (errorMessage.includes("credits")) {
+      errorMessage = "MOdel is at its Full Potential. Please Try Later.";
+    } else if (errorMessage.includes("safety")) {
+      errorMessage = "The prompt was blocked by safety filters. Please try a different prompt.";
+    }
+    
+    addLocalMessage({ 
+      role: "system", 
+      content: `⚠️ **Image Generation Failed**\n\n${errorMessage}\n\nPlease try again with a different prompt.`,
+      mode: "EONIX-forge" 
+    });
+    
+    showToast("Generation Failed", errorMessage, "error");
+  } finally {
+    setProcessing(false);
+    $("promptInput").value = "";
+    autoResizeInput();
+  }
 }
 
 // ----------------------------------------------------------------------------
