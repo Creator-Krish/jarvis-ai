@@ -2967,6 +2967,34 @@ def error_response(message: str, status_code: int = 400, **kwargs) -> Tuple[Any,
 # ---------------------------------------------------------------------------
 # Create app instance
 # ---------------------------------------------------------------------------
+# Add this function BEFORE create_app() in app.py
+
+def register_health_endpoint(app: Flask) -> None:
+    """Register health check endpoint on Flask app"""
+    
+    @app.route(Config.HEALTH_CHECK_ENDPOINT)
+    def health_check():
+        health = model_diagnostics.get_health_status()
+        health.update({
+            "app": Config.APP_NAME,
+            "version": Config.VERSION,
+            "environment": Config.ENVIRONMENT,
+            "rate_limiter": rate_limiter.get_stats(),
+            "content_safety": ContentSafety.get_stats(),
+            "timestamp": iso_now(),
+        })
+        status_code = 200 if health["status"] == "healthy" else 503
+        return jsonify(health), status_code
+    
+    @app.route(f"{Config.HEALTH_CHECK_ENDPOINT}/full")
+    def full_diagnostics():
+        """Full diagnostics endpoint (admin only)"""
+        token = JWTService.from_request()
+        user = JWTService.verify(token)
+        if not user or not user.get("is_admin"):
+            return jsonify({"error": "Admin access required"}), 403
+        
+        return jsonify(model_diagnostics.all_modes_report())
 app = create_app()
 
 # SECTION 9: Routes - Static, Health, Modes, Tasks, and Diagnostics
