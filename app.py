@@ -4445,7 +4445,79 @@ def _print_banner(available_count: int) -> None:
 if __name__ == "__main__":
     # Run startup tasks
     startup_tasks()
+
+    # Add this class - place it before the startup_tasks() function
+
+class ModelSpecialization:
+    """Model specialization definitions for each EONIX mode"""
     
+    SPECIALIZATIONS = {
+        "EONIX-prime": {
+            "specialization": "General Purpose AI",
+            "allowed_tasks": ["general_chat", "fact_checking"],
+            "forbidden_tasks": ["image_generation"],
+            "system_prompt": "You are EONIX Prime, a balanced general-purpose AI assistant. Provide helpful, accurate, and engaging responses.",
+        },
+        "EONIX-swift": {
+            "specialization": "Creative Writing & Content",
+            "allowed_tasks": ["creative_writing", "general_chat"],
+            "forbidden_tasks": ["math_reasoning", "image_generation"],
+            "system_prompt": "You are EONIX Swift, an expert in creative writing and content generation. Be imaginative, engaging, and craft compelling narratives.",
+        },
+        "EONIX-deepcore": {
+            "specialization": "Mathematical Reasoning",
+            "allowed_tasks": ["math_reasoning", "coding"],
+            "forbidden_tasks": ["creative_writing", "image_generation"],
+            "system_prompt": "You are EONIX DeepCore, an expert in mathematical reasoning and problem-solving. Show your work step by step and explain your logic clearly.",
+        },
+        "EONIX-oracle": {
+            "specialization": "Programming & Software Development",
+            "allowed_tasks": ["coding", "math_reasoning"],
+            "forbidden_tasks": ["creative_writing", "image_generation"],
+            "system_prompt": "You are EONIX Oracle, an expert programmer. Write clean, efficient, well-documented code with clear explanations.",
+        },
+        "EONIX-vision": {
+            "specialization": "Visual Analysis & Understanding",
+            "allowed_tasks": ["image_analysis", "general_chat"],
+            "forbidden_tasks": ["image_generation"],
+            "system_prompt": "You are EONIX Vision, an expert in image analysis. Describe images in detail, noting key elements, context, and subtle details.",
+        },
+        "EONIX-forge": {
+            "specialization": "Image Generation",
+            "allowed_tasks": ["image_generation"],
+            "forbidden_tasks": ["math_reasoning", "coding", "fact_checking", "general_chat"],
+            "system_prompt": "You are EONIX Forge, an expert in creating images from text descriptions.",
+        },
+        "EONIX-knowledge": {
+            "specialization": "Knowledge & Facts",
+            "allowed_tasks": ["fact_checking", "general_chat"],
+            "forbidden_tasks": ["image_generation", "creative_writing"],
+            "system_prompt": "You are EONIX Knowledge, an expert in facts and information. Provide accurate, well-researched responses and cite sources when possible.",
+        },
+    }
+    
+    @classmethod
+    def get_specialization(cls, mode_id: str) -> Dict[str, Any]:
+        """Get specialization for a mode"""
+        return cls.SPECIALIZATIONS.get(
+            normalize_mode(mode_id), 
+            cls.SPECIALIZATIONS["EONIX-prime"]
+        )
+    
+    @classmethod
+    def get_system_prompt(cls, mode_id: str) -> str:
+        """Get system prompt for a mode"""
+        return cls.get_specialization(mode_id).get("system_prompt", "")
+    
+    @classmethod
+    def get_allowed_tasks(cls, mode_id: str) -> List[str]:
+        """Get allowed tasks for a mode"""
+        return cls.get_specialization(mode_id).get("allowed_tasks", [])
+    
+    @classmethod
+    def get_forbidden_tasks(cls, mode_id: str) -> List[str]:
+        """Get forbidden tasks for a mode"""
+        return cls.get_specialization(mode_id).get("forbidden_tasks", [])
     # Print mode specializations
     logger.info("=== Mode Specializations ===")
     for mode_id in MODE_SPECS:
