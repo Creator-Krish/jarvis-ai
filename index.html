@@ -1231,7 +1231,7 @@
 
       <div class="auth-foot">
         Devloped by Krish Paliwal<br>
-        v2.0 By Paliwal Group of Industries
+        v5.0 By Paliwal Group of Industries
       </div>
     </div>
   </div>
@@ -1298,7 +1298,7 @@
               <label for="messageScale">Message Scale</label>
               <span id="messageScaleValue">14px</span>
             </div>
-            <input id="messageScale" type="range" min="3" max="30" value="14" step="1">
+            <input id="messageScale" type="range" min="13" max="18" value="14" step="1">
           </section>
 
           <section class="setting-block">
@@ -1342,14 +1342,15 @@
           <h4>Operator Workspace</h4>
           <p>Your EONIX account gives you access to the active command workspace, conversation memory, interface preferences, visual tools, and exportable conversation history.</p><br>
           <ul>
+            <li>Algorithm Writer -> Kautilya Paliwal</li>
             <li>Developed By -> Krish Paliwal</li>
           </ul>
           <h4>Development Detail</h4>
           <ul>
-              <li>Version -> V2.0</li>
+              <li>Version -> V5.0</li>
               <li>Under Development Since -> 03 September 2025</li>
-              <li>Launched on -> 21-March-2026</li>
-              <li>Version V2.0 launched on ->03-June-2026</li>
+              <li>First Launched Ever on -> 21-March-2026</li>
+              <li>Version V5.0 launched on ->03-June-2026</li>
           </ul>
           <div class="modal-actions">
             <button class="ghost-button" id="openSettingsFromProfile" type="button">Settings</button>
@@ -1465,1133 +1466,346 @@
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
   <script>
-    const EONIX_ROUTES = {
-      signIn: "/EONIX/sign-in",
-      identity: "/EONIX/me",
-      signIn: "/EONIX/sign-in",
-      signOut: "/EONIX/sign-out",
-      conversations: "/EONIX/conversations",
-      conversation: id => `/EONIX/conversations/${encodeURIComponent(id)}`,
-      messages: id => `/EONIX/conversations/${encodeURIComponent(id)}/messages`,
-      imageAnalysis: "/EONIX/vision/analyze",
-      imageCreate: "/EONIX/forge/create"
-    };
-
-    const EONIX_MODES = [
-      { id: "EONIX-prime", short: "Prime", label: "EONIX Prime", status: "Balanced command reasoning" },
-      { id: "EONIX-swift", short: "Swift", label: "EONIX Swift", status: "Rapid response mode" },
-      { id: "EONIX-deepcore", short: "DeepCore", label: "EONIX DeepCore", status: "Research and logic mode" },
-      { id: "EONIX-oracle", short: "Oracle", label: "EONIX Oracle", status: "Long-form strategy mode" },
-      { id: "EONIX-vision", short: "Vision", label: "EONIX Vision", status: "Visual analysis mode" },
-      { id: "EONIX-forge", short: "Forge", label: "EONIX Forge", status: "Image creation mode" }
-    ];
-
-    const STARTERS = [
-      { title: "Plan the build", text: "Turn my rough idea into a practical build plan with phases and risks." },
-      { title: "Analyze this", text: "Break down this problem and show the best path forward." },
-      { title: "Write sharper", text: "Rewrite this for clarity, authority, and impact." },
-      { title: "Create visuals", text: "Generate a premium visual direction for a futuristic product." }
-    ];
-
-    const STORAGE = {
-      settings: "EONIX:v5:settings",
-      conversations: "EONIX:v5:conversations",
-      token: "EONIX:token"
-    };
-
-    const state = {
-      previewMode: location.protocol === "file:" || new URLSearchParams(location.search).has("preview"),
-      ready: false,
-      processing: false,
-      listening: false,
-      recognition: null,
-      user: null,
-      currentId: null,
-      conversations: [],
-      settings: {
-        theme: "dark",
-        accent: "cyan",
-        density: "comfortable",
-        messageScale: 14,
-        mode: "EONIX-prime",
-        voice: "en-US"
-      },
-      lastSettingsToast: 0
-    };
-
-    const ICON_PATHS = {
-      "panel-left-close": '<rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 3v18"></path><path d="m16 9-3 3 3 3"></path>',
-      "square-pen": '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"></path>',
-      search: '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>',
-      download: '<path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path>',
-      "trash-2": '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 15H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path>',
-      "log-out": '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path>',
-      menu: '<path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path>',
-      mic: '<path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"></path><path d="M19 11a7 7 0 0 1-14 0"></path><path d="M12 18v3"></path>',
-      "image-plus": '<rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10.5" r="1.5"></circle><path d="m21 15-5-5L5 19"></path><path d="M16 5v6"></path><path d="M13 8h6"></path>',
-      "wand-sparkles": '<path d="m21 3-6.5 6.5"></path><path d="m14 4 6 6"></path><path d="M4 20 14.5 9.5"></path><path d="M5 3v4"></path><path d="M3 5h4"></path><path d="M19 17v4"></path><path d="M17 19h4"></path>',
-      "sliders-horizontal": '<path d="M21 4h-7"></path><path d="M10 4H3"></path><path d="M14 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path><path d="M21 12h-9"></path><path d="M8 12H3"></path><path d="M12 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path><path d="M21 20h-5"></path><path d="M12 20H3"></path><path d="M16 20a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path>',
-      paperclip: '<path d="m21.4 11.6-8.5 8.5a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 1 1 5.7 5.7l-9.2 9.2a2 2 0 1 1-2.8-2.8l8.5-8.5"></path>',
-      sparkles: '<path d="M12 3l1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"></path><path d="M5 3v4"></path><path d="M3 5h4"></path><path d="M19 17v4"></path><path d="M17 19h4"></path>',
-      "shield-check": '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><path d="m9 12 2 2 4-5"></path>',
-      x: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>',
-      "check-circle-2": '<circle cx="12" cy="12" r="9"></circle><path d="m9 12 2 2 4-5"></path>',
-      "circle-alert": '<circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path>',
-      "triangle-alert": '<path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
-      info: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v6"></path><path d="M12 7h.01"></path>',
-      "message-square": '<path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path>',
-      "corner-down-right": '<path d="M15 10l5 5-5 5"></path><path d="M4 4v7a4 4 0 0 0 4 4h12"></path>',
-      "scan-line": '<path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 12h10"></path>',
-      copy: '<rect x="9" y="9" width="12" height="12" rx="2"></rect><rect x="3" y="3" width="12" height="12" rx="2"></rect>',
-      "volume-2": '<path d="M11 5 6 9H3v6h3l5 4Z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19 6a9 9 0 0 1 0 12"></path>',
-      "more-vertical": '<circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle>',
-      "chevron-right": '<path d="m9 18 6-6-6-6"></path>'
-    };
-
-    const $ = id => document.getElementById(id);
-    const nowIso = () => new Date().toISOString();
-    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-    function safeJsonParse(value, fallback) {
-      if (!value) return fallback;
-      try { return JSON.parse(value); } catch { return fallback; }
-    }
-
-    function readStorage(key, fallback) {
-      try { return safeJsonParse(localStorage.getItem(key), fallback); } catch { return fallback; }
-    }
-
-    function writeStorage(key, value) {
-      try {
-        localStorage.setItem(key, JSON.stringify(value));
-        return true;
-      } catch {
-        return false;
-      }
-    }
-
-    function uid(prefix = "id") {
-      if (window.crypto && window.crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
-      return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-    }
-
-    function removeStorage(key) {
-      try { localStorage.removeItem(key); } catch {}
-    }
-
-    function decodeJwtPayload(token) {
-      const [, payload] = String(token || "").split(".");
-      if (!payload) return null;
-      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-      const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
-      return JSON.parse(atob(padded));
-    }
-
-    function isTokenValid(token) {
-      try {
-        const payload = decodeJwtPayload(token);
-        return Boolean(payload && (!payload.exp || payload.exp * 1000 > Date.now()));
-      } catch {
-        return false;
-      }
-    }
-
-    function getTokenFromUrl() {
-      const params = new URLSearchParams(location.search);
-      const token = params.get("token");
-      const error = params.get("error");
-      if (error) {
-        showToast("Sign-in failed", error, "error");
-        history.replaceState({}, document.title, location.pathname);
-        return null;
-      }
-      if (token) {
-        localStorage.setItem(STORAGE.token, token);
-        history.replaceState({}, document.title, location.pathname);
-      }
-      return token;
-    }
-
-    async function bridge(path, options = {}) {
-      const headers = new Headers(options.headers || {});
-      const hasBody = options.body !== undefined && options.body !== null;
-      if (hasBody && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-      }
-      const token = localStorage.getItem(STORAGE.token);
-      if (token) headers.set("Authorization", `Bearer ${token}`);
-
-      const response = await fetch(path, { ...options, headers, credentials: "include" });
-      if (response.status === 204) return {};
-      const text = await response.text();
-      const data = text ? safeJsonParse(text, { message: text }) : {};
-
-      if (response.status === 401) {
-        removeStorage(STORAGE.token);
-        showAuth();
-        throw new Error("Session expired. Please sign in again.");
-      }
-      if (!response.ok) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
-      return data;
-    }
-    
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, char => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "\"": "&quot;",
-        "'": "&#39;"
-      }[char]));
-    }
-
-    function syncIcons() {
-      document.querySelectorAll(".ico[data-lucide]").forEach(icon => {
-        const name = icon.dataset.lucide;
-        if (icon.dataset.rendered === name) return;
-        const body = ICON_PATHS[name];
-        if (!body) return;
-        icon.dataset.rendered = name;
-        icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
-      });
-    }
-
-    function resolveTheme(choice) {
-      if (choice !== "system") return choice;
-      return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-
-    function getMode(id = state.settings.mode) {
-      return EONIX_MODES.find(mode => mode.id === id) || EONIX_MODES[0];
-    }
-
-    function buildModeOptions() {
-      ["modeSelect", "settingsModeSelect"].forEach(id => {
-        const select = $(id);
-        select.innerHTML = "";
-        EONIX_MODES.forEach(mode => {
-          const option = document.createElement("option");
-          option.value = mode.id;
-          option.textContent = mode.label;
-          select.appendChild(option);
-        });
-      });
-    }
-
-    function updateModeLabels() {
-      const mode = getMode();
-      $("modeSignal").textContent = mode.short;
-      $("statusText").textContent = state.processing ? "Thinking" : mode.status;
-      $("statMode").textContent = mode.short;
-    }
-
-    function saveSettings() {
-      writeStorage(STORAGE.settings, state.settings);
-    }
-
-    function applySettings(announce = true) {
-      document.documentElement.dataset.theme = resolveTheme(state.settings.theme);
-      document.documentElement.dataset.accent = state.settings.accent;
-      document.documentElement.dataset.density = state.settings.density;
-      document.documentElement.style.setProperty("--message-font", `${state.settings.messageScale}px`);
-      $("messageScaleValue").textContent = `${state.settings.messageScale}px`;
-      $("messageScale").value = String(state.settings.messageScale);
-      $("voiceSelect").value = state.settings.voice;
-      $("modeSelect").value = state.settings.mode;
-      $("settingsModeSelect").value = state.settings.mode;
-      document.querySelectorAll("[data-theme-choice]").forEach(btn => btn.classList.toggle("active", btn.dataset.themeChoice === state.settings.theme));
-      document.querySelectorAll("#accentControls [data-accent]").forEach(btn => btn.classList.toggle("active", btn.dataset.accent === state.settings.accent));
-      document.querySelectorAll("[data-density-choice]").forEach(btn => btn.classList.toggle("active", btn.dataset.densityChoice === state.settings.density));
-      updateModeLabels();
-      saveSettings();
-      if (announce && Date.now() - state.lastSettingsToast > 2500) {
-        state.lastSettingsToast = Date.now();
-        showToast("Settings updated", "Settings updated successfully.", "success");
-      }
-    }
-
-    function loadSettings() {
-      state.settings = { ...state.settings, ...readStorage(STORAGE.settings, {}) };
-      applySettings(false);
-    }
-
-    function normalizeMessage(raw) {
-      return {
-         id: String(raw.id || raw.message_id || uid("message")),
-        role: ["assistant", "user", "system"].includes(raw.role) ? raw.role : "assistant",
-        content: String(raw.content || raw.text || ""),
-        mode: raw.mode || raw.model || raw.model_used || state.settings.mode,
-        createdAt: raw.createdAt || raw.created_at || raw.timestamp || nowIso()
-      };
-    }
-
-    function normalizeConversation(raw) {
-      return {
-       id: String(raw.id || raw.session_id || uid("conversation")),
-        title: raw.title || "New Conversation",
-         createdAt: raw.createdAt || raw.created_at || nowIso(),
-        updatedAt: raw.updatedAt || raw.updated_at || nowIso(),
-        messages: Array.isArray(raw.messages) ? raw.messages.map(normalizeMessage) : []
-      };
-    }
-
-    function currentConversation() {
-      return state.conversations.find(item => item.id === state.currentId) || null;
-    }
-
-    function saveLocalConversations() {
-      writeStorage(STORAGE.conversations, state.conversations);
-    }
-
-    function setUser(user) {
-      const name = user && (user.name || user.email) ? (user.name || user.email) : "Operator";
-      state.user = { name, email: user && user.email ? user.email : "" };
-      const initial = name.trim().charAt(0).toUpperCase() || "K";
-      $("userName").textContent = name;
-      $("userAvatar").textContent = initial;
-      $("profileName").textContent = name;
-      $("profileEmail").textContent = state.user.email || "operator@EONIX.local";
-      $("profileAvatarLarge").textContent = initial;
-    }
-
-    function userFromToken(token) {
-      try {
-        const payload = decodeJwtPayload(token) || {};
-        return {
-          name: payload.name || payload.given_name || payload.email || "EONIX User",
-          email: payload.email || ""
-        };
-      } catch {
-        return { name: "EONIX User", email: "" };
-      }
-    }
-
-    function showAuth() {
-      closeSidebar();
-      closeSettings();
-      closeProfile();
-      closeActionsMenu();
-      $("authGate").classList.add("active");
-      $("appShell").setAttribute("aria-hidden", "true");
-      state.ready = false;
-    }
-
-    function openApp() {
-      $("authGate").classList.remove("active");
-      $("appShell").setAttribute("aria-hidden", "false");
-      state.ready = true;
-      renderAll();
-      scrollToBottom();
-      setTimeout(() => $("promptInput").focus(), 120);
-    }
-
-    function makeTitle(text) {
-      const cleaned = String(text || "").replace(/\s+/g, " ").trim();
-      return cleaned.length > 48 ? `${cleaned.slice(0, 48)}...` : cleaned || "New Conversation";
-    }
-
-    function createLocalConversation(title = "New Conversation") {
-      const conversation = { id: uid("conversation"), title, createdAt: nowIso(), updatedAt: nowIso(), messages: [] };
-      state.conversations.unshift(conversation);
-      state.currentId = conversation.id;
-      saveLocalConversations();
-      renderAll();
-      closeSidebarOnMobile();
-      return conversation;
-    }
-
-     async function createConversation(title = "New Conversation") {
-      if (state.previewMode) return createLocalConversation(title);
-      const data = await bridge(EONIX_ROUTES.conversations, {
-        method: "POST",
-        body: JSON.stringify({ title })
-      });
-      const conversation = normalizeConversation(data.conversation || data.session || { id: data.conversation_id || data.session_id, title });
-      state.conversations.unshift(conversation);
-      state.currentId = conversation.id;
-      renderAll();
-      closeSidebarOnMobile();
-      return conversation;
-    }
-
-    async function loadConversation(id, rerender = true) {
-      if (!id) return;
-      state.currentId = id;
-      if (!state.previewMode) {
-        const data = await bridge(EONIX_ROUTES.conversation(id));
-        const conversation = state.conversations.find(item => item.id === id);
-        if (conversation) {
-          conversation.messages = (data.messages || data.conversation?.messages || data.session?.messages || []).map(normalizeMessage);
-          conversation.title = data.conversation?.title || data.session?.title || conversation.title;
-          conversation.updatedAt = data.conversation?.updated_at || data.session?.updated_at || conversation.updatedAt;
-        }
-      }
-      if (rerender) renderAll();
-      closeSidebarOnMobile();
-    }
-    function addLocalMessage(message) {
-      let conversation = currentConversation();
-      if (!conversation) conversation = createLocalConversation();
-      const normalized = normalizeMessage(message);
-      conversation.messages.push(normalized);
-      if (conversation.title === "New Conversation" || conversation.title === "Command Session") {
-        const firstUser = conversation.messages.find(item => item.role === "user" && item.content.trim());
-        if (firstUser) conversation.title = makeTitle(firstUser.content.replace(/^Create image:\s*/i, "").replace(/^Analyze image:\s*/i, ""));
-      }
-      conversation.updatedAt = nowIso();
-      state.conversations = [conversation, ...state.conversations.filter(item => item.id !== conversation.id)];
-      saveLocalConversations();
-      renderAll();
-      scrollToBottom();
-      return normalized;
-    }
-
-   async function loadConversations() {
-      if (state.previewMode) {
-        state.conversations = readStorage(STORAGE.conversations, []).map(normalizeConversation);
-        if (!state.conversations.length) {
-          const first = createLocalConversation("Command Session");
-          first.messages.push(normalizeMessage({ role: "system", content: "EONIX is online." }));
-          state.currentId = first.id;
-          saveLocalConversations();
-        } else {
-          state.currentId = state.conversations[0].id;
-        }
-        return;
-      }
-
-      const data = await bridge(EONIX_ROUTES.conversations);
-      const list = data.conversations || data.sessions || [];
-      state.conversations = list.map(normalizeConversation);
-      if (state.conversations.length) {
-        state.currentId = state.conversations[0].id;
-         await loadConversation(state.currentId, false);
-      } else {
-        await createConversation();
-      }
-    }
-
-    function showToast(title, message = "", type = "info") {
-      const iconMap = { success: "check-circle-2", error: "circle-alert", warning: "triangle-alert", info: "info" };
-      const toast = document.createElement("div");
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `<span class="ico" data-lucide="${iconMap[type] || "info"}">!</span><span><strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span></span>`;
-      $("toastRegion").appendChild(toast);
-      syncIcons();
-      setTimeout(() => {
-        toast.style.opacity = "0";
-        toast.style.transform = "translateX(16px)";
-        setTimeout(() => toast.remove(), 180);
-      }, 3600);
-    }
-
-    function setProcessing(value) {
-      state.processing = value;
-      $("sendBtn").disabled = value;
-      $("promptInput").disabled = value;
-      $("statusDot").style.background = value ? "var(--warning)" : "var(--success)";
-      updateModeLabels();
-    }
-
-    function showTyping() {
-      if ($("typingMessage")) return;
-      const article = document.createElement("article");
-      article.className = "message assistant-message";
-      article.id = "typingMessage";
-      article.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
-      $("messages").appendChild(article);
-      scrollToBottom();
-    }
-
-    function hideTyping() {
-      const node = $("typingMessage");
-      if (node) node.remove();
-    }
-
-    async function localReply(prompt) {
-      await wait(650);
-      const mode = getMode();
-      const lower = prompt.toLowerCase();
-      if (lower.includes("plan") || lower.includes("build")) {
-        return [
-          `${mode.label} has structured the work:`,
-          "1. Define the outcome and success criteria.",
-          "2. Identify the smallest useful version.",
-          "3. Build the core path first.",
-          "4. Polish after stable behavior.",
-          "5. Verify desktop and mobile."
-        ].join("\n");
-      }
-      if (lower.includes("rewrite") || lower.includes("write")) {
-        return "Sharper direction:\n\nLead with the result, remove filler, and keep every sentence useful.";
-      }
-      if (lower.includes("image") || lower.includes("visual")) {
-        return "I would steer toward a high-contrast command surface with restrained motion, clear control density, and premium visual hierarchy.";
-      }
-      return `${mode.label} is online.\n\nSend the next detail and I will tighten it.`;
-    }
-
-    async function sendMessage() {
-      const input = $("promptInput");
-      const text = input.value.trim();
-      if (!text || state.processing) return;
-      if (!currentConversation()) await createConversation();
-      input.value = "";
-      autoResizeInput();
-      addLocalMessage({ role: "user", content: text, mode: state.settings.mode });
-      setProcessing(true);
-      showTyping();
-      try {
-         const response = state.previewMode ? { response: await localReply(text) } : await bridge(EONIX_ROUTES.messages(state.currentId), {
-          method: "POST",
-          body: JSON.stringify({ prompt: text, mode: state.settings.mode })
-        });
-        hideTyping();
-         addLocalMessage({
-          role: "assistant",
-          content: response.response || response.message || response.content || "I am ready.",
-          mode: response.mode || state.settings.mode
-        });
-        if (!state.previewMode) {
-          await loadConversation(state.currentId, false);
-          renderAll();
-        }
-      } catch (error) {
-        hideTyping();
-        addLocalMessage({ role: "system", content: "EONIX could not complete that request. Please try again.", mode: state.settings.mode });
-        showToast("Request interrupted", error.message || "Unknown error", "error");
-      } finally {
-        setProcessing(false);
-        input.focus();
-      }
-    }
-
-    function autoResizeInput() {
-      const input = $("promptInput");
-      input.style.height = "auto";
-      input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
-    }
-
-    function scrollToBottom() {
-      requestAnimationFrame(() => {
-        const messages = $("messages");
-        messages.scrollTop = messages.scrollHeight;
-      });
-    }
-
-    function copyText(text) {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(
-          () => showToast("Copied", "Message copied to clipboard.", "success"),
-          () => showToast("Copy failed", "Clipboard access was not available.", "warning")
-        );
-      } else {
-        showToast("Copy unavailable", "Clipboard access was not available.", "warning");
-      }
-    }
-
-    function speak(text) {
-      if (!window.speechSynthesis) {
-        showToast("Voice unavailable", "Speech playback is not supported here.", "warning");
-        return;
-      }
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = state.settings.voice;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    }
-
-    function updateVoiceState() {
-      $("voiceWave").classList.toggle("active", state.listening);
-      ["voiceBtn", "voiceBtnTop"].forEach(id => {
-        const button = $(id);
-        if (button) button.style.color = state.listening ? "var(--danger)" : "";
-      });
-    }
-
-    function toggleVoice() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        showToast("Voice unavailable", "Speech input is not supported in this browser.", "warning");
-        return;
-      }
-      if (!state.recognition) {
-        state.recognition = new SpeechRecognition();
-        state.recognition.continuous = false;
-        state.recognition.interimResults = true;
-        state.recognition.onresult = event => {
-          let transcript = "";
-          for (let i = event.resultIndex; i < event.results.length; i += 1) transcript += event.results[i][0].transcript;
-          $("promptInput").value = transcript;
-          autoResizeInput();
-          if (event.results[event.results.length - 1].isFinal) sendMessage();
-        };
-        state.recognition.onerror = event => {
-          state.listening = false;
-          updateVoiceState();
-          if (event.error !== "aborted") showToast("Voice stopped", event.error || "Recognition ended.", "warning");
-        };
-        state.recognition.onend = () => {
-          state.listening = false;
-          updateVoiceState();
-        };
-      }
-      if (state.listening) {
-        state.recognition.stop();
-        state.listening = false;
-      } else {
-        state.recognition.lang = state.settings.voice;
-        state.recognition.start();
-        state.listening = true;
-      }
-      updateVoiceState();
-    }
-
-    function attachImage() {
-      showToast("Image ready", "Connect your image analysis endpoint to enable live inspection.", "info");
-    }
-
-    function generateImage() {
-      const prompt = $("promptInput").value.trim();
-      if (!prompt) {
-        showToast("Add a prompt", "Describe what EONIX Forge should create.", "warning");
-        $("promptInput").focus();
-        return;
-      }
-      addLocalMessage({ role: "user", content: `Create image: ${prompt}`, mode: "EONIX-forge" });
-      addLocalMessage({ role: "assistant", content: `EONIX Forge concept queued: ${prompt}`, mode: "EONIX-forge" });
-      $("promptInput").value = "";
-      autoResizeInput();
-    }
-
-    async function deleteConversation(id) {
-      const conversation = state.conversations.find(item => item.id === id);
-      if (!conversation) return;
-      if (!confirm(`Delete "${conversation.title}"?`)) return;
-      if (!state.previewMode) await bridge(EONIX_ROUTES.conversation(id), { method: "DELETE" });
-      state.conversations = state.conversations.filter(item => item.id !== id);
-      if (state.currentId === id) state.currentId = state.conversations[0] ? state.conversations[0].id : null;
-      if (!state.currentId) await createConversation();
-      saveLocalConversations();
-      renderAll();
-      showToast("Conversation deleted", conversation.title, "success");
-    }
-
-   async function clearAllHistory() {
-      if (!confirm("Delete all conversations? This cannot be undone.")) return;
-     if (!state.previewMode) {
-        for (const conversation of state.conversations) {
-          await bridge(EONIX_ROUTES.conversation(conversation.id), { method: "DELETE" });
-        }
-      }
-      state.conversations = [];
-      state.currentId = null;
-      saveLocalConversations();
-      await createConversation();
-      closeActionsMenu();
-      showToast("History cleared", "A fresh workspace is ready.", "success");
-    }
-
-    async function exportConversations() {
-      let exportData = state.conversations;
-      if (!state.previewMode) {
-        exportData = [];
-        for (const conversation of state.conversations) {
-          const data = await bridge(EONIX_ROUTES.conversation(conversation.id));
-          exportData.push(normalizeConversation({
-            ...conversation,
-            messages: data.messages || data.conversation?.messages || data.session?.messages || []
-          }));
-        }
-      }
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `EONIX-export-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      closeActionsMenu();
-      showToast("Export complete", "Conversation archive downloaded.", "success");
-    }
-
-   async function signOut() {
-      if (!state.previewMode) {
-        try { await bridge(EONIX_ROUTES.signOut, { method: "POST" }); }
-        catch { try { await bridge(EONIX_ROUTES.signOut, { method: "GET" }); } catch {} }
-      }
-      state.user = null;
-      state.conversations = [];
-      state.currentId = null;
-      removeStorage(STORAGE.token);
-      closeActionsMenu();
-      closeProfile();
-      showAuth();
-    }
-
-    function renderStats() {
-      $("statConversations").textContent = state.conversations.length;
-      $("statMessages").textContent = state.conversations.reduce((sum, conversation) => sum + (conversation.messages ? conversation.messages.length : 0), 0);
-    }
-
-    function renderHeader() {
-      const conversation = currentConversation();
-      $("activeTitle").textContent = conversation ? conversation.title : "EONIX Workspace";
-      const count = conversation && conversation.messages ? conversation.messages.filter(message => message.role !== "system").length : 0;
-      $("messageCount").textContent = `${count} ${count === 1 ? "message" : "messages"}`;
-      updateModeLabels();
-    }
-
-    function groupConversations(items) {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const yesterday = new Date(today);
-      yesterday.setDate(today.getDate() - 1);
-      const week = new Date(today);
-      week.setDate(today.getDate() - 6);
-      const groups = { Today: [], Yesterday: [], "Last 7 Days": [], Earlier: [] };
-      items.forEach(item => {
-        const date = new Date(item.updatedAt);
-        if (date >= today) groups.Today.push(item);
-        else if (date >= yesterday) groups.Yesterday.push(item);
-        else if (date >= week) groups["Last 7 Days"].push(item);
-        else groups.Earlier.push(item);
-      });
-      return groups;
-    }
-
-    function formatRelative(dateLike) {
-      const date = new Date(dateLike);
-      if (Number.isNaN(date.getTime())) return "";
-      const diff = Date.now() - date.getTime();
-      const mins = Math.floor(diff / 60000);
-      if (mins < 1) return "Just now";
-      if (mins < 60) return `${mins}m ago`;
-      const hours = Math.floor(mins / 60);
-      if (hours < 24) return `${hours}h ago`;
-      const days = Math.floor(hours / 24);
-      if (days < 7) return `${days}d ago`;
-      return date.toLocaleDateString([], { month: "short", day: "numeric" });
-    }
-
-    function renderHistory() {
-      const container = $("historyList");
-      const term = $("historySearch").value.trim().toLowerCase();
-      const filtered = state.conversations.filter(item => item.title.toLowerCase().includes(term));
-      container.innerHTML = "";
-      if (!filtered.length) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = term ? "No matching conversations." : "No conversations yet.";
-        container.appendChild(empty);
-        return;
-      }
-      const grouped = groupConversations(filtered);
-      Object.entries(grouped).forEach(([label, items]) => {
-        if (!items.length) return;
-        const heading = document.createElement("h2");
-        heading.className = "history-heading";
-        heading.textContent = label;
-        container.appendChild(heading);
-        items.forEach(conversation => {
-          const row = document.createElement("div");
-          row.className = `history-row ${conversation.id === state.currentId ? "active" : ""}`;
-          row.setAttribute("role", "button");
-          row.setAttribute("tabindex", "0");
-          row.setAttribute("aria-label", `Open ${conversation.title || "conversation"}`);
-          row.addEventListener("click", event => {
-            if (event.target.closest(".history-delete")) return;
-            state.currentId = conversation.id;
-            renderAll();
-            closeSidebarOnMobile();
-          });
-          row.addEventListener("keydown", event => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              state.currentId = conversation.id;
-              renderAll();
-              closeSidebarOnMobile();
-            }
-          });
-
-          const icon = document.createElement("span");
-          icon.className = "ico";
-          icon.dataset.lucide = "message-square";
-          icon.textContent = "C";
-
-          const copy = document.createElement("span");
-          copy.className = "history-copy";
-          copy.innerHTML = `<span class="history-title">${escapeHtml(conversation.title || "New Conversation")}</span><span class="history-time">${escapeHtml(formatRelative(conversation.updatedAt))}</span>`;
-
-          const del = document.createElement("button");
-          del.type = "button";
-          del.className = "history-delete";
-          del.setAttribute("aria-label", `Delete ${conversation.title || "conversation"}`);
-          del.innerHTML = '<span class="ico" data-lucide="x">X</span>';
-          del.addEventListener("click", event => {
-            event.stopPropagation();
-            deleteConversation(conversation.id);
-          });
-
-          row.append(icon, copy, del);
-          container.appendChild(row);
-        });
-      });
-      syncIcons();
-    }
-
-    function renderWelcome(container) {
-      const board = document.createElement("section");
-      board.className = "welcome-board";
-      board.innerHTML = `<div class="welcome-head"><div class="welcome-mark"><span class="ico" data-lucide="scan-line">EX</span></div><div><h3>EONIX is ready.</h3><p>${escapeHtml(getMode().status)}</p></div></div>`;
-      const grid = document.createElement("div");
-      grid.className = "starter-grid";
-      STARTERS.forEach(starter => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "starter";
-        button.innerHTML = `<span class="ico" data-lucide="corner-down-right">></span><strong>${escapeHtml(starter.title)}</strong><span>${escapeHtml(starter.text)}</span>`;
-        button.addEventListener("click", () => {
-          $("promptInput").value = starter.text;
-          autoResizeInput();
-          $("promptInput").focus();
-        });
-        grid.appendChild(button);
-      });
-      board.appendChild(grid);
-      container.appendChild(board);
-    }
-
-    function renderMessageContent(container, text) {
-      String(text || "").split(/\n{2,}/).forEach(paragraph => {
-        if (!paragraph.trim()) return;
-        const p = document.createElement("p");
-        p.textContent = paragraph;
-        container.appendChild(p);
-      });
-    }
-
-    function miniButton(iconName, label, handler) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "mini-action";
-      button.setAttribute("aria-label", label);
-      button.innerHTML = `<span class="ico" data-lucide="${iconName}">${label.charAt(0)}</span>`;
-      button.addEventListener("click", handler);
-      return button;
-    }
-
-    function createMessageNode(message) {
-      const outer = document.createElement("article");
-      outer.className = `message ${message.role}-message`;
-      const content = document.createElement("div");
-      content.className = "message-content";
-      renderMessageContent(content, message.content);
-      const meta = document.createElement("div");
-      meta.className = "message-meta";
-      meta.appendChild(Object.assign(document.createElement("span"), {
-        textContent: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      }));
-      if (message.role === "assistant") {
-        meta.appendChild(Object.assign(document.createElement("span"), { textContent: getMode(message.mode).label }));
-      }
-      const actions = document.createElement("span");
-      actions.className = "message-actions";
-      actions.append(miniButton("copy", "Copy", () => copyText(message.content)), miniButton("volume-2", "Speak", () => speak(message.content)));
-      meta.appendChild(actions);
-      outer.append(content, meta);
-      return outer;
-    }
-
-    function renderMessages() {
-      const container = $("messages");
-      const conversation = currentConversation();
-      container.innerHTML = "";
-      if (!conversation || !conversation.messages || !conversation.messages.length) {
-        renderWelcome(container);
-        syncIcons();
-        return;
-      }
-      if (!conversation.messages.some(message => message.role !== "system")) renderWelcome(container);
-      conversation.messages.forEach(message => container.appendChild(createMessageNode(message)));
-      syncIcons();
-    }
-
-    function renderAll() {
-      renderHistory();
-      renderMessages();
-      renderStats();
-      renderHeader();
-      syncIcons();
-    }
-
-    function openSidebar() {
-      $("sidebar").classList.add("open");
-      $("sidebarOverlay").classList.add("active");
-    }
-
-    function closeSidebar() {
-      $("sidebar").classList.remove("open");
-      $("sidebarOverlay").classList.remove("active");
-    }
-
-    function closeSidebarOnMobile() {
-      if (matchMedia("(max-width: 820px)").matches) closeSidebar();
-    }
-
-    function openSettings() {
-      closeActionsMenu();
-      renderStats();
-      $("settingsModal").classList.add("active");
-    }
-
-    function closeSettings() {
-      $("settingsModal").classList.remove("active");
-    }
-
-    function openProfile(tabName = "overview") {
-      if (state.user) setUser(state.user);
-      activateProfileTab(tabName);
-      $("profileModal").classList.add("active");
-      closeSidebarOnMobile();
-    }
-
-    function closeProfile() {
-      $("profileModal").classList.remove("active");
-    }
-
-    function activateProfileTab(tabName) {
-      document.querySelectorAll("[data-profile-tab]").forEach(button => {
-        const active = button.dataset.profileTab === tabName;
-        button.classList.toggle("active", active);
-        button.setAttribute("aria-selected", String(active));
-      });
-      document.querySelectorAll("[data-profile-panel]").forEach(panel => {
-        panel.classList.toggle("active", panel.dataset.profilePanel === tabName);
-      });
-    }
-
-    function toggleActionsMenu() {
-      const menu = $("actionsMenu");
-      const active = !menu.classList.contains("active");
-      menu.classList.toggle("active", active);
-      $("actionsMenuBtn").setAttribute("aria-expanded", String(active));
-    }
-
-    function closeActionsMenu() {
-      $("actionsMenu").classList.remove("active");
-      $("actionsMenuBtn").setAttribute("aria-expanded", "false");
-    }
-
-    function startSignIn() {
-      if (!state.previewMode) {
-        location.href = EONIX_ROUTES.signIn;
-        return;
-      }
-      setUser({ name: "Krish", email: "krish@EONIX.ai" });
-      loadConversations();
-      openApp();
-    }
-
-    function bootIdentity() {
-      const tokenFromUrl = getTokenFromUrl();
-      if (state.previewMode) {
-        setUser({ name: "Krish", email: "krish@EONIX.ai" });
-        loadConversations();
-        openApp();
-        return;
-      }
-
-      const token = tokenFromUrl || localStorage.getItem(STORAGE.token);
-      if (!token || !isTokenValid(token)) {
-        removeStorage(STORAGE.token);
-        showAuth();
-        return;
-      }
-
-      setUser(userFromToken(token));
-      loadConversations();
-      openApp();
-    }
-
-    function bindEvents() {
-      $("newConversationBtn").addEventListener("click", () => createLocalConversation());
-      $("historySearch").addEventListener("input", renderHistory);
-      $("composerForm").addEventListener("submit", event => {
-        event.preventDefault();
-        sendMessage();
-      });
-      $("promptInput").addEventListener("input", autoResizeInput);
-      $("promptInput").addEventListener("keydown", event => {
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          sendMessage();
-        }
-      });
-
-      ["attachImageBtn", "imageBtnTop"].forEach(id => $(id).addEventListener("click", attachImage));
-      ["generateImageBtn", "createImageBtnTop"].forEach(id => $(id).addEventListener("click", generateImage));
-      ["voiceBtn", "voiceBtnTop"].forEach(id => $(id).addEventListener("click", toggleVoice));
-      $("mobileMenuBtn").addEventListener("click", openSidebar);
-      $("collapseSidebarBtn").addEventListener("click", closeSidebar);
-      $("sidebarOverlay").addEventListener("click", closeSidebar);
-      $("actionsMenuBtn").addEventListener("click", event => {
-        event.stopPropagation();
-        toggleActionsMenu();
-      });
-      $("settingsMenuBtn").addEventListener("click", openSettings);
-      $("exportMenuBtn").addEventListener("click", exportConversations);
-      $("clearMenuBtn").addEventListener("click", clearAllHistory);
-      $("logoutMenuBtn").addEventListener("click", signOut);
-      $("userProfileEntry").addEventListener("click", () => openProfile("overview"));
-      $("closeSettingsBtn").addEventListener("click", closeSettings);
-      $("closeProfileBtn").addEventListener("click", closeProfile);
-      $("openSettingsFromProfile").addEventListener("click", () => {
-        closeProfile();
-        openSettings();
-      });
-      $("signOutFromProfile").addEventListener("click", signOut);
-      $("signInBtn").addEventListener("click", startSignIn);
-      $("googleSignInBtn").addEventListener("click", startSignIn);
-
-      document.querySelectorAll("[data-profile-tab]").forEach(button => {
-        button.addEventListener("click", () => activateProfileTab(button.dataset.profileTab));
-      });
-
-      $("settingsModal").addEventListener("click", event => { if (event.target === $("settingsModal")) closeSettings(); });
-      $("profileModal").addEventListener("click", event => { if (event.target === $("profileModal")) closeProfile(); });
-
-      $("modeSelect").addEventListener("change", event => {
-        state.settings.mode = event.target.value;
-        applySettings(false);
-        renderAll();
-      });
-      $("settingsModeSelect").addEventListener("change", event => {
-        state.settings.mode = event.target.value;
-        applySettings();
-        renderAll();
-      });
-      $("voiceSelect").addEventListener("change", event => {
-        state.settings.voice = event.target.value;
-        saveSettings();
-      });
-      $("messageScale").addEventListener("input", event => {
-        state.settings.messageScale = Number(event.target.value);
-        applySettings(false);
-      });
-
-      document.querySelectorAll("[data-theme-choice]").forEach(btn => btn.addEventListener("click", () => {
-        state.settings.theme = btn.dataset.themeChoice;
-        applySettings();
-      }));
-      document.querySelectorAll("#accentControls [data-accent]").forEach(btn => btn.addEventListener("click", () => {
-        state.settings.accent = btn.dataset.accent;
-        applySettings();
-        drawSignalBackground();
-      }));
-      document.querySelectorAll("[data-density-choice]").forEach(btn => btn.addEventListener("click", () => {
-        state.settings.density = btn.dataset.densityChoice;
-        applySettings();
-      }));
-
-      const media = matchMedia("(prefers-color-scheme: dark)");
-      const onThemeChange = () => {
-        if (state.settings.theme === "system") applySettings(false);
-      };
-      if (typeof media.addEventListener === "function") media.addEventListener("change", onThemeChange);
-      else if (typeof media.addListener === "function") media.addListener(onThemeChange);
-
-      document.addEventListener("click", event => {
-        if (!event.target.closest(".actions-menu-wrap")) closeActionsMenu();
-      });
-      document.addEventListener("keydown", event => {
-        if (event.key === "Escape") {
-          closeSettings();
-          closeProfile();
-          closeSidebar();
-          closeActionsMenu();
-        }
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-          event.preventDefault();
-          createLocalConversation();
-        }
-      });
-    }
-
-    function initSignalCanvas() {
-      drawSignalBackground();
-      addEventListener("resize", drawSignalBackground);
-      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        let tick = 0;
-        const animate = () => {
-          tick += 1;
-          if (tick % 4 === 0) drawSignalBackground(tick);
-          requestAnimationFrame(animate);
-        };
-        requestAnimationFrame(animate);
-      }
-    }
-
-    function drawSignalBackground(tick = 0) {
-      const canvas = $("signalCanvas");
-      const ctx = canvas.getContext("2d");
-      const dpr = Math.min(devicePixelRatio || 1, 2);
-      const width = innerWidth;
-      const height = innerHeight;
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, width, height);
-      const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#34e7ff";
-      ctx.strokeStyle = "rgba(255,255,255,0.04)";
-      ctx.lineWidth = 1;
-      const step = 44;
-      for (let x = (tick % step) - step; x < width; x += step) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-      }
-      for (let y = 0; y < height; y += step) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = accent;
-      ctx.globalAlpha = 0.12;
-      ctx.lineWidth = 1.5;
-      for (let i = 0; i < 7; i += 1) {
-        const y = height * 0.18 + i * (height * 0.11);
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        for (let x = 0; x <= width; x += 90) {
-          const offset = Math.sin((x + tick * 3 + i * 35) / 160) * 26;
-          ctx.lineTo(x, y + offset);
-        }
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    function init() {
-      buildModeOptions();
-      loadSettings();
-      bindEvents();
-      initSignalCanvas();
-      syncIcons();
-      bootIdentity();
-    }
-
-    addEventListener("beforeunload", () => {
-      if (state.recognition && state.listening) state.recognition.abort();
+    // ===========================================================================
+// EONIX v5.0 - Complete Frontend (Production Ready)
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// CONFIGURATION
+// ---------------------------------------------------------------------------
+const ROUTES = {
+  signIn: "/EONIX/sign-in", me: "/EONIX/me", signOut: "/EONIX/sign-out",
+  conversations: "/EONIX/conversations",
+  conversation: id => `/EONIX/conversations/${encodeURIComponent(id)}`,
+  messages: id => `/EONIX/conversations/${encodeURIComponent(id)}/messages`,
+  regenerate: id => `/EONIX/conversations/${encodeURIComponent(id)}/regenerate`,
+  vision: "/EONIX/vision/analyze", visionBatch: "/EONIX/vision/batch-analyze",
+  forge: "/EONIX/forge/create", forgeVariations: "/EONIX/forge/variations",
+  modes: "/EONIX/modes", taskDetect: "/EONIX/task/detect",
+  health: "/EONIX/health", refresh: "/EONIX/auth/refresh", verify: "/EONIX/auth/verify"
+};
+
+const MODES = [
+  { id: "EONIX-prime", short: "Prime", label: "EONIX Prime", icon: "🤖", status: "Balanced reasoning" },
+  { id: "EONIX-swift", short: "Swift", label: "EONIX Swift", icon: "✍️", status: "Creative writing" },
+  { id: "EONIX-deepcore", short: "DeepCore", label: "EONIX DeepCore", icon: "🧮", status: "Math & logic" },
+  { id: "EONIX-oracle", short: "Oracle", label: "EONIX Oracle", icon: "💻", status: "Coding expert" },
+  { id: "EONIX-vision", short: "Vision", label: "EONIX Vision", icon: "👁️", status: "Image analysis" },
+  { id: "EONIX-forge", short: "Forge", label: "EONIX Forge", icon: "🎨", status: "Image generation" },
+  { id: "EONIX-knowledge", short: "Knowledge", label: "EONIX Knowledge", icon: "📚", status: "Facts & info" }
+];
+
+const STORAGE_KEY = "EONIX:v5:";
+const $ = id => document.getElementById(id);
+const nowIso = () => new Date().toISOString();
+
+// ---------------------------------------------------------------------------
+// STATE
+// ---------------------------------------------------------------------------
+const state = {
+  ready: false, processing: false, listening: false, recognition: null,
+  user: null, currentId: null, conversations: [],
+  settings: { theme: "dark", accent: "cyan", density: "comfortable", messageScale: 14, mode: "EONIX-prime", voice: "en-US" }
+};
+
+// ---------------------------------------------------------------------------
+// TASK DETECTOR (matches backend Security class)
+// ---------------------------------------------------------------------------
+const TaskDetector = {
+  patterns: {
+    math: /\b(calculate|solve|equation|math|algebra|calculus|statistics|probability)\b/i,
+    code: /\b(code|program|function|debug|python|javascript|java|api|sql|algorithm|develop)\b/i,
+    creative: /\b(write|story|poem|creative|brainstorm|essay|compose|narrative|fiction)\b/i,
+    vision: /\b(analyze|describe|image|picture|photo|visual|scene|detect|recognize)\b/i,
+    forge: /\b(generate|create|make|draw).*(image|picture|art|visual)\b/i,
+    fact: /\b(fact|history|science|geography|when|who|what|where|why|knowledge|trivia)\b/i,
+    general: /\b(hello|hi|hey|how are you|thanks|thank you)\b/i
+  },
+  modeMap: { math: "EONIX-deepcore", code: "EONIX-oracle", creative: "EONIX-swift", vision: "EONIX-vision", forge: "EONIX-forge", fact: "EONIX-knowledge", general: "EONIX-prime" },
+  modeAllowed: {
+    "EONIX-prime": ["general", "fact"], "EONIX-swift": ["creative"], "EONIX-deepcore": ["math"],
+    "EONIX-oracle": ["code"], "EONIX-vision": ["vision"], "EONIX-forge": ["forge"], "EONIX-knowledge": ["fact", "general"]
+  },
+  detect(text) {
+    if (!text) return "general";
+    const scores = {};
+    for (const [t, p] of Object.entries(this.patterns)) scores[t] = (text.match(p) || []).length;
+    const max = Math.max(...Object.values(scores));
+    if (max === 0) return "general";
+    return Object.keys(scores).filter(k => scores[k] === max)[0] || "general";
+  },
+  recommend(text) { return this.modeMap[this.detect(text)] || "EONIX-prime"; },
+  validate(mode, text) {
+    const task = this.detect(text);
+    if ((this.modeAllowed[mode] || ["general"]).includes(task)) return { valid: true };
+    return { valid: false, recommended: this.recommend(text), task };
+  }
+};
+
+// ---------------------------------------------------------------------------
+// API BRIDGE
+// ---------------------------------------------------------------------------
+async function bridge(path, options = {}) {
+  const headers = new Headers(options.headers || {});
+  if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type"))
+    headers.set("Content-Type", "application/json");
+  const token = localStorage.getItem(STORAGE_KEY + "token");
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  
+  const res = await fetch(path, { ...options, headers, credentials: "include" });
+  if (res.status === 204) return {};
+  const data = JSON.parse(await res.text() || "{}");
+  if (res.status === 401) { localStorage.removeItem(STORAGE_KEY + "token"); showAuth(); throw new Error("Session expired"); }
+  if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// AUTH
+// ---------------------------------------------------------------------------
+function showAuth() { $("authGate")?.classList.add("active"); $("appShell")?.setAttribute("aria-hidden", "true"); }
+function openApp() { $("authGate")?.classList.remove("active"); $("appShell")?.setAttribute("aria-hidden", "false"); state.ready = true; renderAll(); $("promptInput")?.focus(); }
+function startSignIn() { location.href = ROUTES.signIn; }
+async function signOut() { try { await bridge(ROUTES.signOut); } catch {} state.user = null; state.conversations = []; state.currentId = null; localStorage.removeItem(STORAGE_KEY + "token"); showAuth(); }
+
+async function bootIdentity() {
+  const token = new URLSearchParams(location.search).get("token") || localStorage.getItem(STORAGE_KEY + "token");
+  if (!token) return showAuth();
+  try { const payload = JSON.parse(atob(token.split(".")[1])); state.user = { name: payload.name || payload.email, email: payload.email }; } catch {}
+  localStorage.setItem(STORAGE_KEY + "token", token);
+  history.replaceState({}, document.title, location.pathname);
+  await loadConversations(); openApp();
+}
+
+// ---------------------------------------------------------------------------
+// CONVERSATIONS
+// ---------------------------------------------------------------------------
+async function createConversation(title = "New Conversation") {
+  try {
+    const data = await bridge(ROUTES.conversations, { method: "POST", body: JSON.stringify({ title }) });
+    const conv = { id: data.session_id || data.conversation_id || uid(), title, messages: [], updatedAt: nowIso() };
+    state.conversations.unshift(conv); state.currentId = conv.id; renderAll(); return conv;
+  } catch { return createLocalConversation(title); }
+}
+
+function createLocalConversation(title = "New Conversation") {
+  const conv = { id: uid(), title, messages: [], updatedAt: nowIso() };
+  state.conversations.unshift(conv); state.currentId = conv.id; renderAll(); return conv;
+}
+
+async function loadConversations() {
+  try {
+    const data = await bridge(ROUTES.conversations);
+    state.conversations = (data.conversations || data.sessions || []).map(c => ({ id: c.id || c.session_id, title: c.title, messages: c.messages || [], updatedAt: c.updatedAt || c.updated_at }));
+    state.currentId = state.conversations[0]?.id || null;
+    if (!state.currentId) await createConversation();
+  } catch { createLocalConversation(); }
+}
+
+async function deleteConversation(id) {
+  if (!confirm(`Delete "${state.conversations.find(c => c.id === id)?.title}"?`)) return;
+  try { await bridge(ROUTES.conversation(id), { method: "DELETE" }); } catch {}
+  state.conversations = state.conversations.filter(c => c.id !== id);
+  if (state.currentId === id) state.currentId = state.conversations[0]?.id || null;
+  if (!state.currentId) await createConversation();
+  renderAll();
+}
+
+function currentConversation() { return state.conversations.find(c => c.id === state.currentId); }
+function uid() { return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`; }
+
+// ---------------------------------------------------------------------------
+// MESSAGES
+// ---------------------------------------------------------------------------
+async function sendMessage() {
+  const input = $("promptInput"); if (!input) return;
+  const text = input.value.trim(); if (!text || state.processing) return;
+  if (!currentConversation()) await createConversation();
+  input.value = ""; autoResizeInput();
+  
+  // Task detection & mode switching
+  const task = TaskDetector.detect(text);
+  const validation = TaskDetector.validate(state.settings.mode, text);
+  if (!validation.valid && validation.recommended) {
+    state.settings.mode = validation.recommended;
+    saveSettings(); updateModeLabels();
+    showToast("Mode switched", `Using ${MODES.find(m => m.id === validation.recommended)?.label} for this task.`, "info");
+  }
+  
+  addMessage({ role: "user", content: text, taskType: task });
+  setProcessing(true); showTyping();
+  
+  try {
+    const response = await bridge(ROUTES.messages(state.currentId), {
+      method: "POST", body: JSON.stringify({ prompt: text, message: text, mode: state.settings.mode, auto_detect_task: true })
     });
+    hideTyping();
+    addMessage({ role: "assistant", content: response.response || response.message?.content, mode: response.mode, taskType: response.task_type || task });
+    if (response.rate_remaining !== undefined) updateRateDisplay(response.rate_remaining);
+  } catch (e) {
+    hideTyping();
+    addMessage({ role: "system", content: `❌ ${e.message}` });
+    showToast("Error", e.message, "error");
+  } finally { setProcessing(false); input.focus(); }
+}
 
-    addEventListener("DOMContentLoaded", init);
+async function regenerateResponse() {
+  if (!state.currentId || state.processing) return;
+  const msgs = currentConversation()?.messages || [];
+  if (msgs[msgs.length - 1]?.role === "assistant") msgs.pop();
+  setProcessing(true); showTyping();
+  try {
+    const response = await bridge(ROUTES.regenerate(state.currentId), { method: "POST" });
+    hideTyping(); addMessage({ role: "assistant", content: response.response });
+  } catch (e) { hideTyping(); showToast("Error", e.message, "error"); }
+  setProcessing(false);
+}
+
+function addMessage(msg) {
+  const conv = currentConversation(); if (!conv) return;
+  conv.messages.push({ id: uid(), ...msg, createdAt: nowIso() });
+  if (conv.title === "New Conversation" && msg.role === "user" && msg.content.trim())
+    conv.title = msg.content.trim().slice(0, 48) + (msg.content.length > 48 ? "..." : "");
+  conv.updatedAt = nowIso();
+  renderAll(); scrollToBottom();
+}
+
+// ---------------------------------------------------------------------------
+// IMAGE FUNCTIONS
+// ---------------------------------------------------------------------------
+async function analyzeImage(file) {
+  if (!file) return;
+  showToast("Analyzing", "EONIX Vision processing...", "info");
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const response = await bridge(ROUTES.vision, {
+        method: "POST", body: JSON.stringify({ image: e.target.result, prompt: $("promptInput")?.value || "Describe this image.", conversation_id: state.currentId })
+      });
+      if (response.success) {
+        addMessage({ role: "user", content: "[Image Analysis]", mode: "EONIX-vision" });
+        addMessage({ role: "assistant", content: response.analysis || response.response, mode: response.mode, attachments: [{ type: "image", url: e.target.result }] });
+      }
+    } catch (err) { showToast("Error", err.message, "error"); }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function generateImage() {
+  const prompt = $("promptInput")?.value.trim(); if (!prompt) return;
+  showToast("Creating", "EONIX Forge working...", "info"); setProcessing(true);
+  try {
+    const response = await bridge(ROUTES.forge, { method: "POST", body: JSON.stringify({ prompt, aspect_ratio: "1:1", conversation_id: state.currentId }) });
+    if (response.success) {
+      addMessage({ role: "user", content: `[Generate] ${prompt}`, mode: "EONIX-forge" });
+      addMessage({ role: "assistant", content: `<img src="${response.image_url}" alt="${prompt}" style="max-width:100%;border-radius:8px;" loading="lazy" /><p><em>${prompt}</em></p>`, mode: "EONIX-forge", attachments: [{ type: "generated_image", url: response.image_url, prompt }] });
+      $("promptInput").value = "";
+    }
+  } catch (e) { showToast("Error", e.message, "error"); }
+  setProcessing(false);
+}
+
+function attachImage() { const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.onchange = e => e.target.files[0] && analyzeImage(e.target.files[0]); inp.click(); }
+
+// ---------------------------------------------------------------------------
+// UI HELPERS
+// ---------------------------------------------------------------------------
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c])); }
+function showToast(title, msg = "", type = "info") { const t = document.createElement("div"); t.className = `toast ${type}`; t.innerHTML = `<strong>${title}</strong> ${msg}`; $("toastRegion")?.appendChild(t); setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.remove(), 200); }, 3000); }
+function autoResizeInput() { const i = $("promptInput"); if (i) { i.style.height = "auto"; i.style.height = Math.min(i.scrollHeight, 160) + "px"; } }
+function scrollToBottom() { requestAnimationFrame(() => { const m = $("messages"); if (m) m.scrollTop = m.scrollHeight; }); }
+function setProcessing(v) { state.processing = v; $("sendBtn") && ($("sendBtn").disabled = v); $("promptInput") && ($("promptInput").disabled = v); }
+function showTyping() { const d = document.createElement("div"); d.id = "typingMessage"; d.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>'; $("messages")?.appendChild(d); scrollToBottom(); }
+function hideTyping() { $("typingMessage")?.remove(); }
+function getMode(id) { return MODES.find(m => m.id === (id || state.settings.mode)) || MODES[0]; }
+function updateModeLabels() { const m = getMode(); $("modeSignal") && ($("modeSignal").textContent = m.short); $("statusText") && ($("statusText").textContent = state.processing ? "Thinking..." : m.status); }
+function updateRateDisplay(r) { $("rateIndicator") && ($("rateIndicator").textContent = `${r} left`); }
+function saveSettings() { localStorage.setItem(STORAGE_KEY + "settings", JSON.stringify(state.settings)); }
+function loadSettings() { try { state.settings = { ...state.settings, ...JSON.parse(localStorage.getItem(STORAGE_KEY + "settings") || "{}") }; } catch {} }
+
+// ---------------------------------------------------------------------------
+// RENDERING
+// ---------------------------------------------------------------------------
+function renderAll() {
+  renderHistory(); renderMessages(); renderHeader();
+  document.querySelectorAll(".ico[data-icon]").forEach(el => {
+    const icon = el.dataset.icon;
+    if (el.dataset.rendered === icon) return;
+    el.dataset.rendered = icon;
+    el.innerHTML = ICONS[icon] || icon;
+  });
+}
+
+function renderHistory() {
+  const c = $("historyList"); if (!c) return;
+  c.innerHTML = state.conversations.map(conv => `
+    <div class="history-row ${conv.id === state.currentId ? 'active' : ''}" onclick="state.currentId='${conv.id}';renderAll();">
+      <span class="ico" data-icon="message-square">💬</span>
+      <span>${escapeHtml(conv.title)}</span>
+      <button onclick="event.stopPropagation();deleteConversation('${conv.id}')" class="history-delete">×</button>
+    </div>`).join("") || '<div class="empty-state">No conversations yet</div>';
+}
+
+function renderMessages() {
+  const c = $("messages"); if (!c) return;
+  const conv = currentConversation();
+  if (!conv?.messages?.length) {
+    c.innerHTML = `<div class="welcome"><h2>EONIX Ready</h2><p>${getMode().status}</p></div>`;
+    return;
+  }
+  c.innerHTML = conv.messages.map(m => `
+    <article class="message ${m.role}-message">
+      <div class="message-content">
+        ${m.attachments?.some(a => a.type === "generated_image") ? 
+          m.attachments.filter(a => a.type === "generated_image").map(a => 
+            `<img src="${a.url}" alt="${escapeHtml(a.prompt||'')}" style="max-width:100%;border-radius:8px;margin:8px 0;" loading="lazy" />`
+          ).join("") : ""}
+        ${m.content || ""}
+      </div>
+      <div class="message-meta">
+        <span>${new Date(m.createdAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</span>
+        ${m.role === "assistant" ? `<span>${getMode(m.mode).icon} ${getMode(m.mode).short}</span>` : ""}
+        ${m.role === "assistant" ? `<button onclick="copyText('${escapeHtml(m.content||"")}')" title="Copy">📋</button>` : ""}
+      </div>
+    </article>`).join("");
+  scrollToBottom();
+}
+
+function renderHeader() {
+  const conv = currentConversation();
+  $("activeTitle") && ($("activeTitle").textContent = conv?.title || "EONIX");
+  $("messageCount") && ($("messageCount").textContent = `${conv?.messages?.length || 0} messages`);
+  updateModeLabels();
+}
+
+// ---------------------------------------------------------------------------
+// EVENT BINDING
+// ---------------------------------------------------------------------------
+function bindEvents() {
+  $("composerForm")?.addEventListener("submit", e => { e.preventDefault(); sendMessage(); });
+  $("promptInput")?.addEventListener("input", autoResizeInput);
+  $("promptInput")?.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+  $("newConversationBtn")?.addEventListener("click", () => createConversation());
+  $("signInBtn")?.addEventListener("click", startSignIn);
+  $("googleSignInBtn")?.addEventListener("click", startSignIn);
+  $("signOutBtn")?.addEventListener("click", signOut);
+  $("attachImageBtn")?.addEventListener("click", attachImage);
+  $("generateImageBtn")?.addEventListener("click", generateImage);
+  $("regenerateBtn")?.addEventListener("click", regenerateResponse);
+  $("modeSelect")?.addEventListener("change", e => { state.settings.mode = e.target.value; saveSettings(); updateModeLabels(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") { /* close modals */ } });
+}
+
+// ---------------------------------------------------------------------------
+// INIT
+// ---------------------------------------------------------------------------
+function init() {
+  loadSettings();
+  bindEvents();
+  bootIdentity();
+}
+
+document.addEventListener("DOMContentLoaded", init);
   </script>
 </body>
 </html>
