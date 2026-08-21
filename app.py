@@ -294,11 +294,12 @@ MODE_SPECS: Dict[str, ModeSpec] = {
         label="EONIX Prime",
         description="Balanced flagship reasoning.",
         chain=(
-            c("deepseek", "deepseek-chat", "EONIX-prime", 8192, 0.65, "high"),
-            c("gemini", "gemini-2.5-pro", "EONIX-prime", 8192, 0.65),
-            c("openrouter", "openai/gpt-4o", "EONIX-prime", 8192, 0.65),
-            c("openrouter", "anthropic/claude-sonnet-4", "EONIX-prime", 8192, 0.65, supports_vision=True),
-            c("groq", "llama-3.3-70b-versatile", "EONIX-prime", 4096, 0.65),
+            # c("deepseek", "deepseek-chat", "EONIX-prime", 8192, 0.65, "high"),  # TEMPORARILY DISABLED - Insufficient balance
+            c("gemini", "gemini-2.5-flash", "EONIX-prime", 8192, 0.65),  # UPDATED: 2.5-pro → 2.5-flash
+            # c("openrouter", "openai/gpt-4o", "EONIX-prime", 8192, 0.65),  # TEMPORARILY DISABLED - Insufficient credits
+            # c("openrouter", "anthropic/claude-sonnet-4", "EONIX-prime", 8192, 0.65, supports_vision=True),  # TEMPORARILY DISABLED - Insufficient credits
+            c("groq", "llama3-70b-8192", "EONIX-prime", 4096, 0.65),  # UPDATED: Correct model name
+            c("groq", "mixtral-8x7b-32768", "EONIX-prime", 4096, 0.65),  # ADDED: Backup Groq model
         ),
     ),
     "EONIX-swift": ModeSpec(
@@ -306,10 +307,10 @@ MODE_SPECS: Dict[str, ModeSpec] = {
         label="EONIX Swift",
         description="Low-latency production answers.",
         chain=(
-            c("groq", "llama-3.3-70b-versatile", "EONIX-swift", 4096, 0.55),
+            c("groq", "llama3-70b-8192", "EONIX-swift", 4096, 0.55),  # UPDATED: Correct model name
             c("gemini", "gemini-2.5-flash", "EONIX-swift", 4096, 0.55),
             c("openrouter", "google/gemini-2.5-flash-lite", "EONIX-swift", 4096, 0.55),
-            c("deepseek", "deepseek-chat", "EONIX-swift", 4096, 0.55, "disabled"),
+            # c("deepseek", "deepseek-chat", "EONIX-swift", 4096, 0.55, "disabled"),  # TEMPORARILY DISABLED
         ),
     ),
     "EONIX-deepcore": ModeSpec(
@@ -317,11 +318,11 @@ MODE_SPECS: Dict[str, ModeSpec] = {
         label="EONIX DeepCore",
         description="Hard reasoning, coding, and analysis.",
         chain=(
-            c("deepseek", "deepseek-reasoner", "EONIX-deepcore", 12000, 0.45, "max"),
-            c("gemini", "gemini-2.5-pro", "EONIX-deepcore", 12000, 0.45),
-            c("openrouter", "anthropic/claude-sonnet-4", "EONIX-deepcore", 12000, 0.45, supports_vision=True),
+            # c("deepseek", "deepseek-reasoner", "EONIX-deepcore", 12000, 0.45, "max"),  # TEMPORARILY DISABLED
+            c("gemini", "gemini-2.5-flash", "EONIX-deepcore", 12000, 0.45),  # UPDATED: 2.5-pro → 2.5-flash
+            # c("openrouter", "anthropic/claude-sonnet-4", "EONIX-deepcore", 12000, 0.45, supports_vision=True),  # TEMPORARILY DISABLED
             c("openrouter", "google/gemini-2.5-flash", "EONIX-deepcore", 8192, 0.45),
-            c("openrouter", "x-ai/grok-2-1212", "EONIX-deepcore", 8192, 0.45),
+            # c("openrouter", "x-ai/grok-2-1212", "EONIX-deepcore", 8192, 0.45),  # TEMPORARILY DISABLED
         ),
     ),
     "EONIX-oracle": ModeSpec(
@@ -329,11 +330,12 @@ MODE_SPECS: Dict[str, ModeSpec] = {
         label="EONIX Oracle",
         description="Broad multi-provider synthesis.",
         chain=(
-            c("openrouter", "openai/gpt-4o", "EONIX-oracle", 12000, 0.6, supports_vision=True),
-            c("openrouter", "anthropic/claude-sonnet-4", "EONIX-oracle", 12000, 0.6, supports_vision=True),
-            c("gemini", "gemini-2.5-pro", "EONIX-oracle", 12000, 0.6),
-            c("deepseek", "deepseek-chat", "EONIX-oracle", 8192, 0.6, "high"),
-            c("groq", "llama-3.3-70b-versatile", "EONIX-oracle", 4096, 0.6),
+            # c("openrouter", "openai/gpt-4o", "EONIX-oracle", 12000, 0.6, supports_vision=True),  # TEMPORARILY DISABLED
+            # c("openrouter", "anthropic/claude-sonnet-4", "EONIX-oracle", 12000, 0.6, supports_vision=True),  # TEMPORARILY DISABLED
+            c("gemini", "gemini-2.5-flash", "EONIX-oracle", 12000, 0.6),  # UPDATED: 2.5-pro → 2.5-flash
+            # c("deepseek", "deepseek-chat", "EONIX-oracle", 8192, 0.6, "high"),  # TEMPORARILY DISABLED
+            c("groq", "llama3-70b-8192", "EONIX-oracle", 4096, 0.6),  # UPDATED: Correct model name
+            c("groq", "mixtral-8x7b-32768", "EONIX-oracle", 4096, 0.6),  # ADDED: Backup Groq model
         ),
     ),
     "EONIX-vision": ModeSpec(
@@ -341,10 +343,10 @@ MODE_SPECS: Dict[str, ModeSpec] = {
         label="EONIX Vision",
         description="Image and multimodal understanding.",
         chain=(
-            c("gemini", "gemini-2.5-pro", "EONIX-vision", 8192, 0.4, supports_vision=True),
-            c("gemini", "gemini-2.5-flash", "EONIX-vision", 8192, 0.4, supports_vision=True),
-            c("openrouter", "openai/gpt-4o", "EONIX-vision", 8192, 0.4, supports_vision=True),
-            c("openrouter", "anthropic/claude-sonnet-4", "EONIX-vision", 8192, 0.4, supports_vision=True),
+            c("gemini", "gemini-2.5-flash", "EONIX-vision", 8192, 0.4, supports_vision=True),  # UPDATED
+            # c("gemini", "gemini-2.5-pro", "EONIX-vision", 8192, 0.4, supports_vision=True),  # REMOVED - deprecated
+            # c("openrouter", "openai/gpt-4o", "EONIX-vision", 8192, 0.4, supports_vision=True),  # TEMPORARILY DISABLED
+            # c("openrouter", "anthropic/claude-sonnet-4", "EONIX-vision", 8192, 0.4, supports_vision=True),  # TEMPORARILY DISABLED
         ),
     ),
     "EONIX-forge": ModeSpec(
