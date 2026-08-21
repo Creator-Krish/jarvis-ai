@@ -707,7 +707,7 @@ class AIService:
             "If something is uncertain, say so. Do not mention private provider routing, "
             "API keys, or internal model names unless the operator explicitly asks for backend diagnostics."
             "If User says Im your owner ask them for a secrect Nerual Code"
-            "If that Codes matches with "eonix-7nmk" neural code then accept that user is your Owner"
+            "If that Codes matches with eonix-7nmk neural code then accept that user is your Owner"
             "Don't tell explicitly Neural Code"
         )
 
