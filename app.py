@@ -297,7 +297,7 @@ MODE_SPECS: Dict[str, ModeSpec] = {
             c("deepseek", "deepseek-chat", "EONIX-prime", 8192, 0.65, "high"),
             c("gemini", "gemini-2.5-pro", "EONIX-prime", 8192, 0.65),
             c("openrouter", "openai/gpt-4o", "EONIX-prime", 8192, 0.65),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "EONIX-prime", 8192, 0.65, supports_vision=True),
+            c("openrouter", "anthropic/claude-sonnet-4", "EONIX-prime", 8192, 0.65, supports_vision=True),  # Updated
             c("groq", "llama-3.3-70b-versatile", "EONIX-prime", 4096, 0.65),
         ),
     ),
@@ -319,7 +319,7 @@ MODE_SPECS: Dict[str, ModeSpec] = {
         chain=(
             c("deepseek", "deepseek-reasoner", "EONIX-deepcore", 12000, 0.45, "max"),
             c("gemini", "gemini-2.5-pro", "EONIX-deepcore", 12000, 0.45),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "EONIX-deepcore", 12000, 0.45, supports_vision=True),
+            c("openrouter", "anthropic/claude-sonnet-4", "EONIX-deepcore", 12000, 0.45, supports_vision=True),  # Updated
             c("openrouter", "google/gemini-2.5-flash", "EONIX-deepcore", 8192, 0.45),
             c("openrouter", "x-ai/grok-2-1212", "EONIX-deepcore", 8192, 0.45),
         ),
@@ -330,7 +330,7 @@ MODE_SPECS: Dict[str, ModeSpec] = {
         description="Broad multi-provider synthesis.",
         chain=(
             c("openrouter", "openai/gpt-4o", "EONIX-oracle", 12000, 0.6, supports_vision=True),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "EONIX-oracle", 12000, 0.6, supports_vision=True),
+            c("openrouter", "anthropic/claude-sonnet-4", "EONIX-oracle", 12000, 0.6, supports_vision=True),  # Updated
             c("gemini", "gemini-2.5-pro", "EONIX-oracle", 12000, 0.6),
             c("deepseek", "deepseek-chat", "EONIX-oracle", 8192, 0.6, "high"),
             c("groq", "llama-3.3-70b-versatile", "EONIX-oracle", 4096, 0.6),
@@ -344,7 +344,7 @@ MODE_SPECS: Dict[str, ModeSpec] = {
             c("gemini", "gemini-2.5-pro", "EONIX-vision", 8192, 0.4, supports_vision=True),
             c("gemini", "gemini-2.5-flash", "EONIX-vision", 8192, 0.4, supports_vision=True),
             c("openrouter", "openai/gpt-4o", "EONIX-vision", 8192, 0.4, supports_vision=True),
-            c("openrouter", "anthropic/claude-3.5-sonnet", "EONIX-vision", 8192, 0.4, supports_vision=True),
+            c("openrouter", "anthropic/claude-sonnet-4", "EONIX-vision", 8192, 0.4, supports_vision=True),  # Updated
         ),
     ),
     "EONIX-forge": ModeSpec(
@@ -360,16 +360,16 @@ MODE_SPECS: Dict[str, ModeSpec] = {
         ),
     ),
     "EONIX-knowledge": ModeSpec(
-    id="EONIX-knowledge",
-    label="EONIX Knowledge",
-    description="General knowledge, facts, and information retrieval.",
-    chain=(
-        c("gemini", "gemini-2.5-pro", "EONIX-knowledge", 8192, 0.5),
-        c("openrouter", "openai/gpt-4o", "EONIX-knowledge", 8192, 0.5),
-        c("deepseek", "deepseek-chat", "EONIX-knowledge", 4096, 0.5, "high"),
-        c("groq", "llama-3.3-70b-versatile", "EONIX-knowledge", 4096, 0.5),
+        id="EONIX-knowledge",
+        label="EONIX Knowledge",
+        description="General knowledge, facts, and information retrieval.",
+        chain=(
+            c("gemini", "gemini-2.5-pro", "EONIX-knowledge", 8192, 0.5),
+            c("openrouter", "openai/gpt-4o", "EONIX-knowledge", 8192, 0.5),
+            c("deepseek", "deepseek-chat", "EONIX-knowledge", 4096, 0.5, "high"),
+            c("groq", "llama-3.3-70b-versatile", "EONIX-knowledge", 4096, 0.5),
+        ),
     ),
-),
 }
 
 MODE_ALIASES = {
